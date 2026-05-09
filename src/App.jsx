@@ -11,6 +11,26 @@ import InventoryManagement from './InventoryManagement';
 import Settings from './Settings';
 import { API_BASE } from './api';
 
+const roleRank = {
+  Viewer: 1,
+  DataEntry: 2,
+  OperationManager: 3,
+  AdminOwner: 4,
+};
+
+function normalizeRole(role) {
+  const compactRole = String(role || '').replace(/[\s_-]/g, '').toLowerCase();
+  if (compactRole === 'admin' || compactRole === 'adminowner') return 'AdminOwner';
+  if (compactRole === 'opmanager' || compactRole === 'operationmanager') return 'OperationManager';
+  if (compactRole === 'dataentry') return 'DataEntry';
+  if (compactRole === 'viewer') return 'Viewer';
+  return role;
+}
+
+function hasMinimumRole(role, minimumRole) {
+  return (roleRank[normalizeRole(role)] || 0) >= (roleRank[minimumRole] || 0);
+}
+
 function CogIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -64,6 +84,18 @@ const [activeScreen, setActiveScreen] = useState('dashboard');
 const [activeBatch, setActiveBatch] = useState(null);
 // --- DAILY LOGS DATABASE (NOW CONNECTED TO POSTGRESQL!) ---
   const [logs, setLogs] = useState([]);
+  const canEnterDaily = hasMinimumRole(user?.role, 'DataEntry');
+  const canManageOperations = hasMinimumRole(user?.role, 'OperationManager');
+  const canViewFinancial = canManageOperations;
+  const allowedScreens = [
+    'dashboard',
+    'batches',
+    'dailyLog',
+    'inventory',
+    'analytics',
+    'settings',
+    ...(canManageOperations ? ['employees', 'ledger', 'statement'] : []),
+  ];
 
   const clearSession = () => {
     setUser(null);
@@ -106,7 +138,7 @@ const [activeBatch, setActiveBatch] = useState(null);
   }, [token]);
 
   useEffect(() => {
-    if (!token || !activeBatch?.id) {
+    if (!token || !activeBatch?.id || !canViewFinancial) {
       setTransactions([]);
       return;
     }
@@ -130,7 +162,7 @@ const [activeBatch, setActiveBatch] = useState(null);
     };
 
     fetchTransactions();
-  }, [token, activeBatch?.id]);
+  }, [token, activeBatch?.id, canViewFinancial]);
 
   useEffect(() => {
     if (!token || !activeBatch?.id) {
@@ -170,6 +202,12 @@ const [activeBatch, setActiveBatch] = useState(null);
     clearSession();
   };
 
+  useEffect(() => {
+    if (user && !allowedScreens.includes(activeScreen)) {
+      setActiveScreen('dashboard');
+    }
+  }, [activeScreen, user?.role]);
+
   // --- SECURITY GATEKEEPER ---
   // If there is no user logged in, show ONLY the Login Screen!
   if (!user || !token) {
@@ -196,11 +234,11 @@ const [activeBatch, setActiveBatch] = useState(null);
 >
   Batches
 </button>
-            {user.role !== 'DataEntry' && (
+            {canManageOperations && (
               <button onClick={() => setActiveScreen('employees')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'employees' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Employees</button>
             )}
             {/* RBAC: Only show Ledger and Statement to Admins/OpManagers */}
-            {user.role !== 'DataEntry' && (
+            {canViewFinancial && (
               <button onClick={() => setActiveScreen('ledger')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'ledger' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Ledger</button>
             )}
             
@@ -208,7 +246,7 @@ const [activeBatch, setActiveBatch] = useState(null);
             <button onClick={() => setActiveScreen('inventory')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'inventory' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Inventory</button>
             <button onClick={() => setActiveScreen('analytics')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'analytics' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Analytics</button>
             
-            {user.role !== 'DataEntry' && (
+            {canViewFinancial && (
               <button onClick={() => setActiveScreen('statement')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'statement' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Statement</button>
             )}
           </div>
@@ -245,13 +283,14 @@ const [activeBatch, setActiveBatch] = useState(null);
     activeBatch={activeBatch}
     setActiveBatch={setActiveBatch}
     token={token}
+    readOnly={!canManageOperations}
   />
 )}
 {activeScreen === 'dashboard' && (
   <Dashboard setActiveScreen={setActiveScreen} logs={logs} activeBatch={activeBatch} user={user} />
 )}
 
-{activeScreen === 'employees' && (
+{activeScreen === 'employees' && canManageOperations && (
   <EmployeeManagement
     token={token}
     transactions={transactions}
@@ -259,28 +298,29 @@ const [activeBatch, setActiveBatch] = useState(null);
   />
 )}
 
-{activeScreen === 'ledger' && (
+{activeScreen === 'ledger' && canViewFinancial && (
   <TransactionLedger
     transactions={transactions}
     setTransactions={setTransactions}
     activeBatch={activeBatch}
     token={token}
+    readOnly={!canManageOperations}
   />
 )}
 
 {activeScreen === 'dailyLog' && (
-  <DailyLog logs={logs} setLogs={setLogs} activeBatch={activeBatch} token={token} />
+  <DailyLog logs={logs} setLogs={setLogs} activeBatch={activeBatch} token={token} readOnly={!canEnterDaily} />
 )}
 
 {activeScreen === 'inventory' && (
-  <InventoryManagement activeBatch={activeBatch} token={token} />
+  <InventoryManagement activeBatch={activeBatch} token={token} readOnly={!canManageOperations} />
 )}
 
 {activeScreen === 'analytics' && (
-  <Analytics transactions={transactions} logs={logs} activeBatch={activeBatch} />
+  <Analytics transactions={canViewFinancial ? transactions : []} logs={logs} activeBatch={activeBatch} showFinancials={canViewFinancial} />
 )}
 
-{activeScreen === 'statement' && (
+{activeScreen === 'statement' && canViewFinancial && (
   <FinancialStatement transactions={transactions} activeBatch={activeBatch} />
 )}
 

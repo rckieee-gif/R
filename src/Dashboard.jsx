@@ -36,6 +36,25 @@ function getToneClass(value) {
   return isOver ? 'text-semantic-danger' : 'text-semantic-success';
 }
 
+const roleRank = {
+  Viewer: 1,
+  DataEntry: 2,
+  OperationManager: 3,
+  AdminOwner: 4,
+};
+
+function hasMinimumRole(role, minimumRole) {
+  const compactRole = String(role || '').replace(/[\s_-]/g, '').toLowerCase();
+  const normalizedRole =
+    compactRole === 'admin' || compactRole === 'adminowner' ? 'AdminOwner'
+      : compactRole === 'opmanager' || compactRole === 'operationmanager' ? 'OperationManager'
+        : compactRole === 'dataentry' ? 'DataEntry'
+          : compactRole === 'viewer' ? 'Viewer'
+            : role;
+
+  return (roleRank[normalizedRole] || 0) >= (roleRank[minimumRole] || 0);
+}
+
 function MetricCard({ label, value, subtext, tone = 'text-gray-900 dark:text-white' }) {
   return (
     <div className="bg-white dark:bg-gray-800 border border-neutral-border dark:border-gray-700 p-3 rounded-xl shadow-sm">
@@ -87,7 +106,8 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
   const todaysLogs = logs.filter((log) => log.date === today);
   const latestWeightLog = logs.find((log) => log.averageWeightGrams != null && Number(log.averageWeightGrams) > 0);
   const recentLogs = logs.slice(0, 3);
-  const canUseFinancialScreens = user?.role !== 'DataEntry';
+  const canEnterDaily = hasMinimumRole(user?.role, 'DataEntry');
+  const canUseFinancialScreens = hasMinimumRole(user?.role, 'OperationManager');
   const lastTargetDay = getLastBroilerTargetDay();
   const quickActions = canUseFinancialScreens
     ? [
@@ -96,11 +116,19 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
       { label: 'Employees', detail: 'Shares and pay', screen: 'employees' },
       { label: 'Ledger', detail: 'Expenses and balances', screen: 'ledger' }
     ]
-    : [
+    : canEnterDaily
+      ? [
       { label: 'Daily Logs', detail: 'Mortality, feed, weight', screen: 'dailyLog', primary: true },
       { label: 'Analytics', detail: 'Targets and charts', screen: 'analytics' },
+      { label: 'Inventory', detail: 'Stock levels', screen: 'inventory' },
       { label: 'Batches', detail: 'Batch setup', screen: 'batches' }
-    ];
+      ]
+      : [
+      { label: 'Analytics', detail: 'Targets and charts', screen: 'analytics', primary: true },
+      { label: 'Daily Logs', detail: 'Read-only history', screen: 'dailyLog' },
+      { label: 'Inventory', detail: 'Read-only stock', screen: 'inventory' },
+      { label: 'Batches', detail: 'Read-only cycles', screen: 'batches' }
+      ];
 
   if (!activeBatch) {
     return (

@@ -65,7 +65,7 @@ function uniqueStakeholders(stakeholders) {
   }, []);
 }
 
-export default function InventoryManagement({ token, activeBatch }) {
+export default function InventoryManagement({ token, activeBatch, readOnly = false }) {
   const [items, setItems] = useState([]);
   const [movements, setMovements] = useState([]);
   const [buildings, setBuildings] = useState(['All']);
@@ -175,6 +175,11 @@ export default function InventoryManagement({ token, activeBatch }) {
     event.preventDefault();
     setError('');
 
+    if (readOnly) {
+      setError('Your role can view inventory but cannot change stock records.');
+      return;
+    }
+
     try {
       const response = await fetch(
         editingItemId ? `${API_BASE}/api/inventory/items/${editingItemId}` : `${API_BASE}/api/inventory/items`,
@@ -205,6 +210,11 @@ export default function InventoryManagement({ token, activeBatch }) {
   const handleMovementSubmit = async (event) => {
     event.preventDefault();
     setError('');
+
+    if (readOnly) {
+      setError('Your role can view inventory but cannot add stock movements.');
+      return;
+    }
 
     if (!movementForm.itemId) {
       setError('Select an inventory item first.');
@@ -303,6 +313,16 @@ export default function InventoryManagement({ token, activeBatch }) {
         </div>
       )}
 
+      {readOnly && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-xl p-3 mb-6">
+          <p className="text-xs font-black uppercase tracking-wider text-primary">Read-only access</p>
+          <p className="text-sm font-bold text-blue-700 dark:text-blue-200 mt-1">
+            You can review stock levels and movement history. Inventory changes are restricted to operation managers and owners.
+          </p>
+        </div>
+      )}
+
+      {!readOnly && (
       <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">
@@ -389,7 +409,9 @@ export default function InventoryManagement({ token, activeBatch }) {
           </button>
         </form>
       </div>
+      )}
 
+      {!readOnly && (
       <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700 mb-6">
         <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">
           Stock Movement
@@ -581,6 +603,7 @@ export default function InventoryManagement({ token, activeBatch }) {
           </button>
         </form>
       </div>
+      )}
 
       {isLoading && (
         <p className="text-sm text-gray-500 mb-3">Loading inventory...</p>
@@ -613,13 +636,19 @@ export default function InventoryManagement({ token, activeBatch }) {
                 <p className="bg-neutral-light dark:bg-gray-700 rounded-lg p-2 text-gray-500">
                   Alert <span className="font-black">{formatQuantity(item.reorderLevel)}</span>
                 </p>
-                <button
-                  type="button"
-                  onClick={() => handleEditItem(item)}
-                  className="bg-secondary/10 text-secondary rounded-lg p-2 font-black"
-                >
-                  Edit
-                </button>
+                {readOnly ? (
+                  <p className="bg-neutral-light dark:bg-gray-700 rounded-lg p-2 text-gray-500 font-black">
+                    View only
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleEditItem(item)}
+                    className="bg-secondary/10 text-secondary rounded-lg p-2 font-black"
+                  >
+                    Edit
+                  </button>
+                )}
               </div>
             </div>
           ))}

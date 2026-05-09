@@ -49,7 +49,7 @@ function buildLoadingRows(buildings) {
   }));
 }
 
-export default function BatchManagement({ activeBatch, setActiveBatch, token }) {
+export default function BatchManagement({ activeBatch, setActiveBatch, token, readOnly = false }) {
   const [batches, setBatches] = useState([]);
   const [buildings, setBuildings] = useState([]);
   const [loadings, setLoadings] = useState([]);
@@ -158,6 +158,11 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token }) 
   const handleSaveBatch = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (readOnly) {
+      setError('Your role can view batches but cannot create or edit them.');
+      return;
+    }
 
     if (loadings.length === 0) {
       setError('Add at least one building loading row.');
@@ -274,9 +279,18 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token }) 
           Batches
         </h2>
         <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-          Create and manage flock production cycles.
+          {readOnly ? 'Review flock production cycles.' : 'Create and manage flock production cycles.'}
         </p>
       </div>
+
+      {readOnly && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-xl p-3 mb-6">
+          <p className="text-xs font-black uppercase tracking-wider text-primary">Read-only access</p>
+          <p className="text-sm font-bold text-blue-700 dark:text-blue-200 mt-1">
+            You can select and review batches, but changes are restricted to operation managers and owners.
+          </p>
+        </div>
+      )}
 
       {activeBatch && (
         <div className="bg-primary text-white p-4 rounded-2xl shadow-sm mb-6">
@@ -288,6 +302,7 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token }) 
         </div>
       )}
 
+      {!readOnly && (
       <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">
@@ -490,6 +505,7 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token }) 
           </div>
         </form>
       </div>
+      )}
 
       <div>
         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 ml-1">
@@ -531,19 +547,23 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token }) 
                     {activeBatch?.id === batch.id ? 'Selected' : 'Select'}
                   </button>
 
-                  <button
-                    onClick={() => handleEditBatch(batch)}
-                    className="px-3 py-2 rounded-xl text-xs font-bold bg-secondary text-white"
-                  >
-                    Edit
-                  </button>
+                  {!readOnly && (
+                    <>
+                      <button
+                        onClick={() => handleEditBatch(batch)}
+                        className="px-3 py-2 rounded-xl text-xs font-bold bg-secondary text-white"
+                      >
+                        Edit
+                      </button>
 
-                  <button
-                    onClick={() => handleDeleteBatch(batch.id)}
-                    className="px-3 py-2 rounded-xl text-xs font-bold bg-red-100 text-red-600 border border-red-200"
-                  >
-                    Delete
-                  </button>
+                      <button
+                        onClick={() => handleDeleteBatch(batch.id)}
+                        className="px-3 py-2 rounded-xl text-xs font-bold bg-red-100 text-red-600 border border-red-200"
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 

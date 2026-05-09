@@ -34,7 +34,7 @@ function getAssignmentBuilding(assignment) {
   return String(assignment.assignedBuilding || '').toUpperCase();
 }
 
-export default function DailyLog({ logs, setLogs, activeBatch, token }) {
+export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly = false }) {
   const [buildings, setBuildings] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [date, setDate] = useState(todayInput());
@@ -237,6 +237,11 @@ export default function DailyLog({ logs, setLogs, activeBatch, token }) {
     event.preventDefault();
     setError('');
 
+    if (readOnly) {
+      setError('Your role can view daily logs but cannot add or edit entries.');
+      return;
+    }
+
     if (editingId) {
       setError('Daily log editing is not wired yet. Delete and re-enter the row for now.');
       setEditingId(null);
@@ -361,6 +366,32 @@ export default function DailyLog({ logs, setLogs, activeBatch, token }) {
         </div>
       </div>
 
+      {readOnly && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-xl p-3 mb-6">
+          <p className="text-xs font-black uppercase tracking-wider text-primary">Read-only access</p>
+          <p className="text-sm font-bold text-blue-700 dark:text-blue-200 mt-1">
+            You can review daily logs and production totals. New entries are restricted to workers, operation managers, and owners.
+          </p>
+          <div className="flex space-x-2 mt-3">
+            {buildingNames.map((building) => (
+              <button
+                key={building}
+                type="button"
+                onClick={() => setActiveBuilding(building)}
+                className={`flex-1 py-2 rounded-xl font-bold text-sm transition-all border ${
+                  activeBuilding === building
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-neutral-border dark:border-gray-700'
+                }`}
+              >
+                Bldg {building}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!readOnly && (
       <div className={`bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border-2 transition-colors duration-300 mb-6 ${editingId ? 'border-secondary' : 'border-neutral-border dark:border-gray-700'}`}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-3">
@@ -606,6 +637,7 @@ export default function DailyLog({ logs, setLogs, activeBatch, token }) {
           </div>
         </form>
       </div>
+      )}
 
       <div>
         <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 ml-1">
@@ -656,22 +688,24 @@ export default function DailyLog({ logs, setLogs, activeBatch, token }) {
                   {log.remarks ? `"${log.remarks}"` : 'No remarks'}
                 </p>
 
-                <div className="flex space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => handleEditClick(log)}
-                    className="text-xs font-bold text-gray-400 hover:text-secondary transition-colors"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteLog(log.id)}
-                    className="text-xs font-bold text-gray-400 hover:text-semantic-danger transition-colors"
-                  >
-                    Delete
-                  </button>
-                </div>
+                {!readOnly && (
+                  <div className="flex space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => handleEditClick(log)}
+                      className="text-xs font-bold text-gray-400 hover:text-secondary transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteLog(log.id)}
+                      className="text-xs font-bold text-gray-400 hover:text-semantic-danger transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}

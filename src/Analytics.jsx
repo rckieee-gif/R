@@ -97,7 +97,7 @@ function buildFeedCurve(logs, activeBatch) {
   });
 }
 
-export default function Analytics({ transactions = [], logs = [], activeBatch }) {
+export default function Analytics({ transactions = [], logs = [], activeBatch, showFinancials = true }) {
   const totalIncome = transactions
     .filter((tx) => tx.fundingNature === 'Revenue')
     .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
@@ -155,7 +155,7 @@ export default function Analytics({ transactions = [], logs = [], activeBatch })
           <div>
             <h2 className="print-title text-3xl font-extrabold text-primary tracking-tight">Analytics</h2>
             <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-              Financials and production target tracking.
+              {showFinancials ? 'Financials and production target tracking.' : 'Production target tracking.'}
             </p>
           </div>
           <button
@@ -168,6 +168,7 @@ export default function Analytics({ transactions = [], logs = [], activeBatch })
         </div>
       </div>
 
+      {showFinancials && (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="print-card bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700">
           <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Net Profit</p>
@@ -183,6 +184,7 @@ export default function Analytics({ transactions = [], logs = [], activeBatch })
           </p>
         </div>
       </div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <div className="print-card bg-white dark:bg-gray-800 p-4 rounded-xl border border-neutral-border dark:border-gray-700 shadow-sm">
@@ -210,16 +212,20 @@ export default function Analytics({ transactions = [], logs = [], activeBatch })
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Net Profit</td>
-              <td className="numeric">{formatMoney(netProfit)}</td>
-              <td>Revenue less OPEX and CAPEX</td>
-            </tr>
-            <tr>
-              <td>Profit Margin</td>
-              <td className="numeric">{profitMargin}%</td>
-              <td>Net profit divided by revenue</td>
-            </tr>
+            {showFinancials && (
+              <>
+                <tr>
+                  <td>Net Profit</td>
+                  <td className="numeric">{formatMoney(netProfit)}</td>
+                  <td>Revenue less OPEX and CAPEX</td>
+                </tr>
+                <tr>
+                  <td>Profit Margin</td>
+                  <td className="numeric">{profitMargin}%</td>
+                  <td>Net profit divided by revenue</td>
+                </tr>
+              </>
+            )}
             <tr>
               <td>Feed Variance</td>
               <td className="numeric">
@@ -235,7 +241,7 @@ export default function Analytics({ transactions = [], logs = [], activeBatch })
           </tbody>
         </table>
 
-        {financialData.length > 0 && (
+        {showFinancials && financialData.length > 0 && (
           <table className="print-simple-table mt-4">
             <thead>
               <tr>
@@ -320,6 +326,7 @@ export default function Analytics({ transactions = [], logs = [], activeBatch })
         </div>
       </div>
 
+      {showFinancials && (
       <div className="print-card bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700 mb-6">
         <h3 className="text-sm font-bold text-gray-600 dark:text-gray-300 mb-4">Cash Flow Timeline</h3>
         <div className="h-64 w-full">
@@ -340,7 +347,9 @@ export default function Analytics({ transactions = [], logs = [], activeBatch })
           )}
         </div>
       </div>
+      )}
 
+      {showFinancials && (
       <div className="print-card bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700 mb-6">
         <h3 className="text-sm font-bold text-gray-600 dark:text-gray-300 mb-4">Expense & Revenue Breakdown</h3>
         <div className="h-64 w-full">
@@ -361,6 +370,7 @@ export default function Analytics({ transactions = [], logs = [], activeBatch })
           )}
         </div>
       </div>
+      )}
       </div>
     </div>
   );

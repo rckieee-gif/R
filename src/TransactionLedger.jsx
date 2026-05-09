@@ -35,7 +35,7 @@ function uniqueStakeholders(stakeholders) {
   }, []);
 }
 
-export default function TransactionLedger({ transactions, setTransactions, activeBatch, token }) {
+export default function TransactionLedger({ transactions, setTransactions, activeBatch, token, readOnly = false }) {
   const [buildings, setBuildings] = useState(['All']);
   const [categoriesByFunding, setCategoriesByFunding] = useState({});
   const [stakeholders, setStakeholders] = useState([]);
@@ -188,6 +188,11 @@ export default function TransactionLedger({ transactions, setTransactions, activ
     e.preventDefault();
     setError('');
 
+    if (readOnly) {
+      setError('Your role can view ledger records but cannot save changes.');
+      return;
+    }
+
     if (!activeBatch?.id) {
       setError('Please select an active batch before saving a ledger record.');
       return;
@@ -274,6 +279,8 @@ export default function TransactionLedger({ transactions, setTransactions, activ
   };
 
   const handleDeleteTransaction = async (idToDelete) => {
+    if (readOnly) return;
+
     const reason = window.prompt('Reason for voiding this transaction?');
 
     if (!reason) return;
@@ -325,7 +332,17 @@ export default function TransactionLedger({ transactions, setTransactions, activ
         </div>
       </div>
 
-      <div className="lg:grid lg:grid-cols-[minmax(360px,480px)_minmax(0,1fr)] lg:items-start lg:gap-6">
+      {readOnly && (
+        <div className="no-print bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-xl p-3 mb-6">
+          <p className="text-xs font-black uppercase tracking-wider text-primary">Read-only access</p>
+          <p className="text-sm font-bold text-blue-700 dark:text-blue-200 mt-1">
+            You can review ledger records. Changes are restricted to operation managers and owners.
+          </p>
+        </div>
+      )}
+
+      <div className={`${readOnly ? '' : 'lg:grid lg:grid-cols-[minmax(360px,480px)_minmax(0,1fr)] lg:items-start lg:gap-6'}`}>
+      {!readOnly && (
       <div className={`no-print bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border-2 transition-colors duration-300 mb-6 lg:sticky lg:top-24 lg:mb-0 ${editingId ? 'border-secondary' : 'border-neutral-border dark:border-gray-700'}`}>
         <h3 className={`text-xs font-bold uppercase tracking-wider mb-4 border-b pb-2 ${editingId ? 'text-secondary border-secondary/30' : 'text-gray-400 dark:text-gray-500 border-gray-100 dark:border-gray-700'}`}>
           {editingId ? 'Editing Record' : 'New Finance Record'}
@@ -581,6 +598,7 @@ export default function TransactionLedger({ transactions, setTransactions, activ
           </div>
         </form>
       </div>
+      )}
 
       <div className="screen-only min-w-0">
         <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 ml-1">
@@ -630,22 +648,24 @@ export default function TransactionLedger({ transactions, setTransactions, activ
                   )}
                 </div>
 
-                <div className="no-print flex space-x-2">
-                  <button
-                    onClick={() => handleEditClick(tx)}
-                    className="text-xs font-bold text-gray-400 hover:text-secondary transition-colors"
-                    title="Edit Transaction"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDeleteTransaction(tx.id)}
-                    className="text-xs font-bold text-gray-400 hover:text-semantic-danger transition-colors"
-                    title="Void Transaction"
-                  >
-                    Void
-                  </button>
-                </div>
+                {!readOnly && (
+                  <div className="no-print flex space-x-2">
+                    <button
+                      onClick={() => handleEditClick(tx)}
+                      className="text-xs font-bold text-gray-400 hover:text-secondary transition-colors"
+                      title="Edit Transaction"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTransaction(tx.id)}
+                      className="text-xs font-bold text-gray-400 hover:text-semantic-danger transition-colors"
+                      title="Void Transaction"
+                    >
+                      Void
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
