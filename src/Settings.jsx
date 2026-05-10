@@ -9,6 +9,7 @@ const exportDatasets = [
   { value: 'batches', label: 'Batches' }
 ];
 const roleOptions = ['AdminOwner', 'OperationManager', 'DataEntry', 'Viewer'];
+const stakeholderTypeOptions = ['Owner', 'Employee', 'Supplier', 'Buyer', 'Dressing Plant', 'Other'];
 const allFilterValue = 'all';
 
 const emptyAccountForm = {
@@ -310,7 +311,11 @@ export default function Settings({ user, token, activeBatch }) {
   };
 
   const updateAccountForm = (field, value) => {
-    setAccountForm((current) => ({ ...current, [field]: value }));
+    setAccountForm((current) => ({
+      ...current,
+      [field]: value,
+      ...(field === 'role' && value === 'Viewer' ? { stakeholderType: 'Other' } : {})
+    }));
   };
 
   const handleAccountCreate = async (event) => {
@@ -565,7 +570,7 @@ export default function Settings({ user, token, activeBatch }) {
                   onChange={(event) => updateAccountForm('stakeholderType', event.target.value)}
                   className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
                 >
-                  {['Owner', 'Employee', 'Supplier', 'Buyer', 'Dressing Plant'].map((type) => (
+                  {stakeholderTypeOptions.map((type) => (
                     <option key={type} value={type}>{type}</option>
                   ))}
                 </select>

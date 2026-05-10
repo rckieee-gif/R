@@ -89,6 +89,22 @@ function formatBirds(amount) {
   });
 }
 
+function isPaySheetEmployee(employee) {
+  const normalizedName = String(employee?.displayName || employee?.name || employee?.employeeName || '')
+    .trim()
+    .toLowerCase();
+
+  return Boolean(normalizedName) && !['others', 'viewer', 'viewers'].includes(normalizedName);
+}
+
+function getEmployeeMortality(employeeId, dailyLogs = []) {
+  return dailyLogs.reduce((sum, log) => (
+    Number(log.employeeId) === Number(employeeId)
+      ? sum + Number(log.mortality || 0)
+      : sum
+  ), 0);
+}
+
 function getEmployeeSummary(employee, transactions) {
   const names = new Set([employee.name, employee.displayName, employee.employeeName].filter(Boolean));
 
@@ -119,10 +135,10 @@ function getEmployeeSummary(employee, transactions) {
   });
 }
 
-function getCompensationRows(compensations, employees, transactions, compDrafts = {}) {
-  const employeeMap = new Map(employees.map((employee) => [employee.id, employee]));
+function getCompensationRows(compensations, employees, transactions, compDrafts = {}, dailyLogs = []) {
+  const employeeMap = new Map(employees.filter(isPaySheetEmployee).map((employee) => [employee.id, employee]));
   const parent = new Map();
-  const effectiveRows = compensations.map((compensation) => {
+  const effectiveRows = compensations.filter((compensation) => employeeMap.has(compensation.employeeId)).map((compensation) => {
     const draft = compDrafts[compensation.employeeId] || {};
     const hasPoolDraft = Object.prototype.hasOwnProperty.call(draft, 'poolEmployeeIds');
     const handledBirds = draft.handledBirds === '' || draft.handledBirds === undefined
@@ -176,7 +192,7 @@ function getCompensationRows(compensations, employees, transactions, compDrafts 
       members: []
     };
 
-    group.handledBirds += Number(compensation.handledBirds || 0);
+    group.handledBirds += Math.max(Number(compensation.handledBirds || 0) - getEmployeeMortality(compensation.employeeId, dailyLogs), 0);
     group.members.push(compensation.employeeId);
     groups.set(key, group);
   });
@@ -186,27 +202,36 @@ function getCompensationRows(compensations, employees, transactions, compDrafts 
     const summary = getEmployeeSummary({ ...employee, ...compensation }, transactions);
     const group = groups.get(find(compensation.employeeId));
     const handledBirds = Number(compensation.handledBirds || 0);
+    const mortality = getEmployeeMortality(compensation.employeeId, dailyLogs);
+    const netHandledBirds = Math.max(handledBirds - mortality, 0);
     const ratePerBird = Number(compensation.ratePerBird || 1.5);
     const memberCount = group?.members.length || 1;
-    const poolBirds = memberCount > 1 ? group.handledBirds : handledBirds;
-    const payableBirds = memberCount > 1 ? poolBirds / memberCount : handledBirds;
+    const poolBirds = memberCount > 1 ? group.handledBirds : netHandledBirds;
+    const payableBirds = memberCount > 1 ? poolBirds / memberCount : netHandledBirds;
     const cycleIncome = payableBirds * ratePerBird;
+    const outstandingAdvance = summary.cashAdvance - summary.reimbursement;
+    const remainingCyclePay = cycleIncome - summary.laborPaid;
+    const netPayable = remainingCyclePay - outstandingAdvance;
 
     return {
       ...employee,
       ...compensation,
       ...summary,
-      outstandingAdvance: summary.cashAdvance - summary.reimbursement,
+      grossHandledBirds: handledBirds,
+      mortality,
+      netHandledBirds,
+      outstandingAdvance,
       poolBirds,
       payableBirds,
       memberCount,
       cycleIncome,
-      remainingCyclePay: cycleIncome - summary.laborPaid
+      remainingCyclePay,
+      netPayable
     };
   });
 }
 
-export default function EmployeeManagement({ token, transactions = [], activeBatch, canEditOrDelete = false }) {
+export default function EmployeeManagement({ token, transactions = [], dailyLogs = [], activeBatch, canEditOrDelete = false }) {
   const [employees, setEmployees] = useState([]);
   const [compensations, setCompensations] = useState([]);
   const [compDrafts, setCompDrafts] = useState({});
@@ -216,24 +241,29 @@ export default function EmployeeManagement({ token, transactions = [], activeBat
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const employeeIds = useMemo(() => employees.map((employee) => employee.id), [employees]);
+  const paySheetEmployees = useMemo(() => employees.filter(isPaySheetEmployee), [employees]);
+  const employeeIds = useMemo(() => paySheetEmployees.map((employee) => employee.id), [paySheetEmployees]);
 
   const compensationRows = useMemo(
-    () => getCompensationRows(compensations, employees, transactions, compDrafts),
-    [compensations, employees, transactions, compDrafts]
+    () => getCompensationRows(compensations, paySheetEmployees, transactions, compDrafts, dailyLogs),
+    [compensations, paySheetEmployees, transactions, compDrafts, dailyLogs]
   );
 
   const totals = useMemo(
     () => compensationRows.reduce((sum, employee) => ({
       cycleIncome: sum.cycleIncome + employee.cycleIncome,
       laborPaid: sum.laborPaid + employee.laborPaid,
+      mortality: sum.mortality + employee.mortality,
       remainingCyclePay: sum.remainingCyclePay + employee.remainingCyclePay,
-      outstandingAdvance: sum.outstandingAdvance + employee.outstandingAdvance
+      outstandingAdvance: sum.outstandingAdvance + employee.outstandingAdvance,
+      netPayable: sum.netPayable + employee.netPayable
     }), {
       cycleIncome: 0,
       laborPaid: 0,
+      mortality: 0,
       remainingCyclePay: 0,
-      outstandingAdvance: 0
+      outstandingAdvance: 0,
+      netPayable: 0
     }),
     [compensationRows]
   );
@@ -255,7 +285,7 @@ export default function EmployeeManagement({ token, transactions = [], activeBat
         return;
       }
 
-      setEmployees(data);
+      setEmployees(data.filter(isPaySheetEmployee));
     } catch (err) {
       console.error(err);
       setError('Cannot connect to the employee sheet.');
@@ -454,7 +484,7 @@ export default function EmployeeManagement({ token, transactions = [], activeBat
       return;
     }
 
-    const employeeIdsToSave = employees.map((employee) => employee.id);
+    const employeeIdsToSave = paySheetEmployees.map((employee) => employee.id);
     const savedRows = [];
 
     try {
@@ -564,7 +594,7 @@ export default function EmployeeManagement({ token, transactions = [], activeBat
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-neutral-border dark:border-gray-700 shadow-sm">
           <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Cycle Income</p>
           <p className="text-lg font-black mt-1 text-gray-900 dark:text-white">
@@ -573,9 +603,23 @@ export default function EmployeeManagement({ token, transactions = [], activeBat
         </div>
 
         <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-neutral-border dark:border-gray-700 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Remaining Pay</p>
-          <p className={`text-lg font-black mt-1 ${totals.remainingCyclePay > 0 ? 'text-semantic-warning' : 'text-semantic-success'}`}>
-            {formatMoney(totals.remainingCyclePay)}
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Mortality Deducted</p>
+          <p className="text-lg font-black mt-1 text-semantic-danger">
+            {formatBirds(totals.mortality)}
+          </p>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-neutral-border dark:border-gray-700 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Advance Balance</p>
+          <p className={`text-lg font-black mt-1 ${totals.outstandingAdvance > 0 ? 'text-semantic-danger' : 'text-semantic-success'}`}>
+            {formatMoney(totals.outstandingAdvance)}
+          </p>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-neutral-border dark:border-gray-700 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Net Payable</p>
+          <p className={`text-lg font-black mt-1 ${totals.netPayable > 0 ? 'text-semantic-warning' : 'text-semantic-success'}`}>
+            {formatMoney(totals.netPayable)}
           </p>
         </div>
       </div>
@@ -711,7 +755,7 @@ export default function EmployeeManagement({ token, transactions = [], activeBat
           {compensationRows.map((employee) => {
             const draft = buildCompDraft(compDrafts[employee.employeeId]);
             const selectedPoolIds = getDraftPoolIds(draft);
-            const selectedPoolNames = employees
+            const selectedPoolNames = paySheetEmployees
               .filter((item) => selectedPoolIds.includes(item.id))
               .map((item) => item.name);
 
@@ -801,7 +845,7 @@ export default function EmployeeManagement({ token, transactions = [], activeBat
                         <span className="text-gray-400 group-open:rotate-180 transition-transform">v</span>
                       </summary>
                       <div className="max-h-36 overflow-y-auto border-t border-neutral-border dark:border-gray-600 px-2 py-2 space-y-2">
-                        {employees
+                        {paySheetEmployees
                           .filter((item) => item.id !== employee.employeeId)
                           .map((item) => (
                             <label
@@ -818,7 +862,7 @@ export default function EmployeeManagement({ token, transactions = [], activeBat
                               <span className="truncate">{item.name}</span>
                             </label>
                           ))}
-                        {employees.length <= 1 && (
+                        {paySheetEmployees.length <= 1 && (
                           <p className="text-xs text-gray-400">Add another employee to create a pool.</p>
                         )}
                       </div>
@@ -830,10 +874,21 @@ export default function EmployeeManagement({ token, transactions = [], activeBat
                     <div className="h-10 flex items-center px-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-white font-bold">
                       {formatBirds(employee.payableBirds)}
                     </div>
+                    {employee.mortality > 0 && (
+                      <p className="text-[10px] font-bold text-semantic-danger mt-1">
+                        Less mortality: {formatBirds(employee.mortality)}
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+                  <div className="bg-neutral-light dark:bg-gray-700 p-2 rounded-lg">
+                    <p className="text-gray-400 font-bold uppercase">Net Birds</p>
+                    <p className="font-black text-gray-800 dark:text-white mt-1">
+                      {formatBirds(employee.netHandledBirds)}
+                    </p>
+                  </div>
                   <div className="bg-neutral-light dark:bg-gray-700 p-2 rounded-lg">
                     <p className="text-gray-400 font-bold uppercase">Pool Birds</p>
                     <p className="font-black text-gray-800 dark:text-white mt-1">
@@ -846,13 +901,13 @@ export default function EmployeeManagement({ token, transactions = [], activeBat
                     <p className="font-black text-gray-800 dark:text-white mt-1">{formatMoney(employee.cycleIncome)}</p>
                   </div>
                   <div className="bg-neutral-light dark:bg-gray-700 p-2 rounded-lg">
-                    <p className="text-gray-400 font-bold uppercase">Balances</p>
+                    <p className="text-gray-400 font-bold uppercase">Labor Paid</p>
                     <p className="font-black text-gray-800 dark:text-white mt-1">{formatMoney(employee.laborPaid)}</p>
                   </div>
                   <div className="bg-neutral-light dark:bg-gray-700 p-2 rounded-lg">
-                    <p className="text-gray-400 font-bold uppercase">Remaining</p>
-                    <p className={`font-black mt-1 ${employee.remainingCyclePay > 0 ? 'text-semantic-warning' : 'text-semantic-success'}`}>
-                      {formatMoney(employee.remainingCyclePay)}
+                    <p className="text-gray-400 font-bold uppercase">Net Payable</p>
+                    <p className={`font-black mt-1 ${employee.netPayable > 0 ? 'text-semantic-warning' : 'text-semantic-success'}`}>
+                      {formatMoney(employee.netPayable)}
                     </p>
                   </div>
                 </div>

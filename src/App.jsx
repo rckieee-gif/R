@@ -7,6 +7,7 @@ import Analytics from './Analytics';
 import FinancialStatement from './FinancialStatement';
 import BatchManagement from './BatchManagement';
 import EmployeeManagement from './EmployeeManagement';
+import EmployeePaySummary from './EmployeePaySummary';
 import InventoryManagement from './InventoryManagement';
 import Settings from './Settings';
 import { API_BASE } from './api';
@@ -92,6 +93,7 @@ const [activeBatch, setActiveBatch] = useState(null);
     'dashboard',
     'batches',
     'dailyLog',
+    'paySummary',
     'inventory',
     'analytics',
     'settings',
@@ -238,6 +240,7 @@ const [activeBatch, setActiveBatch] = useState(null);
             {canManageOperations && (
               <button onClick={() => setActiveScreen('employees')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'employees' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Employees</button>
             )}
+            <button onClick={() => setActiveScreen('paySummary')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'paySummary' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Pay Summary</button>
             {/* RBAC: Only show Ledger and Statement to Admins/OpManagers */}
             {canViewFinancial && (
               <button onClick={() => setActiveScreen('ledger')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'ledger' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Ledger</button>
@@ -296,9 +299,14 @@ const [activeBatch, setActiveBatch] = useState(null);
   <EmployeeManagement
     token={token}
     transactions={transactions}
+    dailyLogs={logs}
     activeBatch={activeBatch}
     canEditOrDelete={canEditOrDelete}
   />
+)}
+
+{activeScreen === 'paySummary' && (
+  <EmployeePaySummary token={token} activeBatch={activeBatch} />
 )}
 
 {activeScreen === 'ledger' && canViewFinancial && (

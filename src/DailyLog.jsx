@@ -99,6 +99,7 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
 
     const savedTotals = logs
       .filter((log) => String(log.employeeId) === String(selectedAssignment.employeeId))
+      .filter((log) => log.id !== editingId)
       .filter((log) => log.date <= date)
       .reduce((totals, log) => ({
         feedBags: totals.feedBags + Number(log.feed || 0),
@@ -109,7 +110,7 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
       feedBags: savedTotals.feedBags + Number(feedConsumed || 0),
       mortality: savedTotals.mortality + Number(mortality || 0)
     };
-  }, [date, feedConsumed, logs, mortality, selectedAssignment]);
+  }, [date, editingId, feedConsumed, logs, mortality, selectedAssignment]);
 
   const feedTarget = useMemo(
     () => calculateTargetFeedForHeads(selectedAssignment?.handledBirds, ageDay),
@@ -248,12 +249,6 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
       return;
     }
 
-    if (editingId) {
-      setError('Daily log editing is not wired yet. Delete and re-enter the row for now.');
-      setEditingId(null);
-      return;
-    }
-
     if (!activeBatch?.id) {
       setError('Select an active batch before saving a daily log.');
       return;
@@ -284,8 +279,8 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     };
 
     try {
-      const response = await fetch(`${API_BASE}/api/logs`, {
-        method: 'POST',
+      const response = await fetch(editingId ? `${API_BASE}/api/logs/${editingId}` : `${API_BASE}/api/logs`, {
+        method: editingId ? 'PATCH' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
@@ -299,7 +294,12 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
         return;
       }
 
-      setLogs((current) => [data, ...current]);
+      setLogs((current) => (
+        editingId
+          ? current.map((log) => log.id === editingId ? data : log)
+          : [data, ...current]
+      ));
+      setEditingId(null);
       setFeedConsumed('');
       setMortality('');
       setAverageWeightGrams('');
@@ -336,10 +336,13 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
+      const data = await response.json().catch(() => ({}));
 
       if (response.ok) {
         setLogs((current) => current.filter((log) => log.id !== idToDelete));
         if (editingId === idToDelete) resetForm();
+      } else {
+        setError(data.error || 'Failed to delete daily log.');
       }
     } catch (err) {
       console.error('Failed to delete log:', err);
