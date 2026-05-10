@@ -206,7 +206,7 @@ function getCompensationRows(compensations, employees, transactions, compDrafts 
   });
 }
 
-export default function EmployeeManagement({ token, transactions = [], activeBatch }) {
+export default function EmployeeManagement({ token, transactions = [], activeBatch, canEditOrDelete = false }) {
   const [employees, setEmployees] = useState([]);
   const [compensations, setCompensations] = useState([]);
   const [compDrafts, setCompDrafts] = useState({});
@@ -383,6 +383,11 @@ export default function EmployeeManagement({ token, transactions = [], activeBat
     event.preventDefault();
     setError('');
 
+    if (editingId && !canEditOrDelete) {
+      setError('Only admin.roland can edit employee records.');
+      return;
+    }
+
     if (!form.name.trim()) {
       setError('Employee name is required.');
       return;
@@ -439,6 +444,11 @@ export default function EmployeeManagement({ token, transactions = [], activeBat
   };
 
   const handleCompSave = async () => {
+    if (!canEditOrDelete) {
+      setError('Only admin.roland can edit employee batch pay.');
+      return;
+    }
+
     if (!activeBatch?.id) {
       setError('Select an active batch before saving employee batch pay.');
       return;
@@ -500,6 +510,8 @@ export default function EmployeeManagement({ token, transactions = [], activeBat
   };
 
   const handleEdit = (employee) => {
+    if (!canEditOrDelete) return;
+
     setEditingId(employee.id);
     setForm({
       name: employee.name || '',
@@ -515,6 +527,8 @@ export default function EmployeeManagement({ token, transactions = [], activeBat
   };
 
   const handleArchive = async (employee) => {
+    if (!canEditOrDelete) return;
+
     const confirmed = window.confirm(`Archive ${employee.name}? Ledger history will remain intact.`);
     if (!confirmed) return;
 
@@ -714,22 +728,24 @@ export default function EmployeeManagement({ token, transactions = [], activeBat
                     </p>
                   </div>
 
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleEdit(employee)}
-                      className="px-3 py-2 rounded-xl text-xs font-bold bg-secondary text-white"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleArchive({ ...employee, id: employee.employeeId, name: employee.employeeName })}
-                      className="px-3 py-2 rounded-xl text-xs font-bold bg-red-100 text-red-600 border border-red-200"
-                    >
-                      Archive
-                    </button>
-                  </div>
+                  {canEditOrDelete && (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(employee)}
+                        className="px-3 py-2 rounded-xl text-xs font-bold bg-secondary text-white"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleArchive({ ...employee, id: employee.employeeId, name: employee.employeeName })}
+                        className="px-3 py-2 rounded-xl text-xs font-bold bg-red-100 text-red-600 border border-red-200"
+                      >
+                        Archive
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 mt-4">
@@ -740,6 +756,7 @@ export default function EmployeeManagement({ token, transactions = [], activeBat
                       min="0"
                       value={draft.handledBirds}
                       onChange={(event) => updateCompDraft(employee.employeeId, 'handledBirds', event.target.value)}
+                      disabled={!canEditOrDelete}
                       className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
                       placeholder="0"
                     />
@@ -754,6 +771,7 @@ export default function EmployeeManagement({ token, transactions = [], activeBat
                       step="0.01"
                       value={draft.ratePerBird}
                       onChange={(event) => updateCompDraft(employee.employeeId, 'ratePerBird', event.target.value)}
+                      disabled={!canEditOrDelete}
                       className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
                       placeholder="1.50"
                     />
@@ -794,6 +812,7 @@ export default function EmployeeManagement({ token, transactions = [], activeBat
                                 type="checkbox"
                                 checked={selectedPoolIds.includes(item.id)}
                                 onChange={(event) => updatePoolSelection(employee.employeeId, item.id, event.target.checked)}
+                                disabled={!canEditOrDelete}
                                 className="h-4 w-4 accent-primary"
                               />
                               <span className="truncate">{item.name}</span>
@@ -843,16 +862,19 @@ export default function EmployeeManagement({ token, transactions = [], activeBat
                     type="text"
                     value={draft.remarks}
                     onChange={(event) => updateCompDraft(employee.employeeId, 'remarks', event.target.value)}
+                    disabled={!canEditOrDelete}
                     className="flex-1 p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none text-sm"
                     placeholder="Remarks"
                   />
-                  <button
-                    type="button"
-                    onClick={handleCompSave}
-                    className="px-3 py-2 rounded-lg text-xs font-bold bg-primary text-white"
-                  >
-                    Save Pay
-                  </button>
+                  {canEditOrDelete && (
+                    <button
+                      type="button"
+                      onClick={handleCompSave}
+                      className="px-3 py-2 rounded-lg text-xs font-bold bg-primary text-white"
+                    >
+                      Save Pay
+                    </button>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 mt-3 text-[10px]">

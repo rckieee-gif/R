@@ -35,7 +35,7 @@ function uniqueStakeholders(stakeholders) {
   }, []);
 }
 
-export default function TransactionLedger({ transactions, setTransactions, activeBatch, token, readOnly = false }) {
+export default function TransactionLedger({ transactions, setTransactions, activeBatch, token, readOnly = false, canEditOrDelete = false }) {
   const [buildings, setBuildings] = useState(['All']);
   const [categoriesByFunding, setCategoriesByFunding] = useState({});
   const [stakeholders, setStakeholders] = useState([]);
@@ -193,6 +193,11 @@ export default function TransactionLedger({ transactions, setTransactions, activ
       return;
     }
 
+    if (editingId && !canEditOrDelete) {
+      setError('Only admin.roland can edit existing ledger records.');
+      return;
+    }
+
     if (!activeBatch?.id) {
       setError('Please select an active batch before saving a ledger record.');
       return;
@@ -260,6 +265,8 @@ export default function TransactionLedger({ transactions, setTransactions, activ
   };
 
   const handleEditClick = (tx) => {
+    if (!canEditOrDelete) return;
+
     setEditingId(tx.id);
     setDate(new Date(tx.date).toISOString().split('T')[0]);
     setBuilding(tx.building || 'All');
@@ -279,7 +286,7 @@ export default function TransactionLedger({ transactions, setTransactions, activ
   };
 
   const handleDeleteTransaction = async (idToDelete) => {
-    if (readOnly) return;
+    if (readOnly || !canEditOrDelete) return;
 
     const reason = window.prompt('Reason for voiding this transaction?');
 
@@ -648,7 +655,7 @@ export default function TransactionLedger({ transactions, setTransactions, activ
                   )}
                 </div>
 
-                {!readOnly && (
+                {!readOnly && canEditOrDelete && (
                   <div className="no-print flex space-x-2">
                     <button
                       onClick={() => handleEditClick(tx)}

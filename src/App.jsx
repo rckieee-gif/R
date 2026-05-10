@@ -87,6 +87,7 @@ const [activeBatch, setActiveBatch] = useState(null);
   const canEnterDaily = hasMinimumRole(user?.role, 'DataEntry');
   const canManageOperations = hasMinimumRole(user?.role, 'OperationManager');
   const canViewFinancial = canManageOperations;
+  const canEditOrDelete = Boolean(user?.isPrimaryOwner);
   const allowedScreens = [
     'dashboard',
     'batches',
@@ -284,6 +285,7 @@ const [activeBatch, setActiveBatch] = useState(null);
     setActiveBatch={setActiveBatch}
     token={token}
     readOnly={!canManageOperations}
+    canEditOrDelete={canEditOrDelete}
   />
 )}
 {activeScreen === 'dashboard' && (
@@ -295,6 +297,7 @@ const [activeBatch, setActiveBatch] = useState(null);
     token={token}
     transactions={transactions}
     activeBatch={activeBatch}
+    canEditOrDelete={canEditOrDelete}
   />
 )}
 
@@ -305,15 +308,16 @@ const [activeBatch, setActiveBatch] = useState(null);
     activeBatch={activeBatch}
     token={token}
     readOnly={!canManageOperations}
+    canEditOrDelete={canEditOrDelete}
   />
 )}
 
 {activeScreen === 'dailyLog' && (
-  <DailyLog logs={logs} setLogs={setLogs} activeBatch={activeBatch} token={token} readOnly={!canEnterDaily} />
+  <DailyLog logs={logs} setLogs={setLogs} activeBatch={activeBatch} token={token} readOnly={!canEnterDaily} canEditOrDelete={canEditOrDelete} />
 )}
 
 {activeScreen === 'inventory' && (
-  <InventoryManagement activeBatch={activeBatch} token={token} readOnly={!canManageOperations} />
+  <InventoryManagement activeBatch={activeBatch} token={token} readOnly={!canManageOperations} canEditOrDelete={canEditOrDelete} />
 )}
 
 {activeScreen === 'analytics' && (

@@ -49,7 +49,7 @@ function buildLoadingRows(buildings) {
   }));
 }
 
-export default function BatchManagement({ activeBatch, setActiveBatch, token, readOnly = false }) {
+export default function BatchManagement({ activeBatch, setActiveBatch, token, readOnly = false, canEditOrDelete = false }) {
   const [batches, setBatches] = useState([]);
   const [buildings, setBuildings] = useState([]);
   const [loadings, setLoadings] = useState([]);
@@ -164,6 +164,11 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
       return;
     }
 
+    if (editingBatchId && !canEditOrDelete) {
+      setError('Only admin.roland can edit existing batches.');
+      return;
+    }
+
     if (loadings.length === 0) {
       setError('Add at least one building loading row.');
       return;
@@ -231,6 +236,8 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
   };
 
   const handleEditBatch = async (batch) => {
+    if (!canEditOrDelete) return;
+
     setEditingBatchId(batch.id);
     setStartDate(toDateInput(batch.startDate));
     setTargetHarvestDate(toDateInput(batch.targetHarvestDate));
@@ -242,6 +249,8 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
   };
 
   const handleDeleteBatch = async (batchId) => {
+    if (!canEditOrDelete) return;
+
     const isConfirmed = window.confirm(
       `Are you sure you want to delete batch ${batchId}? This will also remove related records if your database uses CASCADE.`
     );
@@ -547,7 +556,7 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
                     {activeBatch?.id === batch.id ? 'Selected' : 'Select'}
                   </button>
 
-                  {!readOnly && (
+                  {!readOnly && canEditOrDelete && (
                     <>
                       <button
                         onClick={() => handleEditBatch(batch)}

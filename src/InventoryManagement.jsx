@@ -65,7 +65,7 @@ function uniqueStakeholders(stakeholders) {
   }, []);
 }
 
-export default function InventoryManagement({ token, activeBatch, readOnly = false }) {
+export default function InventoryManagement({ token, activeBatch, readOnly = false, canEditOrDelete = false }) {
   const [items, setItems] = useState([]);
   const [movements, setMovements] = useState([]);
   const [buildings, setBuildings] = useState(['All']);
@@ -180,6 +180,11 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
       return;
     }
 
+    if (editingItemId && !canEditOrDelete) {
+      setError('Only admin.roland can edit inventory items.');
+      return;
+    }
+
     try {
       const response = await fetch(
         editingItemId ? `${API_BASE}/api/inventory/items/${editingItemId}` : `${API_BASE}/api/inventory/items`,
@@ -261,6 +266,8 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
   };
 
   const handleEditItem = (item) => {
+    if (!canEditOrDelete) return;
+
     setEditingItemId(item.id);
     setItemForm({
       name: item.name,
@@ -636,7 +643,7 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
                 <p className="bg-neutral-light dark:bg-gray-700 rounded-lg p-2 text-gray-500">
                   Alert <span className="font-black">{formatQuantity(item.reorderLevel)}</span>
                 </p>
-                {readOnly ? (
+                {readOnly || !canEditOrDelete ? (
                   <p className="bg-neutral-light dark:bg-gray-700 rounded-lg p-2 text-gray-500 font-black">
                     View only
                   </p>

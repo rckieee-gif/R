@@ -34,7 +34,7 @@ function getAssignmentBuilding(assignment) {
   return String(assignment.assignedBuilding || '').toUpperCase();
 }
 
-export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly = false }) {
+export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly = false, canEditOrDelete = false }) {
   const [buildings, setBuildings] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [date, setDate] = useState(todayInput());
@@ -242,6 +242,12 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
       return;
     }
 
+    if (editingId && !canEditOrDelete) {
+      setError('Only admin.roland can edit existing daily logs.');
+      setEditingId(null);
+      return;
+    }
+
     if (editingId) {
       setError('Daily log editing is not wired yet. Delete and re-enter the row for now.');
       setEditingId(null);
@@ -305,6 +311,8 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
   };
 
   const handleEditClick = (log) => {
+    if (!canEditOrDelete) return;
+
     setEditingId(log.id);
     setDate(log.date);
     setActiveBuilding(log.building);
@@ -318,6 +326,8 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
   };
 
   const handleDeleteLog = async (idToDelete) => {
+    if (readOnly || !canEditOrDelete) return;
+
     const isConfirmed = window.confirm('Delete this daily log? This cannot be undone.');
     if (!isConfirmed) return;
 
@@ -688,7 +698,7 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
                   {log.remarks ? `"${log.remarks}"` : 'No remarks'}
                 </p>
 
-                {!readOnly && (
+                {!readOnly && canEditOrDelete && (
                   <div className="flex space-x-3">
                     <button
                       type="button"
