@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   LineChart,
   Line,
@@ -34,22 +35,27 @@ function formatNumber(amount, digits = 2) {
   });
 }
 
-function buildFeedCurve(logs, activeBatch) {
-  if (!activeBatch?.startDate || !activeBatch?.totalChicksLoaded) return [];
-
+function getCurveMaxDay(logs, startDate) {
   const lastTargetDay = getLastBroilerTargetDay();
-  const todayDay = getAgeDay(activeBatch.startDate, new Date().toISOString().split('T')[0]) || 1;
+  const todayDay = getAgeDay(startDate, new Date().toISOString().split('T')[0]) || 1;
   const maxLoggedDay = logs.reduce((maxDay, log) => {
-    const ageDay = getAgeDay(activeBatch.startDate, log.date);
+    const ageDay = getAgeDay(startDate, log.date);
     return ageDay ? Math.max(maxDay, ageDay) : maxDay;
   }, 0);
-  const maxDay = Math.min(lastTargetDay, Math.max(todayDay, maxLoggedDay, 1));
+
+  return Math.min(lastTargetDay, Math.max(todayDay, maxLoggedDay, 1));
+}
+
+function buildFeedCurveForHeads(logs, startDate, headCount) {
+  if (!startDate || !headCount) return [];
+
+  const maxDay = getCurveMaxDay(logs, startDate);
   const feedByDay = new Map();
   const mortalityByDay = new Map();
   const weightsByDay = new Map();
 
   logs.forEach((log) => {
-    const ageDay = getAgeDay(activeBatch.startDate, log.date);
+    const ageDay = getAgeDay(startDate, log.date);
     if (!ageDay || ageDay > maxDay) return;
 
     feedByDay.set(ageDay, (feedByDay.get(ageDay) || 0) + Number(log.feed || 0));
@@ -70,13 +76,13 @@ function buildFeedCurve(logs, activeBatch) {
     cumulativeFeedBags += feedByDay.get(day) || 0;
     cumulativeMortality += mortalityByDay.get(day) || 0;
 
-    const target = calculateTargetFeedForHeads(activeBatch.totalChicksLoaded, day);
+    const target = calculateTargetFeedForHeads(headCount, day);
     const weights = weightsByDay.get(day) || [];
     const averageWeightGrams = weights.length
       ? weights.reduce((sum, weight) => sum + weight, 0) / weights.length
       : null;
     const actualFeedKg = cumulativeFeedBags * BAG_WEIGHT_KG;
-    const liveHeads = Math.max(Number(activeBatch.totalChicksLoaded || 0) - cumulativeMortality, 0);
+    const liveHeads = Math.max(Number(headCount || 0) - cumulativeMortality, 0);
     const actualFcrValue = averageWeightGrams
       ? calculateActualFcr(actualFeedKg, liveHeads, averageWeightGrams)
       : null;
@@ -97,7 +103,47 @@ function buildFeedCurve(logs, activeBatch) {
   });
 }
 
+function buildFeedCurve(logs, activeBatch) {
+  if (!activeBatch?.startDate || !activeBatch?.totalChicksLoaded) return [];
+
+  return buildFeedCurveForHeads(logs, activeBatch.startDate, activeBatch.totalChicksLoaded);
+}
+
+function buildEmployeeFeedCurves(logs, activeBatch) {
+  if (!activeBatch?.startDate) return [];
+
+  const employees = new Map();
+
+  logs.forEach((log) => {
+    const hasEmployee = log.employeeId || log.employeeName;
+    if (!hasEmployee) return;
+
+    const employeeKey = String(log.employeeId || `name:${log.employeeName}`);
+    const current = employees.get(employeeKey) || {
+      employeeKey,
+      employeeName: log.employeeName || 'Unassigned employee',
+      handledBirds: 0,
+      logs: []
+    };
+
+    current.employeeName = log.employeeName || current.employeeName;
+    current.handledBirds = Math.max(current.handledBirds, Number(log.handledBirds || 0));
+    current.logs.push(log);
+    employees.set(employeeKey, current);
+  });
+
+  return Array.from(employees.values())
+    .filter((employee) => employee.handledBirds > 0)
+    .map((employee) => ({
+      ...employee,
+      curve: buildFeedCurveForHeads(employee.logs, activeBatch.startDate, employee.handledBirds)
+    }))
+    .sort((left, right) => left.employeeName.localeCompare(right.employeeName));
+}
+
 export default function Analytics({ transactions = [], logs = [], activeBatch, showFinancials = true }) {
+  const [selectedEmployeeFeedKey, setSelectedEmployeeFeedKey] = useState('');
+
   const totalIncome = transactions
     .filter((tx) => tx.fundingNature === 'Revenue')
     .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
@@ -126,24 +172,12 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
     .filter((item) => item.expense > 0 || item.income > 0)
     .sort((a, b) => (b.expense + b.income) - (a.expense + a.income));
 
-  const dateMap = {};
-  transactions.forEach((tx) => {
-    const dateObj = new Date(tx.date);
-    const shortDate = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
-
-    if (!dateMap[tx.date]) {
-      dateMap[tx.date] = { date: tx.date, shortDate, expense: 0, income: 0 };
-    }
-
-    if (tx.fundingNature === 'Revenue') {
-      dateMap[tx.date].income += Number(tx.amount || 0);
-    } else if (tx.fundingNature === 'OPEX' || tx.fundingNature === 'CAPEX') {
-      dateMap[tx.date].expense += Number(tx.amount || 0);
-    }
-  });
-
-  const trendData = Object.values(dateMap).sort((a, b) => new Date(a.date) - new Date(b.date));
   const feedCurve = buildFeedCurve(logs, activeBatch);
+  const employeeFeedCurves = buildEmployeeFeedCurves(logs, activeBatch);
+  const selectedEmployeeFeed = employeeFeedCurves.find((employee) => employee.employeeKey === selectedEmployeeFeedKey)
+    || employeeFeedCurves[0]
+    || null;
+  const selectedEmployeeFeedPoint = selectedEmployeeFeed?.curve[selectedEmployeeFeed.curve.length - 1] || null;
   const latestFeedPoint = feedCurve[feedCurve.length - 1] || null;
   const latestWeightPoint = [...feedCurve].reverse().find((point) => point.actualWeightGrams);
   const totalMortality = logs.reduce((sum, log) => sum + Number(log.mortality || 0), 0);
@@ -326,28 +360,53 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
         </div>
       </div>
 
-      {showFinancials && (
       <div className="print-card bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700 mb-6">
-        <h3 className="text-sm font-bold text-gray-600 dark:text-gray-300 mb-4">Cash Flow Timeline</h3>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div>
+            <h3 className="text-sm font-bold text-gray-600 dark:text-gray-300">Employee Feed Target</h3>
+            <p className="text-[10px] font-bold text-gray-400 mt-1">
+              {selectedEmployeeFeedPoint
+                ? `${selectedEmployeeFeedPoint.varianceKg > 0 ? '+' : ''}${formatNumber(selectedEmployeeFeedPoint.varianceKg, 0)} kg variance`
+                : 'No employee curve'}
+            </p>
+          </div>
+          <select
+            value={selectedEmployeeFeed?.employeeKey || ''}
+            onChange={(event) => setSelectedEmployeeFeedKey(event.target.value)}
+            className="max-w-40 rounded-xl border border-neutral-border dark:border-gray-600 bg-neutral-light dark:bg-gray-700 px-3 py-2 text-xs font-bold text-gray-700 dark:text-white outline-none"
+            disabled={employeeFeedCurves.length === 0}
+          >
+            {employeeFeedCurves.length === 0 && <option value="">No employees</option>}
+            {employeeFeedCurves.map((employee) => (
+              <option key={employee.employeeKey} value={employee.employeeKey}>
+                {employee.employeeName}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="h-64 w-full">
-          {trendData.length > 0 ? (
+          {selectedEmployeeFeed?.curve.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+              <LineChart data={selectedEmployeeFeed.curve} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E4E6EB" vertical={false} />
-                <XAxis dataKey="shortDate" tick={{ fontSize: 12, fill: '#888' }} />
-                <YAxis tick={{ fontSize: 12, fill: '#888' }} tickFormatter={(value) => `PHP ${value >= 1000 ? `${value / 1000}k` : value}`} />
-                <Tooltip contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} formatter={(value) => formatMoney(value)} />
+                <XAxis dataKey="dayLabel" tick={{ fontSize: 11, fill: '#888' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#888' }} />
+                <Tooltip
+                  contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  formatter={(value, name) => [`${formatNumber(value, 2)} bags`, name]}
+                />
                 <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                <Line type="monotone" dataKey="income" name="Daily Income" stroke="#16A34A" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                <Line type="monotone" dataKey="expense" name="Daily Expense" stroke="#DC2626" strokeWidth={3} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="targetBags" name="Target" stroke="#C9A84C" strokeWidth={3} dot={false} />
+                <Line type="monotone" dataKey="actualBags" name="Actual" stroke="#2563EB" strokeWidth={3} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center text-gray-400 text-sm font-medium">No ledger data to display.</div>
+            <div className="h-full flex items-center justify-center text-gray-400 text-sm font-medium">
+              No employee feed logs yet.
+            </div>
           )}
         </div>
       </div>
-      )}
 
       {showFinancials && (
       <div className="print-card bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700 mb-6">

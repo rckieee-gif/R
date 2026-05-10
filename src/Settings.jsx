@@ -8,6 +8,13 @@ const exportDatasets = [
   { value: 'employees', label: 'Employees' },
   { value: 'batches', label: 'Batches' }
 ];
+const importDatasets = [
+  { value: 'transactions', label: 'Ledger Transactions', accept: '.csv,text/csv' },
+  { value: 'daily_logs', label: 'Daily Logs', accept: '.csv,text/csv' },
+  { value: 'inventory', label: 'Inventory Movements', accept: '.csv,text/csv' },
+  { value: 'employees', label: 'Employees', accept: '.csv,text/csv' },
+  { value: 'batch_archive', label: 'Single Batch Archive', accept: '.json,application/json' }
+];
 const roleOptions = ['AdminOwner', 'OperationManager', 'DataEntry', 'Viewer'];
 const stakeholderTypeOptions = ['Owner', 'Employee', 'Supplier', 'Buyer', 'Dressing Plant', 'Other'];
 const allFilterValue = 'all';
@@ -31,6 +38,15 @@ function getFilename(response, fallback) {
   return match?.[1] || fallback;
 }
 
+function getImportTotals(summary) {
+  return Object.values(summary || {}).reduce((totals, item) => ({
+    rowsRead: totals.rowsRead + Number(item.rowsRead || 0),
+    created: totals.created + Number(item.created || 0),
+    updated: totals.updated + Number(item.updated || 0),
+    skipped: totals.skipped + Number(item.skipped || 0)
+  }), { rowsRead: 0, created: 0, updated: 0, skipped: 0 });
+}
+
 export default function Settings({ user, token, activeBatch }) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -40,6 +56,11 @@ export default function Settings({ user, token, activeBatch }) {
   const [dataset, setDataset] = useState('transactions');
   const [exportScope, setExportScope] = useState('active');
   const [exportError, setExportError] = useState('');
+  const [importType, setImportType] = useState('transactions');
+  const [importFile, setImportFile] = useState(null);
+  const [importError, setImportError] = useState('');
+  const [importMessage, setImportMessage] = useState('');
+  const [importSummary, setImportSummary] = useState(null);
   const [archiveScope, setArchiveScope] = useState('active');
   const [archiveError, setArchiveError] = useState('');
   const [accounts, setAccounts] = useState([]);
@@ -56,9 +77,11 @@ export default function Settings({ user, token, activeBatch }) {
   const [isLoadingActivity, setIsLoadingActivity] = useState(false);
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
 
   const exportAllowed = canExport(user?.role);
+  const selectedImportDataset = importDatasets.find((option) => option.value === importType) || importDatasets[0];
   const canManageAccounts = Boolean(user?.isPrimaryOwner);
   const exportUsesBatch = dataset !== 'batches';
   const effectiveBatchId = exportUsesBatch && exportScope === 'active' ? activeBatch?.id : null;
@@ -307,6 +330,59 @@ export default function Settings({ user, token, activeBatch }) {
       setArchiveError('Cannot connect to archive service.');
     } finally {
       setIsArchiving(false);
+    }
+  };
+
+  const handleImport = async () => {
+    setImportError('');
+    setImportMessage('');
+    setImportSummary(null);
+
+    if (!exportAllowed) {
+      setImportError('Your role cannot import farm files.');
+      return;
+    }
+
+    if (!importFile) {
+      setImportError('Choose a file first.');
+      return;
+    }
+
+    const confirmed = window.confirm('Import this file into the farm database?');
+    if (!confirmed) return;
+
+    setIsImporting(true);
+
+    try {
+      const content = await importFile.text();
+      const response = await fetch(`${API_BASE}/api/settings/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          importType,
+          filename: importFile.name,
+          content
+        })
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setImportError(data.error || 'Failed to import file.');
+        return;
+      }
+
+      setImportSummary(data.summary || null);
+      const totals = getImportTotals(data.summary);
+      setImportMessage(`Imported ${totals.created} new and ${totals.updated} updated records.`);
+      setImportFile(null);
+    } catch (err) {
+      console.error(err);
+      setImportError('Cannot connect to import service.');
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -844,6 +920,95 @@ export default function Settings({ user, token, activeBatch }) {
             className="w-full bg-secondary text-white p-3 rounded-xl font-bold shadow-sm active:scale-95 transition-all disabled:opacity-60"
           >
             {isExporting ? 'Preparing...' : 'Download CSV'}
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700 mb-6">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">Import Files</h3>
+
+        {importError && (
+          <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold mb-4 border border-red-200">
+            {importError}
+          </div>
+        )}
+        {importMessage && (
+          <div className="bg-green-50 text-green-700 p-3 rounded-xl text-sm font-bold mb-4 border border-green-200">
+            {importMessage}
+          </div>
+        )}
+
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Import Type</label>
+            <select
+              value={importType}
+              onChange={(event) => {
+                setImportType(event.target.value);
+                setImportFile(null);
+                setImportSummary(null);
+                setImportError('');
+                setImportMessage('');
+              }}
+              disabled={!exportAllowed}
+              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none disabled:opacity-60"
+            >
+              {importDatasets.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">File</label>
+            <input
+              type="file"
+              accept={selectedImportDataset.accept}
+              disabled={!exportAllowed}
+              onChange={(event) => {
+                setImportFile(event.target.files?.[0] || null);
+                setImportSummary(null);
+                setImportError('');
+                setImportMessage('');
+              }}
+              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none disabled:opacity-60 text-sm"
+            />
+          </div>
+
+          {importFile && (
+            <div className="bg-neutral-light dark:bg-gray-900 rounded-xl p-3">
+              <p className="text-xs font-black text-gray-700 dark:text-gray-200 truncate">{importFile.name}</p>
+              <p className="text-[10px] font-bold text-gray-400 mt-1">
+                {(importFile.size / 1024).toLocaleString(undefined, { maximumFractionDigits: 1 })} KB
+              </p>
+            </div>
+          )}
+
+          {importSummary && (
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(importSummary).map(([key, item]) => (
+                <div key={key} className="rounded-xl bg-neutral-light dark:bg-gray-900 p-3">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">{item.label || key}</p>
+                  <p className="text-sm font-black text-gray-900 dark:text-white mt-1">
+                    +{item.created || 0} / {item.updated || 0}
+                  </p>
+                  {item.skipped > 0 && (
+                    <p className="text-[10px] font-bold text-semantic-warning mt-1">
+                      {item.skipped} skipped
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleImport}
+            disabled={!exportAllowed || !importFile || isImporting}
+            className="w-full bg-primary text-white p-3 rounded-xl font-bold shadow-sm active:scale-95 transition-all disabled:opacity-60"
+          >
+            {isImporting ? 'Importing...' : 'Import File'}
           </button>
         </div>
       </div>

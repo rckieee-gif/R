@@ -44,6 +44,51 @@ function formatMoney(value) {
   })}`;
 }
 
+function getStockWarningType(item) {
+  if (['low-stock', 'needed-stock', 'ok'].includes(item.warningType)) {
+    return item.warningType;
+  }
+
+  const currentStock = Number(item.currentStock || 0);
+  const targetQuantity = Number(item.targetQuantity || 0);
+  const reorderLevel = Number(item.reorderLevel || 0);
+
+  if (reorderLevel > 0 && currentStock < reorderLevel) return 'low-stock';
+  if (targetQuantity > 0 && currentStock < targetQuantity) return 'needed-stock';
+  return 'ok';
+}
+
+function getStockWarningMeta(type) {
+  if (type === 'low-stock') {
+    return {
+      label: 'Low alert',
+      border: 'border-red-200 dark:border-red-800/50',
+      valueText: 'text-semantic-danger',
+      badgeText: 'text-semantic-danger'
+    };
+  }
+
+  if (type === 'needed-stock') {
+    return {
+      label: 'Needed stock gap',
+      border: 'border-amber-200 dark:border-amber-700/50',
+      valueText: 'text-semantic-warning',
+      badgeText: 'text-semantic-warning'
+    };
+  }
+
+  return {
+    label: 'Stock met',
+    border: 'border-neutral-border dark:border-gray-700',
+    valueText: 'text-semantic-success',
+    badgeText: 'text-semantic-success'
+  };
+}
+
+function formatWarningNames(items) {
+  return `${items.slice(0, 3).map((item) => item.name).join(', ')}${items.length > 3 ? ` +${items.length - 3} more` : ''}`;
+}
+
 function getMovementTone(type) {
   if (type === 'Stock In') return 'text-semantic-success';
   if (type === 'Stock Out') return 'text-semantic-danger';
@@ -77,7 +122,12 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
   const [isLoading, setIsLoading] = useState(false);
 
   const lowStockItems = useMemo(
-    () => items.filter((item) => item.needsWarning),
+    () => items.filter((item) => getStockWarningType(item) === 'low-stock'),
+    [items]
+  );
+
+  const neededStockItems = useMemo(
+    () => items.filter((item) => getStockWarningType(item) === 'needed-stock'),
     [items]
   );
 
@@ -86,11 +136,6 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
       .filter((item) => item.category === 'Feed')
       .reduce((sum, item) => sum + Number(item.currentStock || 0), 0),
     [items]
-  );
-
-  const selectedItem = useMemo(
-    () => items.find((item) => String(item.id) === String(movementForm.itemId)) || null,
-    [items, movementForm.itemId]
   );
 
   const movementAmount = movementForm.unitCost && movementForm.quantity
@@ -288,15 +333,22 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
         <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-neutral-border dark:border-gray-700 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Low Stock</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Low Alerts</p>
           <p className={`text-lg font-black mt-1 ${lowStockItems.length ? 'text-semantic-danger' : 'text-semantic-success'}`}>
             {lowStockItems.length}
           </p>
         </div>
 
         <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-neutral-border dark:border-gray-700 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Need Gaps</p>
+          <p className={`text-lg font-black mt-1 ${neededStockItems.length ? 'text-semantic-warning' : 'text-semantic-success'}`}>
+            {neededStockItems.length}
+          </p>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-neutral-border dark:border-gray-700 shadow-sm col-span-2 lg:col-span-1">
           <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Feed Stock</p>
           <p className="text-lg font-black mt-1 text-gray-900 dark:text-white">
             {formatQuantity(feedStock)} sacks
@@ -308,8 +360,16 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl p-3 mb-6">
           <p className="text-xs font-black uppercase tracking-wider text-semantic-danger">Low Stock Warning</p>
           <p className="text-sm font-bold text-red-700 dark:text-red-300 mt-1">
-            {lowStockItems.slice(0, 3).map((item) => item.name).join(', ')}
-            {lowStockItems.length > 3 ? ` +${lowStockItems.length - 3} more` : ''}
+            {formatWarningNames(lowStockItems)}
+          </p>
+        </div>
+      )}
+
+      {neededStockItems.length > 0 && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-xl p-3 mb-6">
+          <p className="text-xs font-black uppercase tracking-wider text-semantic-warning">Needed Stock Gap</p>
+          <p className="text-sm font-bold text-amber-700 dark:text-amber-200 mt-1">
+            {formatWarningNames(neededStockItems)}
           </p>
         </div>
       )}
@@ -621,44 +681,54 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
           Current Stock
         </h3>
         <div className="space-y-3">
-          {items.map((item) => (
-            <div key={item.id} className={`bg-white dark:bg-gray-800 p-4 rounded-xl border shadow-sm ${item.needsWarning ? 'border-red-200 dark:border-red-800/50' : 'border-neutral-border dark:border-gray-700'}`}>
-              <div className="flex justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-black text-gray-900 dark:text-white truncate">{item.name}</p>
-                  <p className="text-xs text-gray-400 font-bold uppercase mt-1">{item.category}</p>
-                </div>
-                <div className="text-right">
-                  <p className={`text-lg font-black ${item.needsWarning ? 'text-semantic-danger' : 'text-semantic-success'}`}>
-                    {formatQuantity(item.currentStock)}
-                  </p>
-                  <p className="text-xs text-gray-400">{item.unit}</p>
-                </div>
-              </div>
+          {items.map((item) => {
+            const warningType = getStockWarningType(item);
+            const warningMeta = getStockWarningMeta(warningType);
 
-              <div className="grid grid-cols-3 gap-2 mt-3 text-[10px]">
-                <p className="bg-neutral-light dark:bg-gray-700 rounded-lg p-2 text-gray-500">
-                  Need <span className="font-black">{formatQuantity(item.targetQuantity)}</span>
-                </p>
-                <p className="bg-neutral-light dark:bg-gray-700 rounded-lg p-2 text-gray-500">
-                  Alert <span className="font-black">{formatQuantity(item.reorderLevel)}</span>
-                </p>
-                {readOnly || !canEditOrDelete ? (
-                  <p className="bg-neutral-light dark:bg-gray-700 rounded-lg p-2 text-gray-500 font-black">
-                    View only
+            return (
+              <div key={item.id} className={`bg-white dark:bg-gray-800 p-4 rounded-xl border shadow-sm ${warningMeta.border}`}>
+                <div className="flex justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-black text-gray-900 dark:text-white truncate">{item.name}</p>
+                    <p className="text-xs text-gray-400 font-bold uppercase mt-1">{item.category}</p>
+                    {warningType !== 'ok' && (
+                      <p className={`text-[10px] font-black uppercase tracking-wider mt-1 ${warningMeta.badgeText}`}>
+                        {warningMeta.label}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-lg font-black ${warningMeta.valueText}`}>
+                      {formatQuantity(item.currentStock)}
+                    </p>
+                    <p className="text-xs text-gray-400">{item.unit}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 mt-3 text-[10px]">
+                  <p className={`${warningType === 'needed-stock' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-200' : 'bg-neutral-light dark:bg-gray-700 text-gray-500'} rounded-lg p-2`}>
+                    Need <span className="font-black">{formatQuantity(item.targetQuantity)}</span>
                   </p>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleEditItem(item)}
-                    className="bg-secondary/10 text-secondary rounded-lg p-2 font-black"
-                  >
-                    Edit
-                  </button>
-                )}
+                  <p className={`${warningType === 'low-stock' ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-200' : 'bg-neutral-light dark:bg-gray-700 text-gray-500'} rounded-lg p-2`}>
+                    Alert <span className="font-black">{formatQuantity(item.reorderLevel)}</span>
+                  </p>
+                  {readOnly || !canEditOrDelete ? (
+                    <p className="bg-neutral-light dark:bg-gray-700 rounded-lg p-2 text-gray-500 font-black">
+                      View only
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleEditItem(item)}
+                      className="bg-secondary/10 text-secondary rounded-lg p-2 font-black"
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
