@@ -34,6 +34,10 @@ function getAssignmentBuilding(assignment) {
   return String(assignment.assignedBuilding || '').toUpperCase();
 }
 
+const FEED_VARIANCE_WARNING_PERCENT = 15;
+const MORTALITY_WARNING_RATE = 0.005;
+const MORTALITY_WARNING_HEADS = 5;
+
 export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly = false, canEditOrDelete = false }) {
   const [buildings, setBuildings] = useState([]);
   const [assignments, setAssignments] = useState([]);
@@ -132,6 +136,48 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     if (!selectedFeedItem) return null;
     return Number(selectedFeedItem.currentStock || 0) - Number(feedConsumed || 0);
   }, [feedConsumed, selectedFeedItem]);
+
+  const abnormalWarnings = useMemo(() => {
+    const warnings = [];
+
+    if (!isLoading && !selectedAssignment) {
+      warnings.push({
+        label: 'No employee assigned to this building',
+        detail: `Assign at least one employee share for Building ${activeBuilding} before saving.`
+      });
+    }
+
+    if (feedStockAfterLog !== null && feedStockAfterLog < 0) {
+      warnings.push({
+        label: 'Feed stock will go negative',
+        detail: `${selectedFeedItem?.name || 'Selected feed'} will be short by ${formatFeed(Math.abs(feedStockAfterLog))} ${selectedFeedItem?.unit || 'sacks'}.`
+      });
+    }
+
+    const mortalityValue = Number(mortality || 0);
+    const handledBirds = Number(selectedAssignment?.handledBirds || 0);
+    const mortalityThreshold = Math.max(MORTALITY_WARNING_HEADS, Math.ceil(handledBirds * MORTALITY_WARNING_RATE));
+
+    if (mortalityValue > mortalityThreshold) {
+      warnings.push({
+        label: 'Mortality unusually high',
+        detail: `${formatBirds(mortalityValue)} mortality is above the ${formatBirds(mortalityThreshold)} head warning level for this share.`
+      });
+    }
+
+    if (feedTarget?.targetKg && targetVarianceKg !== null) {
+      const variancePercent = (targetVarianceKg / feedTarget.targetKg) * 100;
+
+      if (Math.abs(variancePercent) >= FEED_VARIANCE_WARNING_PERCENT) {
+        warnings.push({
+          label: `Feed usage far ${variancePercent > 0 ? 'above' : 'below'} target`,
+          detail: `${variancePercent > 0 ? '+' : ''}${formatDecimal(variancePercent, 1)}% versus the day ${ageDay || '--'} employee target curve.`
+        });
+      }
+    }
+
+    return warnings;
+  }, [activeBuilding, ageDay, feedStockAfterLog, feedTarget, isLoading, mortality, selectedAssignment, selectedFeedItem, targetVarianceKg]);
 
   const fetchBuildings = async () => {
     if (!token) return;
@@ -570,6 +616,22 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
               </p>
             )}
           </div>
+
+          {abnormalWarnings.length > 0 && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800/40 dark:bg-amber-900/20">
+              <p className="text-[10px] font-black uppercase tracking-wider text-semantic-warning">
+                Abnormal value warning
+              </p>
+              <div className="mt-2 space-y-2">
+                {abnormalWarnings.map((warning) => (
+                  <div key={warning.label} className="rounded-lg bg-white/80 p-2 dark:bg-slate-900/60">
+                    <p className="text-xs font-black text-gray-900 dark:text-white">{warning.label}</p>
+                    <p className="text-[10px] font-bold text-gray-500 dark:text-gray-300 mt-0.5">{warning.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex space-x-3 pt-2">
             <div className="flex-1">

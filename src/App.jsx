@@ -3,6 +3,7 @@ import Login from './login';
 import TransactionLedger from './TransactionLedger';
 import DailyLog from './DailyLog';
 import Dashboard from './Dashboard';
+import TodayOperations from './TodayOperations';
 import Analytics from './Analytics';
 import FinancialStatement from './FinancialStatement';
 import BatchManagement from './BatchManagement';
@@ -79,7 +80,7 @@ const [user, setUser] = useState(() => {
 const [token, setToken] = useState(() => localStorage.getItem('octavioToken'));
 const [isDarkMode, setIsDarkMode] = useState(false);
 
-const [activeScreen, setActiveScreen] = useState('dashboard');
+const [activeScreen, setActiveScreen] = useState('today');
   // --- LEDGER DATABASE (NOW CONNECTED TO POSTGRESQL!) ---
   const [transactions, setTransactions] = useState([]);
 const [activeBatch, setActiveBatch] = useState(null);
@@ -90,6 +91,7 @@ const [activeBatch, setActiveBatch] = useState(null);
   const canViewFinancial = canManageOperations;
   const canEditOrDelete = Boolean(user?.isPrimaryOwner);
   const allowedScreens = [
+    'today',
     'dashboard',
     'batches',
     'dailyLog',
@@ -108,7 +110,7 @@ const [activeBatch, setActiveBatch] = useState(null);
     setLogs([]);
     localStorage.removeItem('octavioUser');
     localStorage.removeItem('octavioToken');
-    setActiveScreen('dashboard');
+    setActiveScreen('today');
   };
 
   useEffect(() => {
@@ -226,6 +228,7 @@ const [activeBatch, setActiveBatch] = useState(null);
         <div className="no-print bg-white/95 dark:bg-slate-900/95 shadow-sm border-b border-neutral-border dark:border-slate-800 p-3 sm:p-4 mb-2 sm:mb-4 flex justify-between items-center sticky top-0 z-10 transition-colors duration-300">
           
           <div className="flex space-x-2 overflow-x-auto">
+            <button onClick={() => setActiveScreen('today')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'today' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Today</button>
             <button onClick={() => setActiveScreen('dashboard')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'dashboard' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Home</button>
             <button
   onClick={() => setActiveScreen('batches')}
@@ -282,6 +285,15 @@ const [activeBatch, setActiveBatch] = useState(null);
         </div>
 
         {/* --- SCREEN DISPLAY LOGIC --- */}
+        {activeScreen === 'today' && (
+  <TodayOperations
+    token={token}
+    activeBatch={activeBatch}
+    logs={logs}
+    setActiveScreen={setActiveScreen}
+  />
+)}
+
         {activeScreen === 'batches' && (
   <BatchManagement
     activeBatch={activeBatch}
