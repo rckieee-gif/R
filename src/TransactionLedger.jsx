@@ -56,6 +56,7 @@ export default function TransactionLedger({ transactions, setTransactions, activ
   const [remarks, setRemarks] = useState('');
   const [quickEntryText, setQuickEntryText] = useState('');
   const [quickEntryStatus, setQuickEntryStatus] = useState('');
+  const [pendingQuickEntry, setPendingQuickEntry] = useState(null);
   const [isParsingQuickEntry, setIsParsingQuickEntry] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState('');
@@ -175,38 +176,113 @@ export default function TransactionLedger({ transactions, setTransactions, activ
     setTransactionType(suggestTransactionType(fundingNature, nextCategory));
   };
 
-  const applyParsedQuickEntry = (parsed) => {
+  const buildLedgerDraftFromQuickEntry = (parsed) => {
     const nextFundingNature = parsed.fundingNature || fundingNature;
     const availableCategories = categoriesByFunding[nextFundingNature] || [];
     const nextCategory = availableCategories.includes(parsed.category)
       ? parsed.category
       : availableCategories[0] || parsed.category || '';
 
-    setDate(parsed.date || date);
-    setBuilding(parsed.building || 'All');
-    setFundingNature(nextFundingNature);
-    setCategory(nextCategory);
-    setTransactionType(parsed.type || suggestTransactionType(nextFundingNature, nextCategory));
-    setDescription(parsed.description || '');
-    setAmount(parsed.amount == null ? '' : String(parsed.amount));
+    return {
+      date: parsed.date || date,
+      building: parsed.building || 'All',
+      fundingNature: nextFundingNature,
+      category: nextCategory,
+      transactionType: parsed.type || suggestTransactionType(nextFundingNature, nextCategory),
+      description: parsed.description || '',
+      quantity: parsed.amountSource === 'quantity_x_unit_price' && parsed.quantity != null ? String(parsed.quantity) : '',
+      unitCost: parsed.amountSource === 'quantity_x_unit_price' && parsed.unitPrice != null ? String(parsed.unitPrice) : '',
+      amount: parsed.amount == null ? '' : String(parsed.amount),
+      paidBy: normalizeStakeholderName(parsed.paidBy || paidBy),
+      paidTo: normalizeStakeholderName(parsed.paidTo || paidTo),
+      reference: parsed.reference || '',
+      remarks: parsed.remarks || `Quick entry: ${parsed.originalText || quickEntryText}`,
+    };
+  };
 
-    if (parsed.amountSource === 'quantity_x_unit_price') {
-      setQuantity(parsed.quantity == null ? '' : String(parsed.quantity));
-      setUnitCost(parsed.unitPrice == null ? '' : String(parsed.unitPrice));
-    } else {
-      setQuantity('');
-      setUnitCost('');
-    }
+  const getCurrentLedgerDraft = () => ({
+    date,
+    building,
+    fundingNature,
+    category,
+    transactionType,
+    description,
+    quantity,
+    unitCost,
+    amount,
+    paidBy,
+    paidTo,
+    reference,
+    remarks,
+  });
 
-    setPaidBy((current) => normalizeStakeholderName(parsed.paidBy || current));
-    setPaidTo((current) => normalizeStakeholderName(parsed.paidTo || current));
-    setReference(parsed.reference || '');
-    setRemarks(parsed.remarks || `Quick entry: ${parsed.originalText || quickEntryText}`);
+  const getQuickEntryReplacementRows = (parsed) => {
+    const current = getCurrentLedgerDraft();
+    const next = buildLedgerDraftFromQuickEntry(parsed);
+    const labels = {
+      date: 'Date',
+      building: 'Building',
+      fundingNature: 'Funding Nature',
+      category: 'Category',
+      transactionType: 'Transaction Type',
+      description: 'Description',
+      quantity: 'Quantity',
+      unitCost: 'Unit Cost',
+      amount: 'Amount',
+      paidBy: 'Paid By',
+      paidTo: 'Paid To',
+      reference: 'Reference',
+      remarks: 'Remarks',
+    };
+
+    return Object.keys(labels)
+      .map((key) => ({
+        key,
+        label: labels[key],
+        from: current[key] || '--',
+        to: next[key] || '--',
+      }))
+      .filter((row) => row.from !== row.to);
+  };
+
+  const applyParsedQuickEntry = (parsed) => {
+    const next = buildLedgerDraftFromQuickEntry(parsed);
+
+    setDate(next.date);
+    setBuilding(next.building);
+    setFundingNature(next.fundingNature);
+    setCategory(next.category);
+    setTransactionType(next.transactionType);
+    setDescription(next.description);
+    setQuantity(next.quantity);
+    setUnitCost(next.unitCost);
+    setAmount(next.amount);
+    setPaidBy(next.paidBy);
+    setPaidTo(next.paidTo);
+    setReference(next.reference);
+    setRemarks(next.remarks);
+  };
+
+  const confirmApplyQuickEntry = () => {
+    if (!pendingQuickEntry?.parsed) return;
+
+    const replacementRows = getQuickEntryReplacementRows(pendingQuickEntry.parsed);
+    const rundown = replacementRows.length
+      ? replacementRows.map((row) => `${row.label}: ${row.from} -> ${row.to}`).join('\n')
+      : 'No ledger fields will change.';
+    const confirmed = window.confirm(`Send this parsed entry to the ledger form?\n\n${rundown}`);
+
+    if (!confirmed) return;
+
+    applyParsedQuickEntry(pendingQuickEntry.parsed);
+    setQuickEntryStatus('Parsed entry sent to the ledger form. Review it, then save the record.');
+    setPendingQuickEntry(null);
   };
 
   const handleQuickEntryParse = async () => {
     setError('');
     setQuickEntryStatus('');
+    setPendingQuickEntry(null);
 
     if (!quickEntryText.trim()) {
       setQuickEntryStatus('Enter transaction text first.');
@@ -237,9 +313,9 @@ export default function TransactionLedger({ transactions, setTransactions, activ
         return;
       }
 
-      applyParsedQuickEntry(data.parsed);
+      setPendingQuickEntry(data);
       setQuickEntryStatus(
-        `${data.parserMode === 'gemini' ? 'Gemini AI' : data.parserMode === 'openai' ? 'OpenAI' : 'Rules'} parsed with ${Math.round(Number(data.parsed.confidence || 0) * 100)}% confidence${data.needsReview ? ' - please review carefully' : ''}.`
+        `${data.parserMode === 'gemini' ? 'Gemini AI' : data.parserMode === 'openai' ? 'OpenAI' : 'Rules'} parsed with ${Math.round(Number(data.parsed.confidence || 0) * 100)}% confidence${data.needsReview ? ' - review before sending to the form' : ''}.`
       );
     } catch (err) {
       console.error('Failed to parse quick entry:', err);
@@ -259,6 +335,7 @@ export default function TransactionLedger({ transactions, setTransactions, activ
     setReference('');
     setRemarks('');
     setQuickEntryStatus('');
+    setPendingQuickEntry(null);
     setError('');
   };
 
@@ -450,7 +527,11 @@ export default function TransactionLedger({ transactions, setTransactions, activ
               <textarea
                 rows="3"
                 value={quickEntryText}
-                onChange={(e) => setQuickEntryText(e.target.value)}
+                onChange={(e) => {
+                  setQuickEntryText(e.target.value);
+                  setPendingQuickEntry(null);
+                  setQuickEntryStatus('');
+                }}
                 placeholder="Write the desciption"
                 className="w-full p-2 border border-primary/20 dark:border-primary/40 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-primary outline-none"
               />
@@ -466,7 +547,11 @@ export default function TransactionLedger({ transactions, setTransactions, activ
                 <button
                   key={example}
                   type="button"
-                  onClick={() => setQuickEntryText(example)}
+                  onClick={() => {
+                    setQuickEntryText(example);
+                    setPendingQuickEntry(null);
+                    setQuickEntryStatus('');
+                  }}
                   className="px-2 py-1 rounded-lg border border-primary/30 text-primary dark:text-blue-300 text-[11px] font-black hover:bg-primary hover:text-white transition-colors"
                 >
                   {example}
@@ -489,6 +574,60 @@ export default function TransactionLedger({ transactions, setTransactions, activ
                 </p>
               )}
             </div>
+
+            {pendingQuickEntry?.parsed && (
+              <div className="rounded-xl border border-amber-200 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-900/20 p-3 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                      Parsed Preview
+                    </p>
+                    <p className="text-sm font-black text-gray-800 dark:text-white mt-1">
+                      {pendingQuickEntry.parsed.type} - {pendingQuickEntry.parsed.fundingNature} / {pendingQuickEntry.parsed.category}
+                    </p>
+                    <p className="text-xs font-bold text-gray-500 dark:text-gray-300 mt-1">
+                      {pendingQuickEntry.parsed.description} - PHP {Number(pendingQuickEntry.parsed.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <span className="text-[11px] font-black text-amber-700 dark:text-amber-300">
+                    {Math.round(Number(pendingQuickEntry.parsed.confidence || 0) * 100)}%
+                  </span>
+                </div>
+
+                {getQuickEntryReplacementRows(pendingQuickEntry.parsed).length > 0 && (
+                  <div className="max-h-40 overflow-auto rounded-lg border border-amber-200 dark:border-amber-800/70 bg-white/70 dark:bg-gray-900/30">
+                    {getQuickEntryReplacementRows(pendingQuickEntry.parsed).map((row) => (
+                      <div key={row.key} className="grid grid-cols-[96px_1fr] gap-2 border-b last:border-b-0 border-amber-100 dark:border-amber-900/60 px-2 py-1.5 text-[11px]">
+                        <span className="font-black text-gray-500 dark:text-gray-400">{row.label}</span>
+                        <span className="font-bold text-gray-700 dark:text-gray-200">
+                          {row.from} {'->'} {row.to}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={confirmApplyQuickEntry}
+                    className="px-3 py-2 rounded-xl bg-amber-600 text-white text-xs font-black hover:bg-amber-700"
+                  >
+                    Send to Ledger Form
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPendingQuickEntry(null);
+                      setQuickEntryStatus('Parsed entry discarded.');
+                    }}
+                    className="px-3 py-2 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-black"
+                  >
+                    Discard Parse
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex space-x-3">
