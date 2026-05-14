@@ -54,6 +54,9 @@ export default function TransactionLedger({ transactions, setTransactions, activ
   const [paidTo, setPaidTo] = useState('');
   const [reference, setReference] = useState('');
   const [remarks, setRemarks] = useState('');
+  const [quickEntryText, setQuickEntryText] = useState('');
+  const [quickEntryStatus, setQuickEntryStatus] = useState('');
+  const [isParsingQuickEntry, setIsParsingQuickEntry] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState('');
   const [isLoadingMasters, setIsLoadingMasters] = useState(false);
@@ -172,6 +175,80 @@ export default function TransactionLedger({ transactions, setTransactions, activ
     setTransactionType(suggestTransactionType(fundingNature, nextCategory));
   };
 
+  const applyParsedQuickEntry = (parsed) => {
+    const nextFundingNature = parsed.fundingNature || fundingNature;
+    const availableCategories = categoriesByFunding[nextFundingNature] || [];
+    const nextCategory = availableCategories.includes(parsed.category)
+      ? parsed.category
+      : availableCategories[0] || parsed.category || '';
+
+    setDate(parsed.date || date);
+    setBuilding(parsed.building || 'All');
+    setFundingNature(nextFundingNature);
+    setCategory(nextCategory);
+    setTransactionType(parsed.type || suggestTransactionType(nextFundingNature, nextCategory));
+    setDescription(parsed.description || '');
+    setAmount(parsed.amount == null ? '' : String(parsed.amount));
+
+    if (parsed.amountSource === 'quantity_x_unit_price') {
+      setQuantity(parsed.quantity == null ? '' : String(parsed.quantity));
+      setUnitCost(parsed.unitPrice == null ? '' : String(parsed.unitPrice));
+    } else {
+      setQuantity('');
+      setUnitCost('');
+    }
+
+    setPaidBy((current) => normalizeStakeholderName(parsed.paidBy || current));
+    setPaidTo((current) => normalizeStakeholderName(parsed.paidTo || current));
+    setReference(parsed.reference || '');
+    setRemarks(parsed.remarks || `Quick entry: ${parsed.originalText || quickEntryText}`);
+  };
+
+  const handleQuickEntryParse = async () => {
+    setError('');
+    setQuickEntryStatus('');
+
+    if (!quickEntryText.trim()) {
+      setQuickEntryStatus('Enter transaction text first.');
+      return;
+    }
+
+    setIsParsingQuickEntry(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/api/quick-entry`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          text: quickEntryText,
+          today: date,
+          building,
+          paidBy
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setQuickEntryStatus(data.error || 'Could not parse quick entry.');
+        return;
+      }
+
+      applyParsedQuickEntry(data.parsed);
+      setQuickEntryStatus(
+        `${data.parserMode === 'gemini' ? 'Gemini AI' : data.parserMode === 'openai' ? 'OpenAI' : 'Rules'} parsed with ${Math.round(Number(data.parsed.confidence || 0) * 100)}% confidence${data.needsReview ? ' - please review carefully' : ''}.`
+      );
+    } catch (err) {
+      console.error('Failed to parse quick entry:', err);
+      setQuickEntryStatus('Cannot connect to quick-entry parser.');
+    } finally {
+      setIsParsingQuickEntry(false);
+    }
+  };
+
   const resetForm = () => {
     setEditingId(null);
     setDescription('');
@@ -181,6 +258,7 @@ export default function TransactionLedger({ transactions, setTransactions, activ
     setPaidTo('');
     setReference('');
     setRemarks('');
+    setQuickEntryStatus('');
     setError('');
   };
 
@@ -366,6 +444,53 @@ export default function TransactionLedger({ transactions, setTransactions, activ
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="rounded-xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-3 space-y-3">
+            <div>
+              <label className="block text-xs font-bold text-primary mb-1">Quick Entry</label>
+              <textarea
+                rows="3"
+                value={quickEntryText}
+                onChange={(e) => setQuickEntryText(e.target.value)}
+                placeholder="Write the desciption"
+                className="w-full p-2 border border-primary/20 dark:border-primary/40 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-primary outline-none"
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {[
+                'bought 25 sacks of charcoal for 300 pesos',
+                'Sold 200 sacks of chicken dung for 35',
+                'paid helper yesterday 500 pesos',
+                'customer paid balance 1000'
+              ].map((example) => (
+                <button
+                  key={example}
+                  type="button"
+                  onClick={() => setQuickEntryText(example)}
+                  className="px-2 py-1 rounded-lg border border-primary/30 text-primary dark:text-blue-300 text-[11px] font-black hover:bg-primary hover:text-white transition-colors"
+                >
+                  {example}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={handleQuickEntryParse}
+                disabled={isParsingQuickEntry}
+                className="px-3 py-2 rounded-xl bg-primary text-white text-xs font-black disabled:opacity-60"
+              >
+                {isParsingQuickEntry ? 'Parsing...' : 'Parse Quick Entry'}
+              </button>
+              {quickEntryStatus && (
+                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-300 text-right">
+                  {quickEntryStatus}
+                </p>
+              )}
+            </div>
+          </div>
+
           <div className="flex space-x-3">
             <div className="flex-1">
               <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Date</label>
