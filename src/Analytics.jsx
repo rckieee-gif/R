@@ -309,16 +309,24 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
           {feedCurve.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={feedCurve} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E4E6EB" vertical={false} />
-                <XAxis dataKey="dayLabel" tick={{ fontSize: 11, fill: '#888' }} />
-                <YAxis tick={{ fontSize: 11, fill: '#888' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-gray-200 dark:text-gray-700/30" vertical={false} />
+                <XAxis dataKey="dayLabel" tick={{ fontSize: 11, fill: 'currentColor' }} className="text-gray-500 dark:text-gray-400" />
+                <YAxis tick={{ fontSize: 11, fill: 'currentColor' }} className="text-gray-500 dark:text-gray-400" />
                 <Tooltip
-                  contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  contentStyle={{
+                    borderRadius: '12px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    color: '#fff'
+                  }}
+                  itemStyle={{ color: '#e2e8f0' }}
+                  labelStyle={{ color: '#94a3b8', fontWeight: 'bold' }}
                   formatter={(value, name) => [`${formatNumber(value, 2)} bags`, name]}
                 />
-                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                <Line type="monotone" dataKey="targetBags" name="Target" stroke="#C9A84C" strokeWidth={3} dot={false} />
-                <Line type="monotone" dataKey="actualBags" name="Actual" stroke="#16A34A" strokeWidth={3} dot={{ r: 3 }} />
+                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} className="text-gray-600 dark:text-gray-300" />
+                <Line type="monotone" dataKey="targetBags" name="Target" stroke="#a855f7" strokeWidth={3} dot={false} />
+                <Line type="monotone" dataKey="actualBags" name="Actual" stroke="#00f0ff" strokeWidth={3} dot={{ r: 3, fill: '#00f0ff', strokeWidth: 0 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -340,16 +348,24 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
           {feedCurve.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={feedCurve} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E4E6EB" vertical={false} />
-                <XAxis dataKey="dayLabel" tick={{ fontSize: 11, fill: '#888' }} />
-                <YAxis tick={{ fontSize: 11, fill: '#888' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-gray-200 dark:text-gray-700/30" vertical={false} />
+                <XAxis dataKey="dayLabel" tick={{ fontSize: 11, fill: 'currentColor' }} className="text-gray-500 dark:text-gray-400" />
+                <YAxis tick={{ fontSize: 11, fill: 'currentColor' }} className="text-gray-500 dark:text-gray-400" />
                 <Tooltip
-                  contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  contentStyle={{
+                    borderRadius: '12px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    color: '#fff'
+                  }}
+                  itemStyle={{ color: '#e2e8f0' }}
+                  labelStyle={{ color: '#94a3b8', fontWeight: 'bold' }}
                   formatter={(value, name) => [formatNumber(value, 2), name]}
                 />
-                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                <Line type="monotone" dataKey="targetFcr" name="Target FCR" stroke="#C9A84C" strokeWidth={3} dot={false} />
-                <Line type="monotone" dataKey="actualFcr" name="Actual FCR" stroke="#2563EB" strokeWidth={3} dot={{ r: 4 }} connectNulls={false} />
+                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} className="text-gray-600 dark:text-gray-300" />
+                <Line type="monotone" dataKey="targetFcr" name="Target FCR" stroke="#a855f7" strokeWidth={3} dot={false} />
+                <Line type="monotone" dataKey="actualFcr" name="Actual FCR" stroke="#ec4899" strokeWidth={3} dot={{ r: 4, fill: '#ec4899', strokeWidth: 0 }} connectNulls={false} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -388,16 +404,24 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
           {selectedEmployeeFeed?.curve.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={selectedEmployeeFeed.curve} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E4E6EB" vertical={false} />
-                <XAxis dataKey="dayLabel" tick={{ fontSize: 11, fill: '#888' }} />
-                <YAxis tick={{ fontSize: 11, fill: '#888' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-gray-200 dark:text-gray-700/30" vertical={false} />
+                <XAxis dataKey="dayLabel" tick={{ fontSize: 11, fill: 'currentColor' }} className="text-gray-500 dark:text-gray-400" />
+                <YAxis tick={{ fontSize: 11, fill: 'currentColor' }} className="text-gray-500 dark:text-gray-400" />
                 <Tooltip
-                  contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  contentStyle={{
+                    borderRadius: '12px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    color: '#fff'
+                  }}
+                  itemStyle={{ color: '#e2e8f0' }}
+                  labelStyle={{ color: '#94a3b8', fontWeight: 'bold' }}
                   formatter={(value, name) => [`${formatNumber(value, 2)} bags`, name]}
                 />
-                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                <Line type="monotone" dataKey="targetBags" name="Target" stroke="#C9A84C" strokeWidth={3} dot={false} />
-                <Line type="monotone" dataKey="actualBags" name="Actual" stroke="#2563EB" strokeWidth={3} dot={{ r: 3 }} />
+                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} className="text-gray-600 dark:text-gray-300" />
+                <Line type="monotone" dataKey="targetBags" name="Target" stroke="#a855f7" strokeWidth={3} dot={false} />
+                <Line type="monotone" dataKey="actualBags" name="Actual" stroke="#00f0ff" strokeWidth={3} dot={{ r: 3, fill: '#00f0ff', strokeWidth: 0 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -415,13 +439,25 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
           {financialData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={financialData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E4E6EB" vertical={false} />
-                <XAxis dataKey="category" tick={{ fontSize: 10, fill: '#888' }} />
-                <YAxis tick={{ fontSize: 12, fill: '#888' }} tickFormatter={(value) => `PHP ${value >= 1000 ? `${value / 1000}k` : value}`} />
-                <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '10px' }} formatter={(value) => formatMoney(value)} />
-                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                <Bar dataKey="income" name="Income" fill="#16A34A" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expense" name="Expense" fill="#C9A84C" radius={[4, 4, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-gray-200 dark:text-gray-700/30" vertical={false} />
+                <XAxis dataKey="category" tick={{ fontSize: 10, fill: 'currentColor' }} className="text-gray-500 dark:text-gray-400" />
+                <YAxis tick={{ fontSize: 12, fill: 'currentColor' }} className="text-gray-500 dark:text-gray-400" tickFormatter={(value) => `PHP ${value >= 1000 ? `${value / 1000}k` : value}`} />
+                <Tooltip
+                  cursor={{ fill: 'transparent' }}
+                  contentStyle={{
+                    borderRadius: '12px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    color: '#fff'
+                  }}
+                  itemStyle={{ color: '#e2e8f0' }}
+                  labelStyle={{ color: '#94a3b8', fontWeight: 'bold' }}
+                  formatter={(value) => formatMoney(value)}
+                />
+                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} className="text-gray-600 dark:text-gray-300" />
+                <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expense" name="Expense" fill="#ec4899" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (

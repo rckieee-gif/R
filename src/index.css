@@ -69,14 +69,16 @@ body {
 
 @media print {
   @page {
-    margin: 12mm;
+    margin: 15mm;
+    size: portrait;
   }
 
-  .no-print {
-    display: none !important;
-  }
-
-  .screen-only {
+  .no-print,
+  .screen-only,
+  button,
+  nav,
+  header:not(.print-only),
+  aside {
     display: none !important;
   }
 
@@ -84,16 +86,40 @@ body {
     display: block !important;
   }
 
+  /* Force light theme on all elements during print, overriding dark mode classes */
   html,
-  body {
+  body,
+  #root,
+  .dark,
+  .dark body,
+  .dark #root {
     background: #ffffff !important;
+    background-color: #ffffff !important;
     color: #111827 !important;
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif !important;
   }
 
-  body * {
-    color-adjust: exact;
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
+  /* Disable all screen-only fancy effects, transitions, shadows, and animations */
+  *,
+  *::before,
+  *::after {
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  /* Structural elements borders */
+  table, th, td, tr {
+    border-color: #d1d5db !important;
   }
 
   .print-container {
@@ -104,58 +130,236 @@ body {
     font-size: 10pt !important;
   }
 
-  .print-card {
-    break-inside: avoid;
-    box-shadow: none !important;
+  /* Reset print card container styles */
+  .print-card,
+  .print-card.bg-white,
+  .dark .print-card,
+  .dark .bg-gray-800.print-card {
+    border: 1px solid #9ca3af !important;
+    border-radius: 6px !important;
+    padding: 1.5rem !important;
+    margin-bottom: 1.5rem !important;
     background: #ffffff !important;
-    border: 1px solid #D1D5DB !important;
-    border-radius: 4px !important;
+    background-color: #ffffff !important;
     color: #111827 !important;
+    break-inside: avoid;
   }
 
-  .print-card * {
+  /* General print card text defaults */
+  .print-card,
+  .print-card p,
+  .print-card span,
+  .print-card div,
+  .print-card td,
+  .print-card th,
+  .print-card h1,
+  .print-card h2,
+  .print-card h3,
+  .print-card h4,
+  .print-card h5,
+  .print-card h6 {
+    color: #1f2937 !important;
+  }
+
+  /* Strict semantic text colors with print-friendly contrast */
+  .text-semantic-success,
+  .dark .text-semantic-success,
+  span.text-semantic-success,
+  .dark span.text-semantic-success {
+    color: #166534 !important; /* Rich dark green */
+    font-weight: 700 !important;
+  }
+
+  .text-semantic-danger,
+  .dark .text-semantic-danger,
+  span.text-semantic-danger,
+  .dark span.text-semantic-danger {
+    color: #991b1b !important; /* Rich dark red */
+    font-weight: 700 !important;
+  }
+
+  .text-primary,
+  .dark .text-primary,
+  span.text-primary,
+  .dark span.text-primary {
+    color: #1e40af !important; /* Rich dark blue */
+    font-weight: 700 !important;
+  }
+
+  /* Subtle background fills for structural elements */
+  th,
+  .print-simple-table th,
+  thead th,
+  .bg-neutral-light,
+  .dark .bg-gray-700 {
+    background-color: #f3f4f6 !important;
+    background: #f3f4f6 !important;
+    color: #1f2937 !important;
+  }
+
+  /* Printable header adjustments */
+  .statement-print-header,
+  .dark .statement-print-header {
+    background-color: #f3f4f6 !important;
+    background: #f3f4f6 !important;
+    border: 1px solid #9ca3af !important;
+    border-bottom: none !important;
+    color: #111827 !important;
+    padding: 1rem !important;
+    text-align: center !important;
+    border-top-left-radius: 6px !important;
+    border-top-right-radius: 6px !important;
+    box-shadow: none !important;
+  }
+
+  .statement-print-header h2,
+  .statement-print-header p,
+  .statement-print-header * {
     color: #111827 !important;
   }
 
   .print-title {
+    font-size: 16pt !important;
+    font-weight: 800 !important;
     color: #111827 !important;
-    font-size: 18pt !important;
-    line-height: 1.2 !important;
   }
 
+  /* Table styling */
   .print-simple-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 9pt;
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 1rem !important;
+    margin-bottom: 1rem !important;
   }
 
   .print-simple-table th,
   .print-simple-table td {
-    border: 1px solid #D1D5DB;
-    padding: 6px 8px;
-    text-align: left;
-    vertical-align: top;
+    border: 1px solid #d1d5db !important;
+    padding: 8px 12px !important;
+    text-align: left !important;
+    font-size: 9pt !important;
+    vertical-align: top !important;
   }
 
   .print-simple-table th {
-    background: #F3F4F6 !important;
-    font-weight: 800;
+    background-color: #f3f4f6 !important;
+    font-weight: bold !important;
   }
 
   .print-simple-table .numeric {
-    text-align: right;
-    white-space: nowrap;
-  }
-
-  .statement-print-header {
-    background: #ffffff !important;
-    color: #111827 !important;
-    border: 1px solid #111827 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-  }
-
-  .statement-print-header * {
-    color: #111827 !important;
+    text-align: right !important;
+    white-space: nowrap !important;
   }
 }
+
+/* ==========================================
+   ANTIGRAVITY SYSTEM STYLES & ANIMATIONS
+   ========================================== */
+
+@keyframes antigravity-bob {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(0.5deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes antigravity-bob-slow {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(-0.5deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes antigravity-bob-fast {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(1deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes particle-drift {
+  0% { transform: translateY(100vh) translateX(0) scale(0.8); opacity: 0; }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.6; }
+  100% { transform: translateY(-10vh) translateX(50px) scale(1.2); opacity: 0; }
+}
+
+/* Apply slow floating bobs ONLY to custom zero-g decor elements when active */
+.antigravity-active .zero-g-float-1 {
+  animation: antigravity-bob 9s ease-in-out infinite;
+}
+
+.antigravity-active .zero-g-float-2 {
+  animation: antigravity-bob-slow 11s ease-in-out infinite;
+}
+
+.antigravity-active .zero-g-float-3 {
+  animation: antigravity-bob-fast 7s ease-in-out infinite;
+}
+
+/* Hover gravity defiance - extremely subtle lift-off and soft shadow */
+.antigravity-active .hover-float,
+.antigravity-active .bg-white:not(.no-float),
+.antigravity-active .bg-slate-900:not(.no-float),
+.antigravity-active .bg-gray-800:not(.no-float) {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+}
+.antigravity-active .hover-float:hover,
+.antigravity-active .bg-white:not(.no-float):hover,
+.antigravity-active .bg-slate-900:not(.no-float):hover,
+.antigravity-active .bg-gray-800:not(.no-float):hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 12px 24px -10px rgba(59, 130, 246, 0.2) !important;
+  z-index: 5;
+}
+
+/* Glassmorphism futuristic panel */
+.ag-glass {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.light .ag-glass {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+/* Custom scrollbar for chat */
+.ag-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.ag-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ag-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.3);
+  border-radius: 4px;
+}
+.ag-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.6);
+}
+
+/* Rising particles container */
+.ag-particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.ag-particle {
+  position: absolute;
+  bottom: -20px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, rgba(59, 130, 246, 0) 70%);
+  border-radius: 50%;
+  animation: particle-drift 22s linear infinite;
+}
+
+/* Cosmic background overlay - disabled for minimal distraction */
+.ag-cosmic-bg {
+  /* Retained class name but cleared overrides to preserve original theme backgrounds */
+}
+

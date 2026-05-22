@@ -12,6 +12,7 @@ import EmployeePaySummary from './EmployeePaySummary';
 import InventoryManagement from './InventoryManagement';
 import Settings from './Settings';
 import { API_BASE } from './api';
+import AntigravityAssistant from './Components/AntigravityAssistant';
 
 const roleRank = {
   Viewer: 1,
@@ -78,7 +79,19 @@ const [user, setUser] = useState(() => {
   }
 });
 const [token, setToken] = useState(() => localStorage.getItem('octavioToken'));
-const [isDarkMode, setIsDarkMode] = useState(false);
+const [isDarkMode, setIsDarkMode] = useState(() => {
+  const saved = localStorage.getItem('themeMode');
+  return saved ? saved === 'dark' : true;
+});
+
+useEffect(() => {
+  localStorage.setItem('themeMode', isDarkMode ? 'dark' : 'light');
+  if (isDarkMode) {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+}, [isDarkMode]);
 
 const [activeScreen, setActiveScreen] = useState('today');
   // --- LEDGER DATABASE (NOW CONNECTED TO POSTGRESQL!) ---
@@ -351,6 +364,12 @@ const [activeBatch, setActiveBatch] = useState(null);
 {activeScreen === 'settings' && (
   <Settings user={user} token={token} activeBatch={activeBatch} />
 )}
+        <AntigravityAssistant
+          activeBatch={activeBatch}
+          logs={logs}
+          transactions={transactions}
+          user={user}
+        />
       </div>
     </div>
   );
