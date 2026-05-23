@@ -6,6 +6,7 @@ import Dashboard from './Dashboard';
 import TodayOperations from './TodayOperations';
 import Analytics from './Analytics';
 import FinancialStatement from './FinancialStatement';
+import HarvestRecording from './HarvestRecording';
 import BatchManagement from './BatchManagement';
 import EmployeeManagement from './EmployeeManagement';
 import EmployeePaySummary from './EmployeePaySummary';
@@ -113,7 +114,7 @@ function App() {
     'inventory',
     'analytics',
     'settings',
-    ...(canManageOperations ? ['employees', 'ledger', 'statement'] : []),
+    ...(canManageOperations ? ['employees', 'ledger', 'harvest', 'statement'] : []),
   ], [canManageOperations]);
 
   const clearSession = useCallback(() => {
@@ -158,7 +159,7 @@ function App() {
     fetchActiveBatch();
   }, [token, clearSession]);
 
-  useEffect(() => {
+  const refreshTransactions = useCallback(async () => {
     if (!token || !activeBatch?.id || !canViewFinancial) {
       setTimeout(() => {
         setTransactions([]);
@@ -166,26 +167,28 @@ function App() {
       return;
     }
 
-    const fetchTransactions = async () => {
-      try {
-        const response = await fetch(`${API_BASE}/api/batches/${activeBatch.id}/transactions`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+    try {
+      const response = await fetch(`${API_BASE}/api/batches/${activeBatch.id}/transactions`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-        if (response.status === 401) {
-          clearSession();
-          return;
-        }
-
-        const data = await response.json();
-        setTransactions(data);
-      } catch (error) {
-        console.error("Failed to fetch transactions:", error);
+      if (response.status === 401) {
+        clearSession();
+        return;
       }
-    };
 
-    fetchTransactions();
+      const data = await response.json();
+      setTransactions(data);
+    } catch (error) {
+      console.error("Failed to fetch transactions:", error);
+    }
   }, [token, activeBatch?.id, canViewFinancial, clearSession]);
+
+  useEffect(() => {
+    setTimeout(() => {
+      refreshTransactions();
+    }, 0);
+  }, [refreshTransactions]);
 
   useEffect(() => {
     if (!token || !activeBatch?.id) {
@@ -271,6 +274,9 @@ function App() {
             {canViewFinancial && (
               <button onClick={() => setActiveScreen('ledger')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'ledger' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Ledger</button>
             )}
+            {canViewFinancial && (
+              <button onClick={() => setActiveScreen('harvest')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'harvest' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Harvest</button>
+            )}
             
             <button onClick={() => setActiveScreen('dailyLog')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'dailyLog' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Daily Logs</button>
             <button onClick={() => setActiveScreen('inventory')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'inventory' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Inventory</button>
@@ -352,6 +358,15 @@ function App() {
     token={token}
     readOnly={!canManageOperations}
     canEditOrDelete={canEditOrDelete}
+  />
+)}
+
+{activeScreen === 'harvest' && canViewFinancial && (
+  <HarvestRecording
+    activeBatch={activeBatch}
+    token={token}
+    readOnly={!canManageOperations}
+    onLedgerPosted={refreshTransactions}
   />
 )}
 
