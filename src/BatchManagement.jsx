@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { API_BASE } from './api';
 
 function toDateInput(value) {
@@ -104,8 +104,11 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
 
   useEffect(() => {
     if (!token) return;
-    fetchBatches();
-    fetchBuildings();
+    setTimeout(() => {
+      fetchBatches();
+      fetchBuildings();
+    }, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const resetForm = () => {
@@ -230,7 +233,7 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
       }
 
       resetForm();
-    } catch (err) {
+    } catch {
       setError('Cannot connect to server.');
     }
   };
@@ -276,7 +279,7 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
       if (activeBatch?.id === batchId) {
         setActiveBatch(remainingBatches[0] || null);
       }
-    } catch (err) {
+    } catch {
       setError('Cannot connect to server.');
     }
   };

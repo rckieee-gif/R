@@ -1,7 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { API_BASE } from './api';
+import QuickEntryBox from './Components/Ledger/QuickEntryBox';
+import TransactionForm from './Components/Ledger/TransactionForm';
+import TransactionTable from './Components/Ledger/TransactionTable';
 
-const TRANSACTION_TYPES = ['Expense', 'Income', 'Adjustment', 'Reimbursement', 'Payment'];
 
 function groupCategories(categories) {
   return categories.reduce((groups, category) => {
@@ -82,14 +84,13 @@ export default function TransactionLedger({ transactions, setTransactions, activ
   const isFeedLedgerRecord = category === 'Feed'
     && ['OPEX', 'CAPEX', 'CAPEX-Recoverable'].includes(fundingNature)
     && transactionType === 'Expense';
-  const selectedFeedItem = useMemo(
-    () => feedItems.find((item) => String(item.id) === String(feedItemId)) || null,
-    [feedItemId, feedItems]
-  );
+
 
   useEffect(() => {
     if (!token) {
-      setError('Please sign in again so the ledger can load dropdown data.');
+      setTimeout(() => {
+        setError('Please sign in again so the ledger can load dropdown data.');
+      }, 0);
       return;
     }
 
@@ -144,21 +145,27 @@ export default function TransactionLedger({ transactions, setTransactions, activ
       }
     };
 
-    fetchMasterData();
+    setTimeout(() => {
+      fetchMasterData();
+    }, 0);
   }, [token]);
 
   useEffect(() => {
     const categories = categoriesByFunding[fundingNature] || [];
     if (!categories.includes(category)) {
       const nextCategory = categories[0] || '';
-      setCategory(nextCategory);
-      setTransactionType(suggestTransactionType(fundingNature, nextCategory));
+      setTimeout(() => {
+        setCategory(nextCategory);
+        setTransactionType(suggestTransactionType(fundingNature, nextCategory));
+      }, 0);
     }
   }, [fundingNature, categoriesByFunding, category]);
 
   useEffect(() => {
     if (isFeedLedgerRecord && !feedItemId && feedItems[0]?.id) {
-      setFeedItemId(String(feedItems[0].id));
+      setTimeout(() => {
+        setFeedItemId(String(feedItems[0].id));
+      }, 0);
     }
   }, [feedItemId, feedItems, isFeedLedgerRecord]);
 
@@ -504,490 +511,89 @@ export default function TransactionLedger({ transactions, setTransactions, activ
       )}
 
       <div className={`${readOnly ? '' : 'lg:grid lg:grid-cols-[minmax(360px,480px)_minmax(0,1fr)] lg:items-start lg:gap-6'}`}>
-      {!readOnly && (
-      <div className={`no-print bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border-2 transition-colors duration-300 mb-6 lg:sticky lg:top-24 lg:mb-0 ${editingId ? 'border-secondary' : 'border-neutral-border dark:border-gray-700'}`}>
-        <h3 className={`text-xs font-bold uppercase tracking-wider mb-4 border-b pb-2 ${editingId ? 'text-secondary border-secondary/30' : 'text-gray-400 dark:text-gray-500 border-gray-100 dark:border-gray-700'}`}>
-          {editingId ? 'Editing Record' : 'New Finance Record'}
-        </h3>
+        {!readOnly && (
+          <div className={`no-print bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border-2 transition-colors duration-300 mb-6 lg:sticky lg:top-24 lg:mb-0 ${editingId ? 'border-secondary' : 'border-neutral-border dark:border-gray-700'}`}>
+            <h3 className={`text-xs font-bold uppercase tracking-wider mb-4 border-b pb-2 ${editingId ? 'text-secondary border-secondary/30' : 'text-gray-400 dark:text-gray-500 border-gray-100 dark:border-gray-700'}`}>
+              {editingId ? 'Editing Record' : 'New Finance Record'}
+            </h3>
 
-        {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold mb-4 border border-red-200">
-            {error}
+            {error && (
+              <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold mb-4 border border-red-200">
+                {error}
+              </div>
+            )}
+
+            {isLoadingMasters && (
+              <p className="text-xs text-gray-500 mb-4">Loading dropdowns...</p>
+            )}
+
+            <div className="space-y-4">
+              <QuickEntryBox
+                quickEntryText={quickEntryText}
+                setQuickEntryText={setQuickEntryText}
+                quickEntryStatus={quickEntryStatus}
+                setQuickEntryStatus={setQuickEntryStatus}
+                pendingQuickEntry={pendingQuickEntry}
+                setPendingQuickEntry={setPendingQuickEntry}
+                isParsingQuickEntry={isParsingQuickEntry}
+                handleQuickEntryParse={handleQuickEntryParse}
+                confirmApplyQuickEntry={confirmApplyQuickEntry}
+                getQuickEntryReplacementRows={getQuickEntryReplacementRows}
+              />
+
+              <TransactionForm
+                handleSubmit={handleSubmit}
+                date={date}
+                setDate={setDate}
+                building={building}
+                setBuilding={setBuilding}
+                buildings={buildings}
+                fundingNature={fundingNature}
+                handleFundingChange={handleFundingChange}
+                fundingNatures={fundingNatures}
+                category={category}
+                handleCategoryChange={handleCategoryChange}
+                categoriesByFunding={categoriesByFunding}
+                transactionType={transactionType}
+                setTransactionType={setTransactionType}
+                reference={reference}
+                setReference={setReference}
+                description={description}
+                setDescription={setDescription}
+                isFeedLedgerRecord={isFeedLedgerRecord}
+                feedItemId={feedItemId}
+                setFeedItemId={setFeedItemId}
+                feedItems={feedItems}
+                quantity={quantity}
+                setQuantity={setQuantity}
+                unitCost={unitCost}
+                setUnitCost={setUnitCost}
+                displayedAmount={displayedAmount}
+                setAmount={setAmount}
+                hasCalculatedAmount={hasCalculatedAmount}
+                paidBy={paidBy}
+                setPaidBy={setPaidBy}
+                paidTo={paidTo}
+                setPaidTo={setPaidTo}
+                payerOptions={payerOptions}
+                payeeOptions={payeeOptions}
+                remarks={remarks}
+                setRemarks={setRemarks}
+                editingId={editingId}
+                resetForm={resetForm}
+              />
+            </div>
           </div>
         )}
 
-        {isLoadingMasters && (
-          <p className="text-xs text-gray-500 mb-4">Loading dropdowns...</p>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="rounded-xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-3 space-y-3">
-            <div>
-              <label className="block text-xs font-bold text-primary mb-1">Quick Entry</label>
-              <textarea
-                rows="3"
-                value={quickEntryText}
-                onChange={(e) => {
-                  setQuickEntryText(e.target.value);
-                  setPendingQuickEntry(null);
-                  setQuickEntryStatus('');
-                }}
-                placeholder="Write the desciption"
-                className="w-full p-2 border border-primary/20 dark:border-primary/40 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-primary outline-none"
-              />
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {[
-                'bought 25 sacks of charcoal for 300 pesos',
-                'Sold 200 sacks of chicken dung for 35',
-                'paid helper yesterday 500 pesos',
-                'customer paid balance 1000'
-              ].map((example) => (
-                <button
-                  key={example}
-                  type="button"
-                  onClick={() => {
-                    setQuickEntryText(example);
-                    setPendingQuickEntry(null);
-                    setQuickEntryStatus('');
-                  }}
-                  className="px-2 py-1 rounded-lg border border-primary/30 text-primary dark:text-blue-300 text-[11px] font-black hover:bg-primary hover:text-white transition-colors"
-                >
-                  {example}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={handleQuickEntryParse}
-                disabled={isParsingQuickEntry}
-                className="px-3 py-2 rounded-xl bg-primary text-white text-xs font-black disabled:opacity-60"
-              >
-                {isParsingQuickEntry ? 'Parsing...' : 'Parse Quick Entry'}
-              </button>
-              {quickEntryStatus && (
-                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-300 text-right">
-                  {quickEntryStatus}
-                </p>
-              )}
-            </div>
-
-            {pendingQuickEntry?.parsed && (
-              <div className="rounded-xl border border-amber-200 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-900/20 p-3 space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[11px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300">
-                      Parsed Preview
-                    </p>
-                    <p className="text-sm font-black text-gray-800 dark:text-white mt-1">
-                      {pendingQuickEntry.parsed.type} - {pendingQuickEntry.parsed.fundingNature} / {pendingQuickEntry.parsed.category}
-                    </p>
-                    <p className="text-xs font-bold text-gray-500 dark:text-gray-300 mt-1">
-                      {pendingQuickEntry.parsed.description} - PHP {Number(pendingQuickEntry.parsed.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                  <span className="text-[11px] font-black text-amber-700 dark:text-amber-300">
-                    {Math.round(Number(pendingQuickEntry.parsed.confidence || 0) * 100)}%
-                  </span>
-                </div>
-
-                {getQuickEntryReplacementRows(pendingQuickEntry.parsed).length > 0 && (
-                  <div className="max-h-40 overflow-auto rounded-lg border border-amber-200 dark:border-amber-800/70 bg-white/70 dark:bg-gray-900/30">
-                    {getQuickEntryReplacementRows(pendingQuickEntry.parsed).map((row) => (
-                      <div key={row.key} className="grid grid-cols-[96px_1fr] gap-2 border-b last:border-b-0 border-amber-100 dark:border-amber-900/60 px-2 py-1.5 text-[11px]">
-                        <span className="font-black text-gray-500 dark:text-gray-400">{row.label}</span>
-                        <span className="font-bold text-gray-700 dark:text-gray-200">
-                          {row.from} {'->'} {row.to}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={confirmApplyQuickEntry}
-                    className="px-3 py-2 rounded-xl bg-amber-600 text-white text-xs font-black hover:bg-amber-700"
-                  >
-                    Send to Ledger Form
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPendingQuickEntry(null);
-                      setQuickEntryStatus('Parsed entry discarded.');
-                    }}
-                    className="px-3 py-2 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-black"
-                  >
-                    Discard Parse
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex space-x-3">
-            <div className="flex-1">
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Date</label>
-              <input
-                type="date"
-                required
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-primary outline-none"
-              />
-            </div>
-
-            <div className="w-1/3">
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Building</label>
-              <select
-                value={building}
-                onChange={(e) => setBuilding(e.target.value)}
-                className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white"
-              >
-                {buildings.map((item) => (
-                  <option key={item} value={item}>{item}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="flex space-x-3">
-            <div className="flex-1">
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Funding Nature</label>
-              <select
-                value={fundingNature}
-                onChange={handleFundingChange}
-                className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white"
-              >
-                {fundingNatures.length === 0 && (
-                  <option value="">No funding types loaded</option>
-                )}
-                {fundingNatures.map((item) => (
-                  <option key={item} value={item}>{item}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex-1">
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Category</label>
-              <select
-                value={category}
-                onChange={handleCategoryChange}
-                className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white"
-              >
-                {(categoriesByFunding[fundingNature] || []).length === 0 && (
-                  <option value="">No categories loaded</option>
-                )}
-                {(categoriesByFunding[fundingNature] || []).map((item) => (
-                  <option key={item} value={item}>{item}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Transaction Type</label>
-              <select
-                value={transactionType}
-                onChange={(e) => setTransactionType(e.target.value)}
-                className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white"
-              >
-                {TRANSACTION_TYPES.map((item) => (
-                  <option key={item} value={item}>{item}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Reference</label>
-              <input
-                type="text"
-                value={reference}
-                onChange={(e) => setReference(e.target.value)}
-                placeholder="OR, invoice, note"
-                className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-primary outline-none"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Description</label>
-            <input
-              type="text"
-              required
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. Starter feed"
-              className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-primary outline-none"
-            />
-          </div>
-
-          {isFeedLedgerRecord && (
-            <div className="rounded-xl border border-green-200 dark:border-green-800/50 bg-green-50 dark:bg-green-900/10 p-3">
-              <label className="block text-xs font-bold text-green-800 dark:text-green-300 mb-1">
-                Feed Inventory Item
-              </label>
-              <select
-                required
-                value={feedItemId}
-                onChange={(e) => setFeedItemId(e.target.value)}
-                className="w-full p-2 border border-green-200 dark:border-green-800/50 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
-              >
-                {feedItems.length === 0 && (
-                  <option value="">No feed items loaded</option>
-                )}
-                {feedItems.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name} - {Number(item.currentStock || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} {item.unit}
-                  </option>
-                ))}
-              </select>
-              <p className="text-[10px] font-semibold text-green-700 dark:text-green-300 mt-2">
-                Saving this feed delivery adds Stock In to inventory. Daily Logs consume from the same feed item.
-                {selectedFeedItem ? ` Current stock: ${Number(selectedFeedItem.currentStock || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${selectedFeedItem.unit}.` : ''}
-              </p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Quantity</label>
-              <input
-                type="number"
-                step="0.001"
-                min="0"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                placeholder="0"
-                className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-primary outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Unit Cost</label>
-              <input
-                type="number"
-                step="0.0001"
-                min="0"
-                value={unitCost}
-                onChange={(e) => setUnitCost(e.target.value)}
-                placeholder="0.00"
-                className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-primary outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Amount</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                required
-                readOnly={hasCalculatedAmount}
-                value={displayedAmount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                className={`w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg text-gray-800 dark:text-white focus:ring-2 focus:ring-primary outline-none ${
-                  hasCalculatedAmount
-                    ? 'bg-gray-100 dark:bg-gray-900 font-bold'
-                    : 'bg-neutral-light dark:bg-gray-700'
-                }`}
-              />
-            </div>
-          </div>
-
-          <div className="flex space-x-3 border-t border-gray-100 dark:border-gray-700 pt-3">
-            <div className="flex-1">
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Paid By</label>
-              <select
-                value={paidBy}
-                onChange={(e) => setPaidBy(e.target.value)}
-                className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white"
-              >
-                <option value="">-- Select --</option>
-                {payerOptions.length === 0 && (
-                  <option value="" disabled>No stakeholders loaded</option>
-                )}
-                {payerOptions.map((item) => (
-                  <option key={item} value={item}>{item}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex-1">
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Paid To</label>
-              <select
-                value={paidTo}
-                onChange={(e) => setPaidTo(e.target.value)}
-                className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white"
-              >
-                <option value="">-- Select --</option>
-                {payeeOptions.length === 0 && (
-                  <option value="" disabled>No stakeholders loaded</option>
-                )}
-                {payeeOptions.map((item) => (
-                  <option key={item} value={item}>{item}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Remarks</label>
-            <input
-              type="text"
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              placeholder="Optional"
-              className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-primary outline-none"
-            />
-          </div>
-
-          <div className="flex space-x-2 mt-4 pt-2">
-            {editingId && (
-              <button
-                type="button"
-                onClick={resetForm}
-                className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-3 rounded-xl font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all active:scale-95 shadow-sm"
-              >
-                Cancel
-              </button>
-            )}
-
-            <button
-              type="submit"
-              className={`flex-[2] text-white p-3 rounded-xl font-bold transition-all active:scale-95 shadow-md ${editingId ? 'bg-secondary hover:bg-opacity-90' : 'bg-primary hover:bg-opacity-90'}`}
-            >
-              {editingId ? 'Update Record' : 'Save Record'}
-            </button>
-          </div>
-        </form>
-      </div>
-      )}
-
-      <div className="screen-only min-w-0">
-        <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 ml-1">
-          Recent Records
-        </h3>
-
-        <div className="grid gap-3 2xl:grid-cols-2">
-          {transactions.map((tx) => (
-            <div
-              key={tx.id}
-              className={`print-card bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border flex flex-col relative overflow-hidden group transition-colors ${editingId === tx.id ? 'border-secondary bg-yellow-50/30 dark:bg-yellow-900/10' : 'border-neutral-border dark:border-gray-700'}`}
-            >
-              <div className={`absolute left-0 top-0 bottom-0 w-1 ${tx.fundingNature === 'Revenue' ? 'bg-semantic-success' : 'bg-secondary'}`}></div>
-
-              <div className="flex justify-between items-start mb-1 pl-2">
-                <div>
-                  <p className="font-bold text-gray-800 dark:text-white text-sm">{tx.description}</p>
-                  <p className="text-xs font-medium text-primary mt-0.5">{tx.category} - Bldg {tx.building}</p>
-                  <p className="text-[10px] text-gray-400 mt-1">
-                    {tx.type} {tx.reference ? `- Ref: ${tx.reference}` : ''}
-                  </p>
-                  {tx.quantity != null && tx.unitCost != null && (
-                    <p className="text-[10px] text-gray-400 mt-1">
-                      {Number(tx.quantity).toLocaleString()} x PHP {Number(tx.unitCost).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
-                    </p>
-                  )}
-                  {tx.feedItemName && (
-                    <p className="text-[10px] text-green-700 dark:text-green-300 font-bold mt-1">
-                      Inventory: {tx.feedItemName}
-                    </p>
-                  )}
-                </div>
-                <div className={`font-black ${tx.fundingNature === 'Revenue' ? 'text-semantic-success' : 'text-gray-800 dark:text-white'}`}>
-                  PHP {parseFloat(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-100 dark:border-gray-700 pl-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">
-                    {new Date(tx.date).toLocaleDateString()} - {tx.fundingNature}
-                  </p>
-                  {tx.paidBy && (
-                    <p className="text-[10px] font-bold px-2 py-1 rounded border bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-700/50">
-                      By: {tx.paidBy}
-                    </p>
-                  )}
-                </div>
-
-                {!readOnly && canEditOrDelete && (
-                  <div className="no-print flex space-x-2">
-                    <button
-                      onClick={() => handleEditClick(tx)}
-                      className="text-xs font-bold text-gray-400 hover:text-secondary transition-colors"
-                      title="Edit Transaction"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteTransaction(tx.id)}
-                      className="text-xs font-bold text-gray-400 hover:text-semantic-danger transition-colors"
-                      title="Void Transaction"
-                    >
-                      Void
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-
-          {transactions.length === 0 && (
-            <p className="text-center text-gray-500 text-sm mt-4">
-              No transactions logged yet.
-            </p>
-          )}
-        </div>
-      </div>
-      </div>
-
-      <div className="print-only">
-        <table className="print-simple-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Building</th>
-              <th>Type</th>
-              <th>Funding</th>
-              <th>Category</th>
-              <th>Description</th>
-              <th>Paid By</th>
-              <th>Paid To</th>
-              <th className="numeric">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {transactions.map((tx) => (
-              <tr key={tx.id}>
-                <td>{new Date(tx.date).toLocaleDateString()}</td>
-                <td>{tx.building || 'All'}</td>
-                <td>{tx.type}</td>
-                <td>{tx.fundingNature}</td>
-                <td>{tx.category}</td>
-                <td>{tx.description}</td>
-                <td>{tx.paidBy || '--'}</td>
-                <td>{tx.paidTo || '--'}</td>
-                <td className="numeric">
-                  PHP {Number(tx.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </td>
-              </tr>
-            ))}
-            {transactions.length === 0 && (
-              <tr>
-                <td colSpan="9">No transactions logged yet.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <TransactionTable
+          transactions={transactions}
+          editingId={editingId}
+          readOnly={readOnly}
+          canEditOrDelete={canEditOrDelete}
+          handleEditClick={handleEditClick}
+          handleDeleteTransaction={handleDeleteTransaction}
+        />
       </div>
     </div>
   );

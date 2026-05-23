@@ -21,7 +21,9 @@ export default function EmployeePaySummary({ token, activeBatch }) {
 
   useEffect(() => {
     if (!token || !activeBatch?.id) {
-      setSummary({ totals: {}, rows: [] });
+      setTimeout(() => {
+        setSummary({ totals: {}, rows: [] });
+      }, 0);
       return;
     }
 

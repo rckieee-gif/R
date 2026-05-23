@@ -190,7 +190,10 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
   };
 
   useEffect(() => {
-    fetchInventory();
+    setTimeout(() => {
+      fetchInventory();
+    }, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, activeBatch?.id]);
 
   const updateItemForm = (field, value) => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Login from './login';
 import TransactionLedger from './TransactionLedger';
 import DailyLog from './DailyLog';
@@ -60,50 +60,51 @@ function ThemeIcon({ isDarkMode }) {
 
 function App() {
   // --- AUTHENTICATION STATE ---
-const [user, setUser] = useState(() => {
-  const savedToken = localStorage.getItem('octavioToken');
-  const savedUser = localStorage.getItem('octavioUser');
+  const [user, setUser] = useState(() => {
+    const savedToken = localStorage.getItem('octavioToken');
+    const savedUser = localStorage.getItem('octavioUser');
 
-  if (!savedToken || !savedUser) {
-    localStorage.removeItem('octavioUser');
-    localStorage.removeItem('octavioToken');
-    return null;
-  }
+    if (!savedToken || !savedUser) {
+      localStorage.removeItem('octavioUser');
+      localStorage.removeItem('octavioToken');
+      return null;
+    }
 
-  try {
-    return JSON.parse(savedUser);
-  } catch (error) {
-    localStorage.removeItem('octavioUser');
-    localStorage.removeItem('octavioToken');
-    return null;
-  }
-});
-const [token, setToken] = useState(() => localStorage.getItem('octavioToken'));
-const [isDarkMode, setIsDarkMode] = useState(() => {
-  const saved = localStorage.getItem('themeMode');
-  return saved ? saved === 'dark' : true;
-});
+    try {
+      return JSON.parse(savedUser);
+    } catch (err) {
+      console.error("Failed to parse user session:", err);
+      localStorage.removeItem('octavioUser');
+      localStorage.removeItem('octavioToken');
+      return null;
+    }
+  });
+  const [token, setToken] = useState(() => localStorage.getItem('octavioToken'));
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('themeMode');
+    return saved ? saved === 'dark' : true;
+  });
 
-useEffect(() => {
-  localStorage.setItem('themeMode', isDarkMode ? 'dark' : 'light');
-  if (isDarkMode) {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
-}, [isDarkMode]);
+  useEffect(() => {
+    localStorage.setItem('themeMode', isDarkMode ? 'dark' : 'light');
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
 
-const [activeScreen, setActiveScreen] = useState('today');
+  const [activeScreen, setActiveScreen] = useState('today');
   // --- LEDGER DATABASE (NOW CONNECTED TO POSTGRESQL!) ---
   const [transactions, setTransactions] = useState([]);
-const [activeBatch, setActiveBatch] = useState(null);
-// --- DAILY LOGS DATABASE (NOW CONNECTED TO POSTGRESQL!) ---
+  const [activeBatch, setActiveBatch] = useState(null);
+  // --- DAILY LOGS DATABASE (NOW CONNECTED TO POSTGRESQL!) ---
   const [logs, setLogs] = useState([]);
   const canEnterDaily = hasMinimumRole(user?.role, 'DataEntry');
   const canManageOperations = hasMinimumRole(user?.role, 'OperationManager');
   const canViewFinancial = canManageOperations;
   const canEditOrDelete = Boolean(user?.isPrimaryOwner);
-  const allowedScreens = [
+  const allowedScreens = useMemo(() => [
     'today',
     'dashboard',
     'batches',
@@ -113,9 +114,9 @@ const [activeBatch, setActiveBatch] = useState(null);
     'analytics',
     'settings',
     ...(canManageOperations ? ['employees', 'ledger', 'statement'] : []),
-  ];
+  ], [canManageOperations]);
 
-  const clearSession = () => {
+  const clearSession = useCallback(() => {
     setUser(null);
     setToken(null);
     setActiveBatch(null);
@@ -124,11 +125,13 @@ const [activeBatch, setActiveBatch] = useState(null);
     localStorage.removeItem('octavioUser');
     localStorage.removeItem('octavioToken');
     setActiveScreen('today');
-  };
+  }, []);
 
   useEffect(() => {
     if (!token) {
-      clearSession();
+      setTimeout(() => {
+        clearSession();
+      }, 0);
       return;
     }
 
@@ -153,11 +156,13 @@ const [activeBatch, setActiveBatch] = useState(null);
     };
 
     fetchActiveBatch();
-  }, [token]);
+  }, [token, clearSession]);
 
   useEffect(() => {
     if (!token || !activeBatch?.id || !canViewFinancial) {
-      setTransactions([]);
+      setTimeout(() => {
+        setTransactions([]);
+      }, 0);
       return;
     }
 
@@ -180,11 +185,13 @@ const [activeBatch, setActiveBatch] = useState(null);
     };
 
     fetchTransactions();
-  }, [token, activeBatch?.id, canViewFinancial]);
+  }, [token, activeBatch?.id, canViewFinancial, clearSession]);
 
   useEffect(() => {
     if (!token || !activeBatch?.id) {
-      setLogs([]);
+      setTimeout(() => {
+        setLogs([]);
+      }, 0);
       return;
     }
 
@@ -207,8 +214,9 @@ const [activeBatch, setActiveBatch] = useState(null);
     };
     
     fetchLogs();
-  }, [token, activeBatch?.id]);
-// --- LOGIN HANDLER ---
+  }, [token, activeBatch?.id, clearSession]);
+
+  // --- LOGIN HANDLER ---
   const handleLogin = (userData, authToken) => {
     setUser(userData);
     setToken(authToken);
@@ -222,9 +230,11 @@ const [activeBatch, setActiveBatch] = useState(null);
 
   useEffect(() => {
     if (user && !allowedScreens.includes(activeScreen)) {
-      setActiveScreen('dashboard');
+      setTimeout(() => {
+        setActiveScreen('dashboard');
+      }, 0);
     }
-  }, [activeScreen, user?.role]);
+  }, [activeScreen, user, allowedScreens]);
 
   // --- SECURITY GATEKEEPER ---
   // If there is no user logged in, show ONLY the Login Screen!

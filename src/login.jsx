@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { API_BASE } from './api';
 
 export default function Login({ onLogin }) {
@@ -26,6 +26,7 @@ export default function Login({ onLogin }) {
         setError(data.error || 'Login failed. Please try again.');
       }
     } catch (err) {
+      console.error('Login connection error:', err);
       setError('Cannot connect to the server. Is it running?');
     }
   };

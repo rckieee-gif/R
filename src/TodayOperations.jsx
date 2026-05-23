@@ -122,9 +122,11 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
 
   useEffect(() => {
     if (!token || !activeBatch?.id) {
-      setLoadings([]);
-      setAssignments([]);
-      setFeedItems([]);
+      setTimeout(() => {
+        setLoadings([]);
+        setAssignments([]);
+        setFeedItems([]);
+      }, 0);
       return;
     }
 

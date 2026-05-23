@@ -1,5 +1,3 @@
-import React from 'react';
-
 // We now receive the live 'transactions' from the App
 export default function FinancialStatement({ transactions = [], activeBatch }) {
   
@@ -7,7 +5,7 @@ export default function FinancialStatement({ transactions = [], activeBatch }) {
   const netMeatSale = transactions
     .filter(tx => tx.category === 'Net Meat Sale')
     .reduce((sum, tx) => sum + tx.amount, 0);
-    
+     
   const emptySackSale = transactions
     .filter(tx => tx.category === 'Empty Sack Sale')
     .reduce((sum, tx) => sum + tx.amount, 0);
@@ -112,7 +110,7 @@ export default function FinancialStatement({ transactions = [], activeBatch }) {
           
           <div className="space-y-1 mb-3">
             {Object.entries(batch.opexBreakdown)
-              .filter(([category, amount]) => amount > 0)
+              .filter(([, amount]) => amount > 0)
               .map(([category, amount]) => (
               <div key={category} className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                 <span className="ml-2">{category}</span>
