@@ -16,7 +16,7 @@ function groupCategories(categories) {
 
 function suggestTransactionType(fundingNature, category = '') {
   if (fundingNature === 'Revenue') return 'Income';
-  if (/deficit|adjust/i.test(category)) return 'Adjustment';
+  if (/deficit|adjust|advance/i.test(category)) return 'Adjustment';
   if (/reimburse/i.test(category)) return 'Reimbursement';
   if (/payment|paid/i.test(category)) return 'Payment';
   return 'Expense';
@@ -69,12 +69,21 @@ export default function TransactionLedger({ transactions, setTransactions, activ
     [categoriesByFunding]
   );
 
-  const payerOptions = useMemo(
-    () => stakeholders.map((stakeholder) => stakeholder.name),
-    [stakeholders]
-  );
+  const payerOptions = useMemo(() => {
+    const list = stakeholders.map((stakeholder) => stakeholder.name);
+    if (paidBy && !list.includes(paidBy)) {
+      list.push(paidBy);
+    }
+    return list;
+  }, [stakeholders, paidBy]);
 
-  const payeeOptions = payerOptions;
+  const payeeOptions = useMemo(() => {
+    const list = stakeholders.map((stakeholder) => stakeholder.name);
+    if (paidTo && !list.includes(paidTo)) {
+      list.push(paidTo);
+    }
+    return list;
+  }, [stakeholders, paidTo]);
 
   const hasCalculatedAmount = quantity !== '' && unitCost !== '';
   const calculatedAmount = hasCalculatedAmount
