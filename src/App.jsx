@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Login from './login';
+import IntroPage from './IntroPage';
 import TransactionLedger from './TransactionLedger';
 import DailyLog from './DailyLog';
 import Dashboard from './Dashboard';
@@ -14,6 +15,12 @@ import InventoryManagement from './InventoryManagement';
 import Settings from './Settings';
 import { API_BASE } from './api';
 import AntigravityAssistant from './Components/AntigravityAssistant';
+import {
+  publicViewerBatch,
+  publicViewerData,
+  publicViewerLogs,
+  publicViewerUser
+} from './publicViewerData';
 
 const roleRank = {
   Viewer: 1,
@@ -81,6 +88,7 @@ function App() {
     }
   });
   const [token, setToken] = useState(() => localStorage.getItem('octavioToken'));
+  const [authView, setAuthView] = useState('intro');
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('themeMode');
     return saved ? saved === 'dark' : true;
@@ -99,23 +107,33 @@ function App() {
   // --- LEDGER DATABASE (NOW CONNECTED TO POSTGRESQL!) ---
   const [transactions, setTransactions] = useState([]);
   const [activeBatch, setActiveBatch] = useState(null);
+  const isPublicViewer = Boolean(user?.isPublicViewer);
+  const apiToken = isPublicViewer ? null : token;
+  const viewerPreviewData = isPublicViewer ? publicViewerData : null;
+  const activeBatchId = activeBatch?.id;
   // --- DAILY LOGS DATABASE (NOW CONNECTED TO POSTGRESQL!) ---
   const [logs, setLogs] = useState([]);
   const canEnterDaily = hasMinimumRole(user?.role, 'DataEntry');
   const canManageOperations = hasMinimumRole(user?.role, 'OperationManager');
   const canViewFinancial = canManageOperations;
   const canEditOrDelete = Boolean(user?.isPrimaryOwner);
-  const allowedScreens = useMemo(() => [
-    'today',
-    'dashboard',
-    'batches',
-    'dailyLog',
-    'paySummary',
-    'inventory',
-    'analytics',
-    'settings',
-    ...(canManageOperations ? ['employees', 'ledger', 'harvest', 'statement'] : []),
-  ], [canManageOperations]);
+  const allowedScreens = useMemo(() => {
+    if (isPublicViewer) {
+      return ['today', 'dashboard', 'batches', 'dailyLog', 'inventory', 'analytics'];
+    }
+
+    return [
+      'today',
+      'dashboard',
+      'batches',
+      'dailyLog',
+      'paySummary',
+      'inventory',
+      'analytics',
+      'settings',
+      ...(canManageOperations ? ['employees', 'ledger', 'harvest', 'statement'] : []),
+    ];
+  }, [canManageOperations, isPublicViewer]);
 
   const clearSession = useCallback(() => {
     setUser(null);
@@ -125,11 +143,19 @@ function App() {
     setLogs([]);
     localStorage.removeItem('octavioUser');
     localStorage.removeItem('octavioToken');
+    setAuthView('intro');
     setActiveScreen('today');
   }, []);
 
   useEffect(() => {
+    if (isPublicViewer) {
+      setActiveBatch(publicViewerBatch);
+      return;
+    }
+
     if (!token) {
+      if (!user) return;
+
       setTimeout(() => {
         clearSession();
       }, 0);
@@ -157,10 +183,10 @@ function App() {
     };
 
     fetchActiveBatch();
-  }, [token, clearSession]);
+  }, [token, clearSession, isPublicViewer, user]);
 
   const refreshTransactions = useCallback(async () => {
-    if (!token || !activeBatch?.id || !canViewFinancial) {
+    if (isPublicViewer || !token || !activeBatchId || !canViewFinancial) {
       setTimeout(() => {
         setTransactions([]);
       }, 0);
@@ -168,7 +194,7 @@ function App() {
     }
 
     try {
-      const response = await fetch(`${API_BASE}/api/batches/${activeBatch.id}/transactions`, {
+      const response = await fetch(`${API_BASE}/api/batches/${activeBatchId}/transactions`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -182,7 +208,7 @@ function App() {
     } catch (error) {
       console.error("Failed to fetch transactions:", error);
     }
-  }, [token, activeBatch?.id, canViewFinancial, clearSession]);
+  }, [token, activeBatchId, canViewFinancial, clearSession, isPublicViewer]);
 
   useEffect(() => {
     setTimeout(() => {
@@ -191,7 +217,12 @@ function App() {
   }, [refreshTransactions]);
 
   useEffect(() => {
-    if (!token || !activeBatch?.id) {
+    if (isPublicViewer) {
+      setLogs(publicViewerLogs);
+      return;
+    }
+
+    if (!token || !activeBatchId) {
       setTimeout(() => {
         setLogs([]);
       }, 0);
@@ -200,7 +231,7 @@ function App() {
 
     const fetchLogs = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/logs?batchId=${activeBatch.id}`, {
+        const response = await fetch(`${API_BASE}/api/logs?batchId=${activeBatchId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -215,16 +246,26 @@ function App() {
         console.error("Failed to fetch logs:", error);
       }
     };
-    
+
     fetchLogs();
-  }, [token, activeBatch?.id, clearSession]);
+  }, [token, activeBatchId, clearSession, isPublicViewer]);
 
   // --- LOGIN HANDLER ---
   const handleLogin = (userData, authToken) => {
     setUser(userData);
     setToken(authToken);
+    setAuthView('intro');
     localStorage.setItem('octavioUser', JSON.stringify(userData));
     localStorage.setItem('octavioToken', authToken);
+  };
+
+  const handleViewerAccess = () => {
+    setUser(publicViewerUser);
+    setToken(null);
+    setActiveBatch(publicViewerBatch);
+    setTransactions([]);
+    setLogs(publicViewerLogs);
+    setActiveScreen('dashboard');
   };
 
   const handleLogout = () => {
@@ -241,8 +282,17 @@ function App() {
 
   // --- SECURITY GATEKEEPER ---
   // If there is no user logged in, show ONLY the Login Screen!
-  if (!user || !token) {
-    return <Login onLogin={handleLogin} />;
+  if (!user || (!token && !isPublicViewer)) {
+    if (authView === 'login') {
+      return <Login onLogin={handleLogin} onBack={() => setAuthView('intro')} />;
+    }
+
+    return (
+      <IntroPage
+        onContinueAsViewer={handleViewerAccess}
+        onMemberLogin={() => setAuthView('login')}
+      />
+    );
   }
 
   // If they ARE logged in, show the App!
@@ -256,6 +306,7 @@ function App() {
           <div className="flex space-x-2 overflow-x-auto">
             <button onClick={() => setActiveScreen('today')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'today' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Today</button>
             <button onClick={() => setActiveScreen('dashboard')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'dashboard' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Home</button>
+            {allowedScreens.includes('batches') && (
             <button
   onClick={() => setActiveScreen('batches')}
   className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${
@@ -266,10 +317,13 @@ function App() {
 >
   Batches
 </button>
+            )}
             {canManageOperations && (
               <button onClick={() => setActiveScreen('employees')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'employees' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Employees</button>
             )}
-            <button onClick={() => setActiveScreen('paySummary')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'paySummary' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Pay Summary</button>
+            {allowedScreens.includes('paySummary') && (
+              <button onClick={() => setActiveScreen('paySummary')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'paySummary' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Pay Summary</button>
+            )}
             {/* RBAC: Only show Ledger and Statement to Admins/OpManagers */}
             {canViewFinancial && (
               <button onClick={() => setActiveScreen('ledger')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'ledger' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Ledger</button>
@@ -278,9 +332,15 @@ function App() {
               <button onClick={() => setActiveScreen('harvest')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'harvest' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Harvest</button>
             )}
             
-            <button onClick={() => setActiveScreen('dailyLog')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'dailyLog' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Daily Logs</button>
-            <button onClick={() => setActiveScreen('inventory')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'inventory' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Inventory</button>
-            <button onClick={() => setActiveScreen('analytics')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'analytics' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Analytics</button>
+            {allowedScreens.includes('dailyLog') && (
+              <button onClick={() => setActiveScreen('dailyLog')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'dailyLog' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Daily Logs</button>
+            )}
+            {allowedScreens.includes('inventory') && (
+              <button onClick={() => setActiveScreen('inventory')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'inventory' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Inventory</button>
+            )}
+            {allowedScreens.includes('analytics') && (
+              <button onClick={() => setActiveScreen('analytics')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'analytics' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Analytics</button>
+            )}
             
             {canViewFinancial && (
               <button onClick={() => setActiveScreen('statement')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'statement' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Statement</button>
@@ -288,18 +348,20 @@ function App() {
           </div>
           
           <div className="flex items-center space-x-3 ml-4">
-            <button
-              onClick={() => setActiveScreen('settings')}
-              className={`h-10 w-10 inline-flex items-center justify-center rounded-full border shadow-sm hover:scale-105 transition-transform ${
-                activeScreen === 'settings'
-                  ? 'bg-primary text-white border-primary'
-                  : 'bg-white text-gray-700 border-neutral-border dark:bg-slate-800 dark:text-gray-200 dark:border-slate-700'
-              }`}
-              aria-label="Settings"
-              title="Settings"
-            >
-              <CogIcon />
-            </button>
+            {allowedScreens.includes('settings') && (
+              <button
+                onClick={() => setActiveScreen('settings')}
+                className={`h-10 w-10 inline-flex items-center justify-center rounded-full border shadow-sm hover:scale-105 transition-transform ${
+                  activeScreen === 'settings'
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-white text-gray-700 border-neutral-border dark:bg-slate-800 dark:text-gray-200 dark:border-slate-700'
+                }`}
+                aria-label="Settings"
+                title="Settings"
+              >
+                <CogIcon />
+              </button>
+            )}
             <button
               onClick={() => setIsDarkMode(!isDarkMode)}
               className="h-10 w-10 inline-flex items-center justify-center rounded-full bg-white dark:bg-slate-800 text-secondary dark:text-primary-light border border-neutral-border dark:border-slate-700 shadow-sm hover:scale-105 transition-transform"
@@ -309,17 +371,20 @@ function App() {
               <ThemeIcon isDarkMode={isDarkMode} />
             </button>
             {/* NEW LOGOUT BUTTON */}
-            <button onClick={handleLogout} className="p-2 text-xs font-bold text-gray-500 hover:text-semantic-danger transition-colors">Logout</button>
+            <button onClick={handleLogout} className="p-2 text-xs font-bold text-gray-500 hover:text-semantic-danger transition-colors">
+              {isPublicViewer ? 'Exit Preview' : 'Logout'}
+            </button>
           </div>
         </div>
 
         {/* --- SCREEN DISPLAY LOGIC --- */}
         {activeScreen === 'today' && (
   <TodayOperations
-    token={token}
+    token={apiToken}
     activeBatch={activeBatch}
     logs={logs}
     setActiveScreen={setActiveScreen}
+    previewData={viewerPreviewData}
   />
 )}
 
@@ -327,9 +392,10 @@ function App() {
   <BatchManagement
     activeBatch={activeBatch}
     setActiveBatch={setActiveBatch}
-    token={token}
+    token={apiToken}
     readOnly={!canManageOperations}
     canEditOrDelete={canEditOrDelete}
+    previewData={viewerPreviewData}
   />
 )}
 {activeScreen === 'dashboard' && (
@@ -371,11 +437,11 @@ function App() {
 )}
 
 {activeScreen === 'dailyLog' && (
-  <DailyLog logs={logs} setLogs={setLogs} activeBatch={activeBatch} token={token} readOnly={!canEnterDaily} canEditOrDelete={canEditOrDelete} />
+  <DailyLog logs={logs} setLogs={setLogs} activeBatch={activeBatch} token={apiToken} readOnly={!canEnterDaily} canEditOrDelete={canEditOrDelete} />
 )}
 
 {activeScreen === 'inventory' && (
-  <InventoryManagement activeBatch={activeBatch} token={token} readOnly={!canManageOperations} canEditOrDelete={canEditOrDelete} />
+  <InventoryManagement activeBatch={activeBatch} token={apiToken} readOnly={!canManageOperations} canEditOrDelete={canEditOrDelete} previewData={viewerPreviewData} />
 )}
 
 {activeScreen === 'analytics' && (

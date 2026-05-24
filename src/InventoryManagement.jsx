@@ -110,7 +110,7 @@ function uniqueStakeholders(stakeholders) {
   }, []);
 }
 
-export default function InventoryManagement({ token, activeBatch, readOnly = false, canEditOrDelete = false }) {
+export default function InventoryManagement({ token, activeBatch, readOnly = false, canEditOrDelete = false, previewData = null }) {
   const [items, setItems] = useState([]);
   const [movements, setMovements] = useState([]);
   const [buildings, setBuildings] = useState(['All']);
@@ -190,11 +190,21 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
   };
 
   useEffect(() => {
+    if (!token && previewData) {
+      setItems(previewData.inventoryItems || []);
+      setMovements(previewData.inventoryMovements || []);
+      setBuildings(['All', ...(previewData.buildings || []).map((building) => building.name)]);
+      setStakeholders(previewData.stakeholders || []);
+      setError('');
+      setIsLoading(false);
+      return;
+    }
+
     setTimeout(() => {
       fetchInventory();
     }, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, activeBatch?.id]);
+  }, [token, activeBatch?.id, previewData]);
 
   const updateItemForm = (field, value) => {
     setItemForm((current) => ({ ...current, [field]: value }));

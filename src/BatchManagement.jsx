@@ -49,7 +49,7 @@ function buildLoadingRows(buildings) {
   }));
 }
 
-export default function BatchManagement({ activeBatch, setActiveBatch, token, readOnly = false, canEditOrDelete = false }) {
+export default function BatchManagement({ activeBatch, setActiveBatch, token, readOnly = false, canEditOrDelete = false, previewData = null }) {
   const [batches, setBatches] = useState([]);
   const [buildings, setBuildings] = useState([]);
   const [loadings, setLoadings] = useState([]);
@@ -103,13 +103,26 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
   };
 
   useEffect(() => {
+    if (!token && previewData) {
+      setBatches(previewData.batches || []);
+      setBuildings(previewData.buildings || []);
+      setLoadings((previewData.loadings || []).map((row) => ({
+        building: row.building,
+        owner: row.owner || getBuildingOwner(row.building),
+        chicksLoaded: String(row.chicksLoaded || ''),
+        loadingSharePct: row.loadingSharePct || 0,
+        remarks: row.remarks || ''
+      })));
+      return;
+    }
+
     if (!token) return;
     setTimeout(() => {
       fetchBatches();
       fetchBuildings();
     }, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, previewData]);
 
   const resetForm = () => {
     setEditingBatchId(null);

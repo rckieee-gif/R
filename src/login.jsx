@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { API_BASE } from './api';
 
-export default function Login({ onLogin }) {
+export default function Login({ onLogin, onBack }) {
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -34,6 +34,15 @@ export default function Login({ onLogin }) {
   return (
     <div className="min-h-screen bg-neutral-light dark:bg-gray-900 flex items-center justify-center p-4 font-sans transition-colors duration-300">
       <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg border border-neutral-border dark:border-gray-700 w-full max-w-sm">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="mb-5 text-xs font-black uppercase tracking-wider text-gray-400 transition hover:text-primary"
+          >
+            Back
+          </button>
+        )}
         
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-primary text-white rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-md">

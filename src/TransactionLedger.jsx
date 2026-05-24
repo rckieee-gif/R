@@ -23,7 +23,8 @@ function suggestTransactionType(fundingNature, category = '') {
 }
 
 function normalizeStakeholderName(name) {
-  return name === 'Yanyan' ? 'Others' : name;
+  const cleaned = String(name || '').trim();
+  return cleaned === 'Yanyan' ? 'Others' : cleaned;
 }
 
 function normalizeSearchValue(value) {
@@ -56,11 +57,38 @@ function uniqueStakeholders(stakeholders) {
   const seen = new Set();
   return stakeholders.reduce((list, stakeholder) => {
     const name = normalizeStakeholderName(stakeholder.name);
-    if (seen.has(name)) return list;
-    seen.add(name);
+    const key = name.toLowerCase();
+    if (!name || seen.has(key)) return list;
+    seen.add(key);
     list.push({ ...stakeholder, name });
     return list;
   }, []);
+}
+
+function mergeStakeholderNames(stakeholders, names) {
+  const merged = uniqueStakeholders(stakeholders);
+  const seen = new Set(merged.map((stakeholder) => stakeholder.name.toLowerCase()));
+
+  names
+    .map(normalizeStakeholderName)
+    .filter(Boolean)
+    .forEach((name) => {
+      const key = name.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      merged.push({ id: `saved-${key}`, name, type: 'Other' });
+    });
+
+  return merged;
+}
+
+async function fetchStakeholders(headers) {
+  const response = await fetch(`${API_BASE}/api/stakeholders`, { headers });
+  if (!response.ok) {
+    throw new Error('Failed to load stakeholder data.');
+  }
+
+  return uniqueStakeholders(await response.json());
 }
 
 export default function TransactionLedger({ transactions, setTransactions, activeBatch, token, readOnly = false, canEditOrDelete = false }) {
@@ -225,28 +253,26 @@ export default function TransactionLedger({ transactions, setTransactions, activ
 
       try {
         const headers = { Authorization: `Bearer ${token}` };
-        const [buildingResponse, categoryResponse, stakeholderResponse, feedResponse] = await Promise.all([
+        const [buildingResponse, categoryResponse, nextStakeholders, feedResponse] = await Promise.all([
           fetch(`${API_BASE}/api/buildings`, { headers }),
           fetch(`${API_BASE}/api/categories`, { headers }),
-          fetch(`${API_BASE}/api/stakeholders`, { headers }),
+          fetchStakeholders(headers),
           fetch(`${API_BASE}/api/inventory/items?category=Feed`, { headers })
         ]);
 
-        if (!buildingResponse.ok || !categoryResponse.ok || !stakeholderResponse.ok || !feedResponse.ok) {
+        if (!buildingResponse.ok || !categoryResponse.ok || !feedResponse.ok) {
           throw new Error('Failed to load ledger dropdown data.');
         }
 
-        const [buildingData, categoryData, stakeholderData, feedData] = await Promise.all([
+        const [buildingData, categoryData, feedData] = await Promise.all([
           buildingResponse.json(),
           categoryResponse.json(),
-          stakeholderResponse.json(),
           feedResponse.json()
         ]);
 
         const nextBuildings = ['All', ...buildingData.map((item) => item.name)];
         const nextCategories = groupCategories(categoryData);
         const nextFundingNature = nextCategories.OPEX ? 'OPEX' : Object.keys(nextCategories)[0] || '';
-        const nextStakeholders = uniqueStakeholders(stakeholderData);
         const rolly = nextStakeholders.find((item) => item.name === 'Rolly');
 
         setBuildings(nextBuildings);
@@ -395,6 +421,23 @@ export default function TransactionLedger({ transactions, setTransactions, activ
     setRemarks(next.remarks);
   };
 
+  const refreshStakeholders = async (fallbackNames = []) => {
+    const names = fallbackNames.map(normalizeStakeholderName).filter(Boolean);
+    if (names.length > 0) {
+      setStakeholders((current) => mergeStakeholderNames(current, names));
+    }
+
+    try {
+      const nextStakeholders = await fetchStakeholders({ Authorization: `Bearer ${token}` });
+      setStakeholders(mergeStakeholderNames(nextStakeholders, names));
+    } catch (err) {
+      console.warn('Failed to refresh stakeholder dropdown data:', err);
+      if (names.length > 0) {
+        setStakeholders((current) => mergeStakeholderNames(current, names));
+      }
+    }
+  };
+
   const confirmApplyQuickEntry = () => {
     if (!pendingQuickEntry?.parsed) return;
 
@@ -457,7 +500,10 @@ export default function TransactionLedger({ transactions, setTransactions, activ
     }
   };
 
-  const resetForm = () => {
+  const resetForm = ({ stakeholderNames = [] } = {}) => {
+    if (stakeholderNames.length > 0) {
+      setStakeholders((current) => mergeStakeholderNames(current, stakeholderNames));
+    }
     setEditingId(null);
     setDescription('');
     setQuantity('');
@@ -539,12 +585,20 @@ export default function TransactionLedger({ transactions, setTransactions, activ
         return;
       }
 
+      const savedStakeholderNames = [
+        newTxData.paidBy,
+        newTxData.paidTo,
+        data.paidBy,
+        data.paidTo
+      ];
+
       if (editingId) {
-        setTransactions(transactions.map((tx) => tx.id === editingId ? data : tx));
+        setTransactions((currentTransactions) => currentTransactions.map((tx) => tx.id === editingId ? data : tx));
       } else {
-        setTransactions([data, ...transactions]);
+        setTransactions((currentTransactions) => [data, ...currentTransactions]);
       }
-      resetForm();
+      resetForm({ stakeholderNames: savedStakeholderNames });
+      refreshStakeholders(savedStakeholderNames);
     } catch (err) {
       console.error('Failed to save transaction:', err);
       setError('Cannot connect to server.');

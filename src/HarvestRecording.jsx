@@ -185,7 +185,9 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
 
   useEffect(() => {
     if (!token || !activeBatch?.id) {
-      setReport(null);
+      setTimeout(() => {
+        setReport(null);
+      }, 0);
       return;
     }
 

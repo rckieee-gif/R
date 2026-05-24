@@ -109,7 +109,7 @@ function WarningRow({ warning }) {
   );
 }
 
-export default function TodayOperations({ token, activeBatch, logs = [], setActiveScreen }) {
+export default function TodayOperations({ token, activeBatch, logs = [], setActiveScreen, previewData = null }) {
   const [loadings, setLoadings] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [feedItems, setFeedItems] = useState([]);
@@ -121,6 +121,15 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
   const daysToHarvest = diffDays(activeBatch?.targetHarvestDate, today);
 
   useEffect(() => {
+    if (!token && previewData) {
+      setLoadings(previewData.loadings || []);
+      setAssignments(previewData.assignments || []);
+      setFeedItems(previewData.feedItems || []);
+      setError('');
+      setIsLoading(false);
+      return;
+    }
+
     if (!token || !activeBatch?.id) {
       setTimeout(() => {
         setLoadings([]);
@@ -173,7 +182,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     return () => {
       isMounted = false;
     };
-  }, [activeBatch?.id, token]);
+  }, [activeBatch?.id, token, previewData]);
 
   const todayLogs = useMemo(
     () => logs.filter((log) => log.date === today),
