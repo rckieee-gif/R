@@ -33,14 +33,14 @@ export default function Login({ onLogin, onBack }) {
     const y = (clientY - rect.top - rect.height / 2) / (rect.height / 2);
 
     // Limit the rotation angle
-    const maxRotate = 15;
+    const maxRotate = 6;
     const rotateX = -y * maxRotate;
     const rotateY = x * maxRotate;
 
     // Dynamic shadow based on tilt
-    const shadowX = -x * 30;
-    const shadowY = -y * 30;
-    const shadowBlur = 40 + Math.abs(x) * 20 + Math.abs(y) * 20;
+    const shadowX = -x * 12;
+    const shadowY = -y * 12;
+    const shadowBlur = 30 + Math.abs(x) * 10 + Math.abs(y) * 10;
 
     card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
     card.style.boxShadow = `
