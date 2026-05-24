@@ -125,14 +125,14 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
   const lastTargetDay = getLastBroilerTargetDay();
   const quickActions = canUseFinancialScreens
     ? [
-      { label: 'Daily Logs', detail: 'Mortality, feed, weight', screen: 'dailyLog'},
+      { label: 'Daily Logs', detail: 'Mortality, feed, weight', screen: 'dailyLog' },
       { label: 'Analytics', detail: 'Targets and charts', screen: 'analytics' },
       { label: 'Employees', detail: 'Shares and pay', screen: 'employees' },
       { label: 'Ledger', detail: 'Expenses and balances', screen: 'ledger' }
     ]
     : canEnterDaily
       ? [
-      { label: 'Daily Logs', detail: 'Mortality, feed, weight', screen: 'dailyLog'},
+      { label: 'Daily Logs', detail: 'Mortality, feed, weight', screen: 'dailyLog' },
       { label: 'Analytics', detail: 'Targets and charts', screen: 'analytics' },
       { label: 'Inventory', detail: 'Stock levels', screen: 'inventory' },
       { label: 'Batches', detail: 'Batch setup', screen: 'batches' }
