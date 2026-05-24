@@ -45,9 +45,16 @@
   --color-stitch-error-container: #93000a;
 
   /* Stitch Typography */
-  --font-hanken: "Hanken Grotesk", sans-serif;
+  --font-hanken: "Manrope", sans-serif;
   --font-jetbrains: "JetBrains Mono", monospace;
   --font-inter: "Inter", sans-serif;
+
+  /* Custom Romer SaaS Dashboard Radius Overrides */
+  --radius-xl: 0.5rem;   /* 8px */
+  --radius-2xl: 0.5rem;  /* 8px */
+  --radius-lg: 0.5rem;   /* 8px */
+  --radius-md: 0.25rem;  /* 4px */
+  --radius-sm: 0.25rem;  /* 4px */
 
   /* Dynamic High-Readability Application Theme Variables */
   --color-app-bg: var(--app-bg);
@@ -117,12 +124,12 @@
 
 :root {
   color-scheme: light;
-  --app-bg: #ffffff;
+  --app-bg: #f4f4f5;
   --app-card: #ffffff;
-  --app-border: #e5e7eb;
-  --app-text: #000000;
-  --app-text-secondary: #4b5563;
-  --app-accent: #000000;
+  --app-border: #e4e4e7;
+  --app-text: #09090b;
+  --app-text-secondary: #71717a;
+  --app-accent: #5e6bff;
   --app-on-accent: #ffffff;
   --app-success: #16a34a;
   --app-success-bg: rgba(22, 163, 74, 0.08);
@@ -161,13 +168,13 @@ body {
 
 .dark {
   color-scheme: dark;
-  --app-bg: #000000;
-  --app-card: #000000;
-  --app-border: #262626;
-  --app-text: #ffffff;
-  --app-text-secondary: #9ca3af;
-  --app-accent: #ffffff;
-  --app-on-accent: #000000;
+  --app-bg: #070708;
+  --app-card: #101112;
+  --app-border: #1b1c1e;
+  --app-text: #f0f1f2;
+  --app-text-secondary: #9a9da3;
+  --app-accent: #5e6bff;
+  --app-on-accent: #ffffff;
   --app-success: #4ade80;
   --app-success-bg: rgba(74, 222, 128, 0.12);
   --app-danger: #f87171;
