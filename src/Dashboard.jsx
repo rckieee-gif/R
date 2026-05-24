@@ -55,13 +55,27 @@ function hasMinimumRole(role, minimumRole) {
   return (roleRank[normalizedRole] || 0) >= (roleRank[minimumRole] || 0);
 }
 
-function MetricCard({ label, value, subtext, tone = 'text-gray-900 dark:text-white' }) {
+function MetricCard({ label, value, subtext, icon = null, tone = 'text-dashboard-text' }) {
+  const finalTone = tone === 'text-white' ? 'text-dashboard-text' : tone;
   return (
-    <div className="bg-white dark:bg-gray-800 border border-neutral-border dark:border-gray-700 p-3 rounded-xl shadow-sm">
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{label}</p>
-      <p className={`text-xl font-black mt-1 ${tone}`}>{value}</p>
+    <div className="bg-dashboard-card border border-dashboard-border rounded-xl p-5 hover:border-dashboard-accent transition-colors relative overflow-hidden group">
+      {icon && (
+        <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none text-dashboard-text-secondary">
+          <span className="material-symbols-outlined text-7xl select-none">{icon}</span>
+        </div>
+      )}
+      <h3 className="text-[10px] font-bold tracking-widest text-dashboard-text-secondary uppercase mb-2 relative z-10 font-jetbrains">
+        {label}
+      </h3>
+      <div className="flex items-baseline gap-2 relative z-10 mt-1">
+        <p className={`text-2xl font-black font-jetbrains ${finalTone}`}>
+          {value}
+        </p>
+      </div>
       {subtext && (
-        <p className="text-[10px] font-bold text-gray-400 mt-1 leading-tight">{subtext}</p>
+        <p className="text-[10px] font-semibold text-dashboard-text-secondary mt-2 relative z-10 leading-tight font-inter">
+          {subtext}
+        </p>
       )}
     </div>
   );
@@ -72,16 +86,21 @@ function ActionButton({ label, detail, onClick, primary = false }) {
     <button
       type="button"
       onClick={onClick}
-      className={`min-h-20 rounded-xl border p-3 text-left shadow-sm active:scale-[0.98] transition-all ${
+      className={`p-4 rounded-xl border text-left shadow-sm active:scale-[0.98] transition-all flex flex-col justify-between min-h-[95px] cursor-pointer ${
         primary
-          ? 'bg-primary text-white border-primary'
-          : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-white border-neutral-border dark:border-gray-700'
+          ? 'bg-dashboard-accent text-dashboard-on-accent border-dashboard-accent hover:opacity-90'
+          : 'bg-dashboard-card hover:bg-slate-100 dark:hover:bg-stitch-surface-container-high text-dashboard-text border-dashboard-border'
       }`}
     >
-      <span className={`block text-sm font-black ${primary ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
-        {label}
-      </span>
-      <span className={`block text-[10px] font-bold mt-1 leading-tight ${primary ? 'text-white/80' : 'text-gray-400'}`}>
+      <div>
+        <span className={`block text-[9px] font-bold uppercase tracking-widest font-jetbrains ${primary ? 'text-dashboard-on-accent/80' : 'text-dashboard-text-secondary'}`}>
+          Action
+        </span>
+        <span className="block text-base font-extrabold font-hanken mt-0.5">
+          {label}
+        </span>
+      </div>
+      <span className={`block text-[10px] mt-2 font-inter leading-tight ${primary ? 'text-dashboard-on-accent/75' : 'text-dashboard-text-secondary'}`}>
         {detail}
       </span>
     </button>
@@ -132,23 +151,23 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
 
   if (!activeBatch) {
     return (
-      <div className="app-page">
+      <div className="app-page text-dashboard-text min-h-screen p-6">
         <div className="mb-5 mt-2">
-          <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Octavio Poultry</p>
-          <h2 className="text-3xl font-extrabold text-primary tracking-tight mt-1">Home</h2>
+          <p className="text-xs font-bold uppercase tracking-widest text-dashboard-accent font-jetbrains">Octavio Poultry</p>
+          <h2 className="text-3xl font-bold tracking-tight mt-1 font-hanken">Home</h2>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 border border-neutral-border dark:border-gray-700 rounded-2xl p-5 shadow-sm">
-          <p className="text-lg font-black text-gray-900 dark:text-white">No active batch selected</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            Create or select a batch before daily logging and production targets can appear here.
+        <div className="bg-dashboard-card border border-dashboard-border rounded-2xl p-6 shadow-lg max-w-md mx-auto mt-10">
+          <p className="text-xl font-bold font-hanken">No active batch selected</p>
+          <p className="text-sm text-dashboard-text-secondary mt-3 leading-relaxed">
+            Create or select an active flock batch before daily logging, performance monitoring, and production telemetry can be accessed here.
           </p>
           <button
             type="button"
             onClick={() => setActiveScreen('batches')}
-            className="w-full mt-4 bg-primary text-white p-3 rounded-xl font-bold shadow-sm active:scale-95 transition-all"
+            className="w-full mt-6 bg-dashboard-accent text-dashboard-on-accent py-3.5 rounded-xl font-extrabold text-base shadow-md active:scale-95 transition-all cursor-pointer hover:opacity-90"
           >
-            Open Batches
+            Open Batches Portal
           </button>
         </div>
       </div>
@@ -156,38 +175,42 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
   }
 
   return (
-    <div className="app-page">
-      <div className="mb-5 mt-2">
-        <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Octavio Poultry</p>
-        <div className="flex items-start justify-between gap-3">
+    <div className="app-page text-dashboard-text p-4 sm:p-6">
+      
+      {/* Top Banner Info */}
+      <div className="mb-6 mt-2">
+        <p className="text-xs font-bold uppercase tracking-widest text-dashboard-accent font-jetbrains">Octavio Poultry</p>
+        <div className="flex items-start justify-between gap-3 mt-1">
           <div>
-            <h2 className="text-3xl font-extrabold text-primary tracking-tight">Home</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Batch {activeBatch.id}
+            <h2 className="text-3xl font-bold tracking-tight font-hanken">Home Portal</h2>
+            <p className="text-xs text-dashboard-text-secondary font-jetbrains mt-1 bg-dashboard-card px-2 py-0.5 rounded border border-dashboard-border inline-block">
+              Batch #{activeBatch.id}
             </p>
           </div>
-          <div className="text-right bg-white dark:bg-gray-800 border border-neutral-border dark:border-gray-700 rounded-xl px-3 py-2 shadow-sm">
-            <p className="text-[10px] font-bold text-gray-400 uppercase">Age</p>
-            <p className="text-xl font-black text-secondary">D{currentAgeDays || '--'}</p>
+          <div className="text-right bg-dashboard-card border border-dashboard-border rounded-xl px-4 py-2 shadow-sm">
+            <p className="text-[9px] font-bold text-dashboard-text-secondary uppercase tracking-widest font-jetbrains">Flock Age</p>
+            <p className="text-xl font-black text-dashboard-success font-jetbrains mt-0.5">D{currentAgeDays || '--'}</p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-5">
-        <div className="bg-slate-900 dark:bg-slate-800 text-white rounded-xl p-3 shadow-sm">
-          <p className="text-[10px] text-gray-300 uppercase tracking-wider font-bold">Started</p>
-          <p className="text-xs font-black mt-1">{formatDate(activeBatch.startDate)}</p>
+      {/* Date and Log Summary row */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="bg-dashboard-card border border-dashboard-border text-dashboard-text rounded-xl p-4 shadow-sm">
+          <p className="text-[9px] text-dashboard-text-secondary uppercase tracking-widest font-bold font-jetbrains">Started</p>
+          <p className="text-sm font-bold mt-1 font-inter">{formatDate(activeBatch.startDate)}</p>
         </div>
-        <div className="bg-slate-900 dark:bg-slate-800 text-white rounded-xl p-3 shadow-sm">
-          <p className="text-[10px] text-gray-300 uppercase tracking-wider font-bold">Today</p>
-          <p className="text-xs font-black mt-1">{formatDate(today)}</p>
+        <div className="bg-dashboard-card border border-dashboard-border text-dashboard-text rounded-xl p-4 shadow-sm">
+          <p className="text-[9px] text-dashboard-text-secondary uppercase tracking-widest font-bold font-jetbrains">Today</p>
+          <p className="text-sm font-bold mt-1 font-inter">{formatDate(today)}</p>
         </div>
-        <div className="bg-slate-900 dark:bg-slate-800 text-white rounded-xl p-3 shadow-sm">
-          <p className="text-[10px] text-gray-300 uppercase tracking-wider font-bold">Logs</p>
-          <p className="text-xs font-black mt-1">{todaysLogs.length} today</p>
+        <div className="bg-dashboard-card border border-dashboard-border text-dashboard-text rounded-xl p-4 shadow-sm">
+          <p className="text-[9px] text-dashboard-text-secondary uppercase tracking-widest font-bold font-jetbrains">Logs Today</p>
+          <p className="text-sm font-bold mt-1 font-jetbrains">{todaysLogs.length}</p>
         </div>
       </div>
 
+      {/* Quick Action buttons */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {quickActions.map((action) => (
           <ActionButton
@@ -200,153 +223,189 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
         ))}
       </div>
 
+      {/* Main Grid: Flock Status, Feed Performance, Recent Logs */}
       <div className="grid gap-6 xl:grid-cols-[1fr_1.15fr]">
-      <div className="mb-0">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-secondary font-extrabold tracking-wide uppercase text-sm">Flock Status</h3>
-          <span className="text-[10px] font-bold text-gray-400">
-            Live estimate
-          </span>
+        
+        {/* Flock Status Block */}
+        <div className="mb-0">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-dashboard-text-secondary font-bold tracking-widest uppercase text-xs font-jetbrains">Flock Status</h3>
+            <span className="text-[10px] font-bold text-dashboard-text-secondary/80 font-jetbrains">
+              Live estimate
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <MetricCard
+              label="Loaded"
+              value={formatNumber(actualLoaded)}
+              subtext="Total chicks"
+              icon="egg_alt"
+            />
+            <MetricCard
+              label="Live Birds"
+              value={formatNumber(liveBirds)}
+              subtext={yieldVsPlanPercent === null ? 'No plan set' : `${formatNumber(yieldVsPlanPercent, 2)}% vs plan`}
+              tone="text-dashboard-success"
+              icon="flutter_dash"
+            />
+            <MetricCard
+              label="Mortality"
+              value={formatNumber(totalMortality)}
+              subtext={`${formatNumber(mortalityPercent, 2)}% rate`}
+              tone={totalMortality > 0 ? 'text-dashboard-danger' : 'text-dashboard-success'}
+              icon="medical_services"
+            />
+            <MetricCard
+              label="Latest Weight"
+              value={latestWeightLog ? `${formatNumber(latestWeightLog.averageWeightGrams, 0)}g` : '--'}
+              subtext={latestWeightLog ? `Logged ${latestWeightLog.date}` : 'No weigh-in yet'}
+              icon="scale"
+            />
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-2 gap-3">
-          <MetricCard
-            label="Loaded"
-            value={formatNumber(actualLoaded)}
-            subtext="Total chicks"
-          />
-          <MetricCard
-            label="Live Birds"
-            value={formatNumber(liveBirds)}
-            subtext={yieldVsPlanPercent === null ? 'No plan set' : `${formatNumber(yieldVsPlanPercent, 2)}% vs plan`}
-            tone="text-semantic-success"
-          />
-          <MetricCard
-            label="Mortality"
-            value={formatNumber(totalMortality)}
-            subtext={`${formatNumber(mortalityPercent, 2)}% rate`}
-            tone={totalMortality > 0 ? 'text-semantic-danger' : 'text-semantic-success'}
-          />
-          <MetricCard
-            label="Latest Weight"
-            value={latestWeightLog ? `${formatNumber(latestWeightLog.averageWeightGrams, 0)}g` : '--'}
-            subtext={latestWeightLog ? `Logged ${latestWeightLog.date}` : 'No weigh-in yet'}
-            tone="text-gray-900 dark:text-white"
-          />
-        </div>
-      </div>
+        {/* Feed Performance Block */}
+        <div className="mb-0">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-dashboard-text-secondary font-bold tracking-widest uppercase text-xs font-jetbrains">Feed Performance</h3>
+            <button
+              type="button"
+              onClick={() => setActiveScreen('analytics')}
+              className="text-[10px] font-bold text-dashboard-accent bg-dashboard-accent/15 px-2 py-1 rounded-lg hover:bg-dashboard-accent/25 transition-colors font-jetbrains"
+            >
+              View telemetry
+            </button>
+          </div>
 
-      <div className="mb-0">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-primary dark:text-primary-light font-extrabold tracking-wide uppercase text-sm">Feed Performance</h3>
-          <button
-            type="button"
-            onClick={() => setActiveScreen('analytics')}
-            className="text-[10px] font-black text-primary bg-primary/10 px-2 py-1 rounded-lg"
-          >
-            View chart
-          </button>
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-1">
-          <div className="bg-white dark:bg-gray-800 border border-neutral-border dark:border-gray-700 p-4 rounded-xl shadow-sm">
-            <div className="flex justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold text-gray-500 dark:text-gray-400">Actual Feed</p>
-                <p className="text-[10px] text-gray-400">Accumulated daily logs</p>
+          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+            {/* Actual Feed */}
+            <div className="bg-dashboard-card border border-dashboard-border p-5 rounded-xl hover:border-dashboard-accent transition-colors relative overflow-hidden group">
+              <div className="flex justify-between items-center gap-3">
+                <div>
+                  <p className="text-xs font-bold text-dashboard-text-secondary tracking-wider uppercase font-jetbrains">Actual Feed</p>
+                  <p className="text-[10px] text-dashboard-text-secondary/80 mt-1 font-inter">Accumulated daily logs</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-bold font-jetbrains">
+                    {formatNumber(totalFeedKg, 0)} <span className="text-xs font-semibold text-dashboard-text-secondary font-inter">kg</span>
+                  </p>
+                  <p className="text-xs font-bold text-dashboard-success mt-0.5 font-jetbrains">
+                    {formatNumber(totalFeedBags, 2)} bags
+                  </p>
+                </div>
               </div>
-              <div className="text-right">
-                <p className="text-lg font-black text-gray-800 dark:text-white">
-                  {formatNumber(totalFeedKg, 0)} <span className="text-sm font-bold text-gray-500">kg</span>
-                </p>
-                <p className="text-xs font-bold text-primary">
-                  {formatNumber(totalFeedBags, 2)} bags
-                </p>
+            </div>
+
+            {/* Target Feed */}
+            <div className="bg-dashboard-card border border-dashboard-border p-5 rounded-xl hover:border-dashboard-accent transition-colors relative overflow-hidden group">
+              <div className="flex justify-between items-center gap-3">
+                <div>
+                  <p className="text-xs font-bold text-dashboard-text-secondary tracking-wider uppercase font-jetbrains">Target Feed</p>
+                  <p className="text-[10px] text-dashboard-text-secondary/80 mt-1 font-inter">
+                    {feedTarget ? `Curve day ${currentAgeDays}` : `Curve available through day ${lastTargetDay}`}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-bold font-jetbrains">
+                    {feedTarget ? formatNumber(feedTarget.targetKg, 0) : '--'} <span className="text-xs font-semibold text-dashboard-text-secondary font-inter">kg</span>
+                  </p>
+                  <p className="text-xs font-bold text-dashboard-text-secondary mt-0.5 font-jetbrains">
+                    {feedTarget ? formatNumber(feedTarget.targetBags, 2) : '--'} bags
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Feed Variance Warning */}
+            <div className={`p-5 rounded-xl border transition-colors ${
+              varianceKg === null || varianceKg <= 0
+                ? 'bg-dashboard-success-bg border-dashboard-success/30 hover:border-dashboard-success'
+                : 'bg-dashboard-warning-bg border-dashboard-warning/30 hover:border-dashboard-warning'
+            }`}>
+              <div className="flex justify-between items-center gap-3">
+                <div>
+                  <p className={`text-xs font-bold tracking-wider uppercase font-jetbrains ${
+                    varianceKg === null || varianceKg <= 0 ? 'text-dashboard-success' : 'text-dashboard-warning'
+                  }`}>
+                    Feed Variance
+                  </p>
+                  <p className={`text-2xl font-black mt-1 font-jetbrains ${
+                    varianceKg === null || varianceKg <= 0 ? 'text-dashboard-success' : 'text-dashboard-warning'
+                  }`}>
+                    {variancePercent === null ? '--' : `${variancePercent > 0 ? '+' : ''}${formatNumber(variancePercent, 2)}%`}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className={`text-sm font-bold font-jetbrains ${
+                    varianceKg === null || varianceKg <= 0 ? 'text-dashboard-success' : 'text-dashboard-warning'
+                  }`}>
+                    {varianceKg === null ? 'No target' : `${varianceKg > 0 ? '+' : ''}${formatNumber(varianceKg, 0)} kg`}
+                  </p>
+                  <p className={`text-xs font-semibold mt-0.5 font-jetbrains ${
+                    varianceKg === null || varianceKg <= 0 ? 'text-dashboard-success' : 'text-dashboard-warning'
+                  }`}>
+                    {varianceBags === null ? 'Need curve extension' : `${varianceBags > 0 ? '+' : ''}${formatNumber(varianceBags, 2)} bags`}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="bg-white dark:bg-gray-800 border border-neutral-border dark:border-gray-700 p-4 rounded-xl shadow-sm">
-            <div className="flex justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold text-gray-500 dark:text-gray-400">Target Feed</p>
-                <p className="text-[10px] text-gray-400">
-                  {feedTarget ? `Curve day ${currentAgeDays}` : `Curve available through day ${lastTargetDay}`}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-lg font-black text-gray-800 dark:text-white">
-                  {feedTarget ? formatNumber(feedTarget.targetKg, 0) : '--'} <span className="text-sm font-bold text-gray-500">kg</span>
-                </p>
-                <p className="text-xs font-bold text-gray-500">
-                  {feedTarget ? formatNumber(feedTarget.targetBags, 2) : '--'} bags
-                </p>
-              </div>
-            </div>
+        {/* Recent Activity Section */}
+        <div className="xl:col-span-2 mt-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xs font-bold text-dashboard-text-secondary uppercase tracking-widest font-jetbrains">
+              Recent Activity Log
+            </h3>
+            <button
+              type="button"
+              onClick={() => setActiveScreen('dailyLog')}
+              className="text-[10px] font-bold text-dashboard-accent bg-dashboard-accent/15 px-2.5 py-1 rounded-lg cursor-pointer hover:bg-dashboard-accent/25 transition-colors font-jetbrains"
+            >
+              Open Logs Portal
+            </button>
           </div>
 
-          <div className={`p-4 rounded-xl shadow-sm border ${varianceKg === null || varianceKg <= 0 ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800/30' : 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800/30'}`}>
-            <div className="flex justify-between items-center gap-3">
-              <div>
-                <p className={`text-xs font-bold uppercase tracking-wider ${getToneClass(varianceKg)}`}>
-                  Feed Variance
-                </p>
-                <p className={`text-2xl font-black ${getToneClass(varianceKg)}`}>
-                  {variancePercent === null ? '--' : `${variancePercent > 0 ? '+' : ''}${formatNumber(variancePercent, 2)}%`}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className={`text-sm font-black ${getToneClass(varianceKg)}`}>
-                  {varianceKg === null ? 'No target' : `${varianceKg > 0 ? '+' : ''}${formatNumber(varianceKg, 0)} kg`}
-                </p>
-                <p className={`text-xs font-bold mt-0.5 ${getToneClass(varianceKg)}`}>
-                  {varianceBags === null ? 'Need curve extension' : `${varianceBags > 0 ? '+' : ''}${formatNumber(varianceBags, 2)} bags`}
-                </p>
-              </div>
-            </div>
+          <div className="bg-dashboard-card border border-dashboard-border rounded-xl overflow-hidden shadow-md">
+            <ul className="divide-y divide-dashboard-border">
+              {recentLogs.map((log) => {
+                const hasMortality = Number(log.mortality || 0) > 0;
+                const dotClass = hasMortality
+                  ? 'bg-dashboard-danger shadow-[0_0_8px_var(--dashboard-danger)]'
+                  : 'bg-dashboard-success shadow-[0_0_8px_var(--dashboard-success)]';
+                
+                return (
+                  <li key={log.id} className="p-4 hover:bg-slate-100 dark:hover:bg-stitch-surface-container-high transition-colors flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotClass}`}></div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold font-hanken truncate">
+                          Building {log.building} logged by {log.employeeName || 'Unassigned'}
+                        </p>
+                        <p className="text-xs text-dashboard-text-secondary mt-1 font-inter">
+                          {log.feed ? `${formatNumber(log.feed, 2)} bags feed` : 'No feed logged'}
+                          {log.mortality ? ` • ${formatNumber(log.mortality)} mortality` : ' • 0 mortality'}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="font-jetbrains text-xs text-dashboard-text-secondary shrink-0 font-medium bg-dashboard-bg px-2.5 py-1 rounded border border-dashboard-border">
+                      {log.date}
+                    </span>
+                  </li>
+                );
+              })}
+
+              {recentLogs.length === 0 && (
+                <li className="p-6 text-center text-sm text-dashboard-text-secondary font-inter">
+                  No recent activity records registered for this flock batch.
+                </li>
+              )}
+            </ul>
           </div>
         </div>
-      </div>
 
-      <div className="xl:col-span-2">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Recent Activity</h3>
-          <button
-            type="button"
-            onClick={() => setActiveScreen('dailyLog')}
-            className="text-[10px] font-black text-primary"
-          >
-            Open logs
-          </button>
-        </div>
-
-        <div className="grid gap-2 md:grid-cols-3">
-          {recentLogs.map((log) => (
-            <div key={log.id} className="bg-white dark:bg-gray-800 border border-neutral-border dark:border-gray-700 rounded-xl p-3 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm font-black text-gray-900 dark:text-white truncate">
-                  Bldg {log.building} - {log.employeeName || 'Unassigned'}
-                </p>
-                <p className="text-[10px] font-bold text-gray-400 mt-0.5">
-                  {log.date} - {formatNumber(log.feed, 2)} bags feed
-                </p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className={`text-sm font-black ${Number(log.mortality || 0) > 0 ? 'text-semantic-danger' : 'text-semantic-success'}`}>
-                  {formatNumber(log.mortality)} hd
-                </p>
-                <p className="text-[10px] text-gray-400">mortality</p>
-              </div>
-            </div>
-          ))}
-
-          {recentLogs.length === 0 && (
-            <div className="bg-white dark:bg-gray-800 border border-neutral-border dark:border-gray-700 rounded-xl p-4 text-center">
-              <p className="text-sm font-bold text-gray-500">No daily logs yet for this batch.</p>
-            </div>
-          )}
-        </div>
-      </div>
       </div>
     </div>
   );

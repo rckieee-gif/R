@@ -48,6 +48,21 @@
   --font-hanken: "Hanken Grotesk", sans-serif;
   --font-jetbrains: "JetBrains Mono", monospace;
   --font-inter: "Inter", sans-serif;
+
+  /* Dynamic High-Readability Dashboard Variables */
+  --color-dashboard-bg: var(--dashboard-bg);
+  --color-dashboard-card: var(--dashboard-card);
+  --color-dashboard-border: var(--dashboard-border);
+  --color-dashboard-text: var(--dashboard-text);
+  --color-dashboard-text-secondary: var(--dashboard-text-secondary);
+  --color-dashboard-accent: var(--dashboard-accent);
+  --color-dashboard-on-accent: var(--dashboard-on-accent);
+  --color-dashboard-success: var(--dashboard-success);
+  --color-dashboard-success-bg: var(--dashboard-success-bg);
+  --color-dashboard-danger: var(--dashboard-danger);
+  --color-dashboard-danger-bg: var(--dashboard-danger-bg);
+  --color-dashboard-warning: var(--dashboard-warning);
+  --color-dashboard-warning-bg: var(--dashboard-warning-bg);
 }
 
 /* Stitch custom 3D utilities and animations (only active on desktop viewports) */
@@ -87,6 +102,19 @@
 
 :root {
   color-scheme: light;
+  --dashboard-bg: #f7fafe;
+  --dashboard-card: #ffffff;
+  --dashboard-border: #c3c6d7;
+  --dashboard-text: #181c1f;
+  --dashboard-text-secondary: #434655;
+  --dashboard-accent: #004ac6;
+  --dashboard-on-accent: #ffffff;
+  --dashboard-success: #15803d;
+  --dashboard-success-bg: rgba(21, 128, 61, 0.08);
+  --dashboard-danger: #b91c1c;
+  --dashboard-danger-bg: rgba(185, 28, 28, 0.08);
+  --dashboard-warning: #b45309;
+  --dashboard-warning-bg: rgba(180, 83, 9, 0.08);
 }
 
 html,
@@ -103,6 +131,19 @@ body {
 
 .dark {
   color-scheme: dark;
+  --dashboard-bg: #101415;
+  --dashboard-card: #1d2022;
+  --dashboard-border: #3d4a3d;
+  --dashboard-text: #e0e3e5;
+  --dashboard-text-secondary: #bccbb9;
+  --dashboard-accent: #4be277;
+  --dashboard-on-accent: #003915;
+  --dashboard-success: #4be277;
+  --dashboard-success-bg: rgba(75, 226, 119, 0.12);
+  --dashboard-danger: #ffb4ab;
+  --dashboard-danger-bg: rgba(255, 180, 171, 0.12);
+  --dashboard-warning: #f59e0b;
+  --dashboard-warning-bg: rgba(245, 158, 11, 0.12);
 }
 
 .app-page {
