@@ -31,18 +31,6 @@ export default function AntigravityAssistant({
     }
   ]);
 
-  const [showFullBanner, setShowFullBanner] = useState(false);
-
-  useEffect(() => {
-    let timer;
-    if (showFullBanner) {
-      timer = setTimeout(() => {
-        setShowFullBanner(false);
-      }, 3000);
-    }
-    return () => clearTimeout(timer);
-  }, [showFullBanner]);
-
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef(null);
@@ -243,28 +231,6 @@ All telemetry indicators are green. The farm manager application is running on *
             />
           ))}
         </div>
-      )}
-
-      {/* Floating Warning Banner when Zero Gravity is active */}
-      {isZeroGravity && (
-        showFullBanner ? (
-          <div className="no-print fixed top-16 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md bg-blue-600/90 dark:bg-indigo-900/90 text-white text-xs font-black text-center py-2 px-4 rounded-full shadow-lg border border-white/20 backdrop-blur-sm animate-bounce flex items-center justify-center space-x-2 transition-all duration-500">
-            <span>🚀</span>
-            <span>ZERO-GRAVITY PROTOCOL ACTIVE: All elements weightless</span>
-          </div>
-        ) : (
-          /* Small icon at the side (bottom left) */
-          <button
-            onClick={() => {
-              setShowFullBanner(true);
-            }}
-            className="no-print fixed bottom-6 left-6 z-50 h-10 w-10 rounded-full bg-blue-600/95 dark:bg-indigo-900/95 text-white flex items-center justify-center border border-white/25 shadow-lg cursor-pointer animate-pulse hover:scale-110 active:scale-95 transition-all"
-            title="Zero-Gravity Active (Click to expand banner)"
-            aria-label="Zero gravity status"
-          >
-            <span>🚀</span>
-          </button>
-        )
       )}
 
       {/* FLOATING ORB BUTTON */}
