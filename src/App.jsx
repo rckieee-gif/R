@@ -129,6 +129,20 @@ function App() {
     }
   }, [isDarkMode]);
 
+  const [isZeroGravity, setIsZeroGravity] = useState(() => {
+    const saved = localStorage.getItem('antigravityMode');
+    return saved === null ? true : saved === 'true';
+  });
+
+  useEffect(() => {
+    if (isZeroGravity) {
+      document.body.classList.add('antigravity-active');
+    } else {
+      document.body.classList.remove('antigravity-active');
+    }
+    localStorage.setItem('antigravityMode', String(isZeroGravity));
+  }, [isZeroGravity]);
+
   const [isNavMinimized, setIsNavMinimized] = useState(() => {
     const saved = localStorage.getItem('octavioNavMinimized');
     return saved ? saved === 'true' : false;
@@ -797,7 +811,13 @@ function App() {
             )}
 
             {activeScreen === 'settings' && (
-              <Settings user={user} token={token} activeBatch={activeBatch} />
+              <Settings 
+                user={user} 
+                token={token} 
+                activeBatch={activeBatch} 
+                isZeroGravity={isZeroGravity}
+                setIsZeroGravity={setIsZeroGravity}
+              />
             )}
             
             <AntigravityAssistant
@@ -805,6 +825,8 @@ function App() {
               logs={logs}
               transactions={transactions}
               user={user}
+              isZeroGravity={isZeroGravity}
+              setIsZeroGravity={setIsZeroGravity}
             />
           </div>
         </div>

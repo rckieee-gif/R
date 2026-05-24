@@ -1,14 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { BAG_WEIGHT_KG, getAgeDay } from '../broilerTargets';
 
-export default function AntigravityAssistant({ activeBatch, logs = [], transactions = [], user }) {
+export default function AntigravityAssistant({ 
+  activeBatch, 
+  logs = [], 
+  transactions = [], 
+  user,
+  isZeroGravity,
+  setIsZeroGravity
+}) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isZeroGravity, setIsZeroGravity] = useState(() => {
-    return localStorage.getItem('antigravityMode') === 'true';
-  });
 
   const [particles, setParticles] = useState(() => {
-    const isZeroG = localStorage.getItem('antigravityMode') === 'true';
+    const saved = localStorage.getItem('antigravityMode');
+    const isZeroG = saved === null ? true : saved === 'true';
     if (isZeroG) {
       return Array.from({ length: 8 }).map((_, i) => ({
         id: i,
@@ -47,14 +52,23 @@ export default function AntigravityAssistant({ activeBatch, logs = [], transacti
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef(null);
 
-  // Sync body classes based on Zero Gravity mode state
+  // Sync particles and banner based on Zero Gravity mode state
   useEffect(() => {
     if (isZeroGravity) {
-      document.body.classList.add('antigravity-active');
+      setParticles((prev) => {
+        if (prev.length > 0) return prev;
+        return Array.from({ length: 8 }).map((_, i) => ({
+          id: i,
+          left: `${Math.random() * 100}%`,
+          size: `${Math.random() * 3 + 2}px`,
+          delay: `${Math.random() * 10}s`,
+          duration: `${Math.random() * 10 + 15}s`,
+        }));
+      });
     } else {
-      document.body.classList.remove('antigravity-active');
+      setParticles([]);
+      setShowFullBanner(false);
     }
-    localStorage.setItem('antigravityMode', String(isZeroGravity));
   }, [isZeroGravity]);
 
   // Scroll to bottom of chat
@@ -66,18 +80,7 @@ export default function AntigravityAssistant({ activeBatch, logs = [], transacti
     const next = !isZeroGravity;
     setIsZeroGravity(next);
     if (next) {
-      const newParticles = Array.from({ length: 8 }).map((_, i) => ({
-        id: i,
-        left: `${Math.random() * 100}%`,
-        size: `${Math.random() * 3 + 2}px`,
-        delay: `${Math.random() * 10}s`,
-        duration: `${Math.random() * 10 + 15}s`,
-      }));
-      setParticles(newParticles);
       setShowFullBanner(true);
-    } else {
-      setParticles([]);
-      setShowFullBanner(false);
     }
   };
 

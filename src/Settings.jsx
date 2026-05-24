@@ -35,7 +35,7 @@ function getImportTotals(summary) {
   }), { rowsRead: 0, created: 0, updated: 0, skipped: 0 });
 }
 
-export default function Settings({ user, token, activeBatch }) {
+export default function Settings({ user, token, activeBatch, isZeroGravity, setIsZeroGravity }) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -492,6 +492,32 @@ export default function Settings({ user, token, activeBatch }) {
             <p className="text-[10px] font-black uppercase text-app-text-secondary">System Role</p>
             <p className="font-black text-app-text mt-1 font-jetbrains">{user?.role}</p>
           </div>
+        </div>
+      </div>
+
+      <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6">
+        <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-4">Interface Options</h3>
+        <div className="flex items-center justify-between bg-app-bg rounded-xl p-4 border border-app-border/40">
+          <div>
+            <h4 className="text-sm font-bold text-app-text uppercase tracking-wide">Zero-Gravity Interface Physics</h4>
+            <p className="text-xs text-app-text-secondary mt-1">
+              Enable floating elements, low-gravity hover translations, and particle effects throughout the deck.
+            </p>
+          </div>
+          <button
+            onClick={() => setIsZeroGravity(!isZeroGravity)}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              isZeroGravity ? 'bg-app-accent' : 'bg-app-text-secondary/30'
+            }`}
+            role="switch"
+            aria-checked={isZeroGravity}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-app-card shadow ring-0 transition duration-200 ease-in-out ${
+                isZeroGravity ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
         </div>
       </div>
 
