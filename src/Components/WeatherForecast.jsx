@@ -27,6 +27,40 @@ const WMO_CODES = {
   99: { label: 'Severe storm', icon: 'thunderstorm', tone: 'text-purple-500' },
 };
 
+/* De-duplicated legend entries grouped by category */
+const LEGEND_GROUPS = [
+  {
+    title: 'Clear / Cloudy',
+    items: [
+      { icon: 'clear_day', tone: 'text-yellow-400', label: 'Clear sky' },
+      { icon: 'partly_cloudy_day', tone: 'text-yellow-300', label: 'Mainly clear / Partly cloudy' },
+      { icon: 'cloud', tone: 'text-slate-400', label: 'Overcast' },
+      { icon: 'foggy', tone: 'text-slate-400', label: 'Fog' },
+    ],
+  },
+  {
+    title: 'Rain / Drizzle',
+    items: [
+      { icon: 'rainy_light', tone: 'text-blue-300', label: 'Light drizzle / rain' },
+      { icon: 'rainy', tone: 'text-blue-400', label: 'Moderate rain / showers' },
+      { icon: 'rainy_heavy', tone: 'text-blue-500', label: 'Heavy rain / showers' },
+    ],
+  },
+  {
+    title: 'Storms',
+    items: [
+      { icon: 'thunderstorm', tone: 'text-purple-400', label: 'Thunderstorm' },
+      { icon: 'thunderstorm', tone: 'text-purple-500', label: 'Severe storm / hail' },
+    ],
+  },
+];
+
+const FORECAST_INSTRUCTIONS = [
+  'Use the large card for today: high / low temperature, rainfall, humidity, and max wind.',
+  'Use the blue bar in each upcoming day row as a quick rain-volume indicator.',
+  'Tap Refresh to clear the cache and pull the latest Open-Meteo forecast.'
+];
+
 function getWeatherInfo(code) {
   return WMO_CODES[code] || { label: 'Unknown', icon: 'help', tone: 'text-slate-400' };
 }
@@ -130,6 +164,7 @@ export default function WeatherForecast() {
   const [forecast, setForecast] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showLegend, setShowLegend] = useState(false);
 
   const fetchWeather = useCallback(async () => {
     const cached = getCachedData();
@@ -167,7 +202,11 @@ export default function WeatherForecast() {
   }, []);
 
   useEffect(() => {
-    fetchWeather();
+    const timeoutId = setTimeout(() => {
+      fetchWeather();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, [fetchWeather]);
 
   /* ── Loading state ── */
@@ -211,9 +250,25 @@ export default function WeatherForecast() {
     <div className="mb-6">
       {/* Section header */}
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-dashboard-text-secondary font-bold tracking-widest uppercase text-xs font-jetbrains">
-          Weather Forecast
-        </h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-dashboard-text-secondary font-bold tracking-widest uppercase text-xs font-jetbrains">
+            Weather Forecast
+          </h3>
+          <button
+            type="button"
+            onClick={() => setShowLegend((v) => !v)}
+            className={`h-5 min-w-7 rounded-full px-1.5 flex items-center justify-center text-[10px] font-bold font-inter cursor-pointer transition-all border ${
+              showLegend
+                ? 'bg-dashboard-accent text-dashboard-on-accent border-dashboard-accent'
+                : 'bg-transparent text-dashboard-text-secondary border-dashboard-text-secondary/30 hover:border-dashboard-text-secondary/60'
+            }`}
+            title="Weather legend and instructions"
+            aria-label="Weather legend and instructions"
+            aria-expanded={showLegend}
+          >
+            (i)
+          </button>
+        </div>
         <button
           type="button"
           onClick={() => { localStorage.removeItem(CACHE_KEY); fetchWeather(); }}
@@ -222,6 +277,56 @@ export default function WeatherForecast() {
           Refresh
         </button>
       </div>
+
+      {/* Legend panel */}
+      {showLegend && (
+        <div className="bg-dashboard-card border border-dashboard-border rounded-xl p-4 mb-3 animate-[fadeIn_0.15s_ease-out]">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-dashboard-text-secondary font-jetbrains">
+              Weather Legend & Instructions
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowLegend(false)}
+              className="material-symbols-outlined text-dashboard-text-secondary hover:text-dashboard-text text-sm cursor-pointer transition-colors"
+            >
+              close
+            </button>
+          </div>
+          <div className="mb-4 rounded-lg border border-dashboard-border/60 bg-white/[0.03] p-3">
+            <p className="mb-2 text-[9px] font-bold uppercase tracking-wider text-dashboard-text-secondary/70 font-jetbrains">
+              How to read this forecast
+            </p>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {FORECAST_INSTRUCTIONS.map((instruction) => (
+                <p key={instruction} className="text-[11px] font-semibold leading-snug text-dashboard-text-secondary font-inter">
+                  {instruction}
+                </p>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {LEGEND_GROUPS.map((group) => (
+              <div key={group.title}>
+                <p className="text-[9px] font-bold uppercase tracking-wider text-dashboard-text-secondary/60 font-jetbrains mb-1.5">
+                  {group.title}
+                </p>
+                <div className="space-y-1">
+                  {group.items.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 py-0.5">
+                      <span className={`material-symbols-outlined text-base ${item.tone}`}>{item.icon}</span>
+                      <span className="text-[11px] text-dashboard-text font-inter">{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[9px] text-dashboard-text-secondary/50 font-inter mt-3 text-right">
+            Data by Open-Meteo · WMO weather codes
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_1.2fr] gap-3">
 

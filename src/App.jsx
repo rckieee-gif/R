@@ -827,6 +827,10 @@ function App() {
               transactions={transactions}
               user={user}
               isZeroGravity={isZeroGravity}
+              allowedScreens={allowedScreens}
+              canEnterDaily={canEnterDaily}
+              canViewFinancial={canViewFinancial}
+              isPublicViewer={isPublicViewer}
             />
           </div>
         </div>

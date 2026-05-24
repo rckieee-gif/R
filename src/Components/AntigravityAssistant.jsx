@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { BAG_WEIGHT_KG, getAgeDay } from '../broilerTargets';
 
+const quickActionClass = "text-[10px] font-black py-1 px-2.5 rounded-full bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 border border-neutral-border/30 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer flex items-center space-x-1";
+
 function createParticles() {
   return Array.from({ length: 8 }).map((_, i) => ({
     id: i,
@@ -11,22 +13,71 @@ function createParticles() {
   }));
 }
 
+function listToSentence(items) {
+  if (!items.length) return 'the screens available to your role';
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+
+  return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
+}
+
+function getWelcomeText({ isZeroGravity, userName, isPublicViewer, canViewFinancial, canEnterDaily, availableFlowText }) {
+  const gravityLine = isZeroGravity
+    ? 'Zero-gravity mode is active, so I will keep the cabin copy light and the scans focused.'
+    : 'Zero-gravity mode is standing by, so I will keep the guidance grounded and operational.';
+  const accessLine = isPublicViewer
+    ? 'You are in public viewer mode, so I will stick to read-only batch, log, inventory, and analytics guidance.'
+    : canViewFinancial
+      ? 'Your role can open operational and financial modules, so financial scans are available here.'
+      : canEnterDaily
+        ? 'Your role can work with daily operations, so I will focus on logs, inventory, batches, and analytics.'
+        : 'Your role is read-only, so I will avoid edit-only and financial workflows.';
+
+  return `Greetings, Captain ${userName}! I am the **Antigravity AI Assistant**. ${gravityLine}\n\n${accessLine} Quick scans below are limited to ${availableFlowText}.`;
+}
+
 export default function AntigravityAssistant({ 
   activeBatch, 
   logs = [], 
   transactions = [], 
   user,
-  isZeroGravity
+  isZeroGravity,
+  allowedScreens = [],
+  canEnterDaily = false,
+  canViewFinancial = false,
+  isPublicViewer = false
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const particles = useMemo(() => (isZeroGravity ? createParticles() : []), [isZeroGravity]);
 
   const userName = user?.name || 'Farmer';
+  const allowedScreenSet = useMemo(() => new Set(allowedScreens), [allowedScreens]);
+  const canOpenDailyLogs = allowedScreenSet.has('dailyLog');
+  const canOpenInventory = allowedScreenSet.has('inventory');
+  const canOpenAnalytics = allowedScreenSet.has('analytics');
+  const canOpenBatches = allowedScreenSet.has('batches');
+  const canOpenSettings = allowedScreenSet.has('settings');
+  const canRunFinancialAudit = canViewFinancial && (allowedScreenSet.has('ledger') || allowedScreenSet.has('statement'));
+  const availableFlowText = listToSentence([
+    canOpenAnalytics ? 'analytics' : null,
+    canOpenDailyLogs ? (canEnterDaily ? 'daily logs' : 'read-only daily logs') : null,
+    canOpenInventory ? 'inventory' : null,
+    canOpenBatches ? 'batches' : null,
+    canRunFinancialAudit ? 'financials' : null
+  ].filter(Boolean));
+  const welcomeText = useMemo(() => getWelcomeText({
+    isZeroGravity,
+    userName,
+    isPublicViewer,
+    canViewFinancial: canRunFinancialAudit,
+    canEnterDaily,
+    availableFlowText
+  }), [availableFlowText, canEnterDaily, canRunFinancialAudit, isPublicViewer, isZeroGravity, userName]);
   const [messages, setMessages] = useState(() => [
     {
       id: 'welcome',
       sender: 'assistant',
-      text: `Greetings, Captain! 🧑‍🚀 I am the **Antigravity AI Assistant**. My thrusters are primed, and gravity sensors are set to normal.\n\nHow can I help you manage your space farm today? Choose a quick scan below or type a message.`,
+      text: welcomeText,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     }
   ]);
@@ -71,7 +122,9 @@ export default function AntigravityAssistant({
     if (!activeBatch) {
       simulateResponse(
         "Analyze Current Batch Health",
-        "⚠️ **Diagnostic Failure**: No active batch found. Please go to the **Batches** tab to launch or select a poultry cycle before I can scan life-support metrics!"
+        canOpenBatches
+          ? "**Diagnostic paused**: No active batch found. Open **Batches** to select a poultry cycle before I can scan flock metrics."
+          : "**Diagnostic paused**: No active batch is available for your current access."
       );
       return;
     }
@@ -111,16 +164,26 @@ export default function AntigravityAssistant({
 ${fcr && fcr < 1.6 
   ? "🚀 Excellent feed conversion! Your birds are defying gravity and growing efficiently." 
   : "🛸 Feed conversion is within normal parameters. Ensure water lines are flowing and light intensity is configured properly for Day " + age + "."
-} Keep monitoring daily logs to prevent gravity drops!`;
+} ${canOpenDailyLogs ? (canEnterDaily ? 'Keep daily logs current to prevent gravity drops!' : 'Review the daily logs to keep trends in view.') : 'Use the available analytics views to keep trends in view.'}`;
 
     simulateResponse("Analyze Current Batch Health", response);
   };
 
   const handleFinancialAudit = () => {
+    if (!canRunFinancialAudit) {
+      simulateResponse(
+        "Financial Health Audit",
+        `**Access limited**: Your current role cannot open financial modules. I can still help with ${availableFlowText}.`
+      );
+      return;
+    }
+
     if (!activeBatch) {
       simulateResponse(
         "Financial Health Audit",
-        "⚠️ **Scan Aborted**: No active batch. Ledgers are currently floating in deep space. Select an active batch first!"
+        canOpenBatches
+          ? "**Scan paused**: No active batch. Open **Batches** and select a cycle before running a financial scan."
+          : "**Scan paused**: No active batch is available for this session."
       );
       return;
     }
@@ -150,6 +213,34 @@ ${net >= 0
     simulateResponse("Financial Health Audit", response);
   };
 
+  const handleInventorySnapshot = () => {
+    if (!activeBatch) {
+      simulateResponse(
+        "Inventory Readiness Snapshot",
+        canOpenBatches
+          ? "**Snapshot paused**: Select an active batch in **Batches** before I compare inventory needs against flock activity."
+          : "**Snapshot paused**: No active batch is available for this session."
+      );
+      return;
+    }
+
+    const totalFeedBags = logs.reduce((sum, log) => sum + Number(log.feed || 0), 0);
+    const totalFeedKg = totalFeedBags * (BAG_WEIGHT_KG || 50);
+    const response = `**Inventory Readiness Snapshot**
+* **Active Batch**: Batch ${activeBatch.id}
+* **Feed Logged**: ${totalFeedKg.toLocaleString()} kg (${totalFeedBags.toFixed(1)} bags)
+* **Production Logs Used**: ${logs.length.toLocaleString()}
+
+**Next best route**:
+${canOpenInventory
+  ? 'Open **Inventory** to review stock levels and movement history available to your role.'
+  : canOpenAnalytics
+    ? 'Open **Analytics** to review production trends available to your role.'
+    : `Stay within ${availableFlowText} for the current session.`}`;
+
+    simulateResponse("Inventory Readiness Snapshot", response);
+  };
+
   const handleDiagnostics = () => {
     const systems = [
       { name: "Coop Gravity Dampeners", status: isZeroGravity ? "Enabled (0.0G)" : "Disabled (1.0G)", ok: true },
@@ -165,20 +256,27 @@ ${net >= 0
 ${sysList}
 
 🤖 **Engine Room Memo**:
-All telemetry indicators are green. The farm manager application is running on **Antigravity Core v1.0.0**. Booster engines are fueled by Vite and Tailwind CSS. We are ready for hyperdrive!`;
+All telemetry indicators are green. Zero-gravity mode is **${isZeroGravity ? 'active' : 'inactive'}**. ${canOpenSettings ? 'Use **Settings** if you want to change the antigravity controls.' : 'Your current access does not include Settings, so I will only report the current mode.'}`;
 
     simulateResponse("Zero-G Diagnostics Check", response);
   };
 
-  const handleChickenLevitation = () => {
-    const responses = [
-      "🐔 **Levitation Simulation Launching...**\n\nResults: Chickens have discovered that wings are highly effective in zero-g. They are currently performing complex orbital maneuvers in Coop A. Feathers are floating everywhere. Water lines have been switched to bubble-suction mode so droplets don't float into the ventilation shafts!",
-      "🐣 **Gravity Disabled in Incubator Coop...**\n\nThe chicks are floating around like fuzzy tennis balls! They seem to enjoy the lack of weight, but feed is drifting. Recommend attaching magnetic shoes or restoring 0.1G standard gravity so they can find the feeders.",
-      "🐓 **Zero-Gravity Pecking Order Diagnostics...**\n\nWe have observed that in zero gravity, the dominant rooster cannot peck downwards effectively. This has led to an egalitarian cooperative society among the poultry. A true antigravity miracle!"
-    ];
-    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-    simulateResponse("Chicken Levitation Test", randomResponse);
+  const handleGravityStatus = () => {
+    const response = isZeroGravity
+      ? `**Zero-G Status**: Antigravity mode is active. ${canOpenSettings ? 'Settings can return the interface to standard gravity when needed.' : 'Your current access can view this state but cannot change it.'}`
+      : `**Gravity Status**: Standard gravity is active. ${canOpenSettings ? 'Settings can enable zero-gravity mode when you want the floating interface.' : 'Your current access can view this state but cannot change it.'}`;
+
+    simulateResponse(isZeroGravity ? "Zero-G Status" : "Gravity Status", response);
   };
+
+  const quickActions = [
+    { key: 'flock', label: 'Flock Health', icon: '📊', onClick: handleFlockAnalysis },
+    canRunFinancialAudit
+      ? { key: 'financials', label: 'Financials', icon: '💸', onClick: handleFinancialAudit }
+      : { key: 'inventory', label: canOpenInventory ? 'Inventory' : 'Operations', icon: '📦', onClick: handleInventorySnapshot },
+    { key: 'diagnostics', label: 'Telemetry', icon: '🔋', onClick: handleDiagnostics },
+    { key: 'gravity', label: isZeroGravity ? 'Zero-G Status' : 'Gravity Status', icon: isZeroGravity ? '🛸' : 'G', onClick: handleGravityStatus }
+  ];
 
   const handleSendMessage = (e) => {
     e.preventDefault();
@@ -191,11 +289,11 @@ All telemetry indicators are green. The farm manager application is running on *
     const lowerQuery = query.toLowerCase();
 
     if (lowerQuery.includes('hello') || lowerQuery.includes('hi') || lowerQuery.includes('hey')) {
-      reply = `Hello, Captain ${userName}! Always great to hear from you. Gravity sensors are reporting stable conditions. Ask me to perform a "Flock Health" or "Financial Audit" scan!`;
+      reply = `Hello, Captain ${userName}! ${isZeroGravity ? 'Zero-G sensors are active.' : 'Gravity sensors are reporting standard conditions.'} Try one of the available quick scans: ${quickActions.map((action) => action.label).join(', ')}.`;
     } else if (lowerQuery.includes('fcr') || lowerQuery.includes('feed conversion')) {
-      reply = `🌾 **Feed Conversion Ratio (FCR)** is calculated by dividing the total feed consumed (kg) by the total weight of the live birds (kg). A lower FCR means your birds convert feed into weight more efficiently! Try clicking the **Analyze Current Batch Health** button to compute your current FCR automatically.`;
+      reply = `🌾 **Feed Conversion Ratio (FCR)** is calculated by dividing the total feed consumed (kg) by the total weight of the live birds (kg). A lower FCR means your birds convert feed into weight more efficiently. Use **Flock Health** to estimate it from the logs available to your role.`;
     } else if (lowerQuery.includes('mortality') || lowerQuery.includes('die') || lowerQuery.includes('dead')) {
-      reply = `⚠️ Mortality is a crucial metric. A rate below 5% for a full cycle is excellent. If you see spikes, check coop ventilation, heating, water supply, or consult a veterinarian immediately. Toggling **Zero-Gravity Mode** will not make them weightless in real life, but it certainly lifts the mood!`;
+      reply = `⚠️ Mortality is a crucial metric. A rate below 5% for a full cycle is excellent. If you see spikes, check coop ventilation, heating, water supply, or consult a veterinarian immediately. ${canOpenDailyLogs ? (canEnterDaily ? 'Record unusual mortality in **Daily Logs**.' : 'Review **Daily Logs** for the latest mortality pattern.') : 'Use the flock views available to your role for the latest pattern.'}`;
     } else if (lowerQuery.includes('joke') || lowerQuery.includes('funny')) {
       const jokes = [
         "Why did the chicken cross the road in zero gravity? To get to the other side... eventually!",
@@ -204,9 +302,11 @@ All telemetry indicators are green. The farm manager application is running on *
       ];
       reply = jokes[Math.floor(Math.random() * jokes.length)];
     } else if (lowerQuery.includes('gravity') || lowerQuery.includes('antigravity')) {
-      reply = `**Antigravity Mode** allows the UI elements of this Farm Manager to break free from standard gravitational constraints. Use the Zero-Gravity switch in Settings under Interface Options to control the effect.`;
+      reply = canOpenSettings
+        ? `**Antigravity Mode** is currently ${isZeroGravity ? 'active' : 'inactive'}. Use the Zero-Gravity switch in Settings under Interface Options to control the effect.`
+        : `**Antigravity Mode** is currently ${isZeroGravity ? 'active' : 'inactive'}. Your current access can view the mode, but Settings is not available in this session.`;
     } else {
-      reply = `I've received your transmission, ${userName}! 🛰️ Regarding "${query}": I recommend checking your daily logs and financial ledgers to cross-reference trends. You can also try one of our telemetry quick scans above!`;
+      reply = `I've received your transmission, ${userName}! 🛰️ Regarding "${query}": I recommend cross-checking ${availableFlowText}. You can also try one of the visible quick scans above.`;
     }
 
     simulateResponse(query, reply);
@@ -301,34 +401,38 @@ All telemetry indicators are green. The farm manager application is running on *
 
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 ag-scrollbar bg-slate-950/25 dark:bg-black/10">
-            {messages.map((m) => (
-              <div
-                key={m.id}
-                className={`flex flex-col max-w-[85%] ${
-                  m.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'
-                }`}
-              >
+            {messages.map((m) => {
+              const messageText = m.id === 'welcome' ? welcomeText : m.text;
+
+              return (
                 <div
-                  className={`p-3 rounded-2xl text-xs leading-relaxed ${
-                    m.sender === 'user'
-                      ? 'bg-blue-600 text-white rounded-br-none shadow-sm'
-                      : 'bg-white/95 dark:bg-slate-900/95 text-gray-800 dark:text-gray-100 rounded-bl-none shadow-md border border-neutral-border/20 dark:border-slate-800'
+                  key={m.id}
+                  className={`flex flex-col max-w-[85%] ${
+                    m.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'
                   }`}
                 >
-                  {m.text.split('\n').map((line, idx) => {
-                    const parts = line.split('**');
-                    return (
-                      <p key={idx} className={idx > 0 ? "mt-1.5" : ""}>
-                        {parts.map((part, pIdx) => 
-                          pIdx % 2 === 1 ? <strong key={pIdx} className="font-extrabold text-blue-600 dark:text-cyan-400">{part}</strong> : part
-                        )}
-                      </p>
-                    );
-                  })}
+                  <div
+                    className={`p-3 rounded-2xl text-xs leading-relaxed ${
+                      m.sender === 'user'
+                        ? 'bg-blue-600 text-white rounded-br-none shadow-sm'
+                        : 'bg-white/95 dark:bg-slate-900/95 text-gray-800 dark:text-gray-100 rounded-bl-none shadow-md border border-neutral-border/20 dark:border-slate-800'
+                    }`}
+                  >
+                    {messageText.split('\n').map((line, idx) => {
+                      const parts = line.split('**');
+                      return (
+                        <p key={idx} className={idx > 0 ? "mt-1.5" : ""}>
+                          {parts.map((part, pIdx) => 
+                            pIdx % 2 === 1 ? <strong key={pIdx} className="font-extrabold text-blue-600 dark:text-cyan-400">{part}</strong> : part
+                          )}
+                        </p>
+                      );
+                    })}
+                  </div>
+                  <span className="text-[9px] text-gray-400 font-bold mt-1 px-1">{m.timestamp}</span>
                 </div>
-                <span className="text-[9px] text-gray-400 font-bold mt-1 px-1">{m.timestamp}</span>
-              </div>
-            ))}
+              );
+            })}
 
             {isTyping && (
               <div className="flex items-center space-x-1 bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-2xl rounded-bl-none max-w-[60px] shadow-sm border border-neutral-border/10">
@@ -342,30 +446,16 @@ All telemetry indicators are green. The farm manager application is running on *
 
           {/* Quick Scan Action Chips */}
           <div className="p-2 border-t border-white/5 bg-slate-900/40 dark:bg-black/25 flex space-x-1.5 overflow-x-auto whitespace-nowrap ag-scrollbar">
-            <button
-              onClick={handleFlockAnalysis}
-              className="text-[10px] font-black py-1 px-2.5 rounded-full bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 border border-neutral-border/30 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer flex items-center space-x-1"
-            >
-              <span>📊</span> <span>Flock Health</span>
-            </button>
-            <button
-              onClick={handleFinancialAudit}
-              className="text-[10px] font-black py-1 px-2.5 rounded-full bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 border border-neutral-border/30 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer flex items-center space-x-1"
-            >
-              <span>💸</span> <span>Financials</span>
-            </button>
-            <button
-              onClick={handleDiagnostics}
-              className="text-[10px] font-black py-1 px-2.5 rounded-full bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 border border-neutral-border/30 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer flex items-center space-x-1"
-            >
-              <span>🔋</span> <span>Booster Telemetry</span>
-            </button>
-            <button
-              onClick={handleChickenLevitation}
-              className="text-[10px] font-black py-1 px-2.5 rounded-full bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 border border-neutral-border/30 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer flex items-center space-x-1"
-            >
-              <span>🐔</span> <span>Float Test</span>
-            </button>
+            {quickActions.map((action) => (
+              <button
+                key={action.key}
+                type="button"
+                onClick={action.onClick}
+                className={quickActionClass}
+              >
+                <span>{action.icon}</span> <span>{action.label}</span>
+              </button>
+            ))}
           </div>
 
           {/* Footer Form Input */}

@@ -532,7 +532,8 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
         label: 'Daily logs',
         value: logs.length ? `${formatNumber(logs.length)} row${logs.length === 1 ? '' : 's'}` : 'No logs',
         detail: postSummary.latestLogDate ? `Last log ${formatDate(postSummary.latestLogDate)}` : 'No production logs found',
-        tone: logs.length ? 'success' : 'warning'
+        tone: logs.length ? 'success' : 'warning',
+        actionScreen: logs.length ? null : 'dailyLog'
       },
       {
         key: 'building-loadings',
@@ -548,14 +549,16 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
         detail: postSummary.harvest.hasActualSales
           ? `${formatNumber(postSummary.harvest.soldBirds)} birds / ${formatNumber(postSummary.harvest.kilos, 1)} kg`
           : 'No sold birds or kilos recorded',
-        tone: postSummary.harvest.hasActualSales ? 'success' : 'warning'
+        tone: postSummary.harvest.hasActualSales ? 'success' : 'warning',
+        actionScreen: postSummary.harvest.hasActualSales ? null : 'harvest'
       },
       {
         key: 'feed-inventory',
         label: 'Feed inventory',
         value: lowFeedItems.length ? `${lowFeedItems.length} low` : 'Clear',
         detail: lowFeedItems.length ? 'Feed stock has items below reorder level' : 'Feed items are above reorder level',
-        tone: lowFeedItems.length ? 'warning' : 'success'
+        tone: lowFeedItems.length ? 'warning' : 'success',
+        actionScreen: lowFeedItems.length ? 'inventory' : null
       }
     ];
   }, [activeBatch, activeLoadings.length, logs.length, lowFeedItems.length, postSummary]);
@@ -827,30 +830,50 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           </div>
 
           <div className="grid gap-3 md:grid-cols-4">
-            {postChecklist.map((item) => (
-              <div
-                key={item.key}
-                className={`rounded-xl border p-4 shadow-sm ${
-                  item.tone === 'success'
-                    ? 'border-app-success/30 bg-app-success-bg'
-                    : item.tone === 'warning'
-                      ? 'border-app-warning/30 bg-app-warning-bg'
-                      : 'border-app-border bg-app-card'
-                }`}
-              >
-                <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-jetbrains">{item.label}</p>
-                <p className={`mt-1 text-lg font-black font-jetbrains ${
-                  item.tone === 'success'
-                    ? 'text-app-success'
-                    : item.tone === 'warning'
-                      ? 'text-app-warning'
-                      : 'text-app-text'
-                }`}>
-                  {item.value}
-                </p>
-                <p className="mt-1 text-xs font-bold leading-snug text-app-text-secondary font-inter">{item.detail}</p>
-              </div>
-            ))}
+            {postChecklist.map((item) => {
+              const isActionable = Boolean(item.actionScreen) && item.tone !== 'success';
+              const cardClass = `rounded-xl border p-4 shadow-sm ${
+                item.tone === 'success'
+                  ? 'border-app-success/30 bg-app-success-bg'
+                  : item.tone === 'warning'
+                    ? 'border-app-warning/30 bg-app-warning-bg'
+                    : 'border-app-border bg-app-card'
+              }`;
+              const content = (
+                <>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-jetbrains">{item.label}</p>
+                  <p className={`mt-1 text-lg font-black font-jetbrains ${
+                    item.tone === 'success'
+                      ? 'text-app-success'
+                      : item.tone === 'warning'
+                        ? 'text-app-warning'
+                        : 'text-app-text'
+                  }`}>
+                    {item.value}
+                  </p>
+                  <p className="mt-1 text-xs font-bold leading-snug text-app-text-secondary font-inter">{item.detail}</p>
+                </>
+              );
+
+              if (isActionable) {
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setActiveScreen(item.actionScreen)}
+                    className={`${cardClass} text-left transition-all duration-200 active:scale-[0.98] hover:border-app-accent cursor-pointer`}
+                  >
+                    {content}
+                  </button>
+                );
+              }
+
+              return (
+                <div key={item.key} className={cardClass}>
+                  {content}
+                </div>
+              );
+            })}
           </div>
         </section>
       </div>
