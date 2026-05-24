@@ -122,11 +122,13 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
 
   useEffect(() => {
     if (!token && previewData) {
-      setLoadings(previewData.loadings || []);
-      setAssignments(previewData.assignments || []);
-      setFeedItems(previewData.feedItems || []);
-      setError('');
-      setIsLoading(false);
+      setTimeout(() => {
+        setLoadings(previewData.loadings || []);
+        setAssignments(previewData.assignments || []);
+        setFeedItems(previewData.feedItems || []);
+        setError('');
+        setIsLoading(false);
+      }, 0);
       return;
     }
 

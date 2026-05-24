@@ -28,7 +28,7 @@ function PreviewStat({ label, value, tone = 'text-[#e0e3e5]', suffix = null, isA
   );
 }
 
-export default function IntroPage({ onContinueAsViewer, onMemberLogin }) {
+export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerLoading = false, viewerError = '' }) {
   return (
     <div className="bg-[#0F172A] text-[#e0e3e5] min-h-screen flex flex-col font-inter selection:bg-[#4be277]/30">
       {/* TopAppBar */}
@@ -74,10 +74,11 @@ export default function IntroPage({ onContinueAsViewer, onMemberLogin }) {
             <button
               type="button"
               onClick={onContinueAsViewer}
-              className="btn-primary btn-3d font-medium px-6 py-3.5 rounded-lg text-sm hover:opacity-95 transition-opacity active:scale-[0.98]"
+              disabled={isViewerLoading}
+              className="btn-primary btn-3d font-medium px-6 py-3.5 rounded-lg text-sm hover:opacity-95 transition-opacity active:scale-[0.98] disabled:cursor-wait disabled:opacity-70"
               style={{ backgroundColor: '#22c55e', color: '#003915' }}
             >
-              Continue as Viewer
+              {isViewerLoading ? 'Opening Current Batch' : 'Continue as Viewer'}
             </button>
             <button
               type="button"
@@ -87,6 +88,12 @@ export default function IntroPage({ onContinueAsViewer, onMemberLogin }) {
               Login as Member
             </button>
           </div>
+
+          {viewerError && (
+            <div className="mb-8 rounded-lg border border-[#ef4444]/40 bg-[#ef4444]/10 px-4 py-3 text-sm font-medium text-[#fecaca]">
+              {viewerError}
+            </div>
+          )}
 
           {/* Features Bento */}
           <div className="grid grid-cols-3 gap-6 border-t border-[#334155] pt-8">

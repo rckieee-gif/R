@@ -15,12 +15,7 @@ import InventoryManagement from './InventoryManagement';
 import Settings from './Settings';
 import { API_BASE } from './api';
 import AntigravityAssistant from './Components/AntigravityAssistant';
-import {
-  publicViewerBatch,
-  publicViewerData,
-  publicViewerLogs,
-  publicViewerUser
-} from './publicViewerData';
+import { publicViewerUser } from './publicViewerData';
 
 const roleRank = {
   Viewer: 1,
@@ -117,6 +112,9 @@ function App() {
   });
   const [token, setToken] = useState(() => localStorage.getItem('octavioToken'));
   const [authView, setAuthView] = useState('intro');
+  const [viewerSnapshot, setViewerSnapshot] = useState(null);
+  const [viewerError, setViewerError] = useState('');
+  const [isViewerLoading, setIsViewerLoading] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('themeMode');
     return saved ? saved === 'dark' : true;
@@ -140,7 +138,7 @@ function App() {
   const [batchListError, setBatchListError] = useState('');
   const isPublicViewer = Boolean(user?.isPublicViewer);
   const apiToken = isPublicViewer ? null : token;
-  const viewerPreviewData = isPublicViewer ? publicViewerData : null;
+  const viewerPreviewData = isPublicViewer ? viewerSnapshot : null;
   const activeBatchId = activeBatch?.id;
   // --- DAILY LOGS DATABASE (NOW CONNECTED TO POSTGRESQL!) ---
   const [logs, setLogs] = useState([]);
@@ -172,6 +170,8 @@ function App() {
     setActiveBatch(null);
     setBatches([]);
     setBatchListError('');
+    setViewerSnapshot(null);
+    setViewerError('');
     setTransactions([]);
     setLogs([]);
     localStorage.removeItem('octavioUser');
@@ -183,8 +183,9 @@ function App() {
   useEffect(() => {
     if (isPublicViewer) {
       setTimeout(() => {
-        setBatches([publicViewerBatch]);
-        setActiveBatch(publicViewerBatch);
+        const liveBatch = viewerPreviewData?.batch || viewerPreviewData?.batches?.[0] || null;
+        setBatches(viewerPreviewData?.batches || (liveBatch ? [liveBatch] : []));
+        setActiveBatch(liveBatch);
       }, 0);
       return;
     }
@@ -253,7 +254,7 @@ function App() {
     return () => {
       isCancelled = true;
     };
-  }, [token, clearSession, isPublicViewer, user]);
+  }, [token, clearSession, isPublicViewer, user, viewerPreviewData]);
 
   const selectActiveBatch = useCallback((batch) => {
     setActiveBatch(batch || null);
@@ -301,7 +302,9 @@ function App() {
 
   useEffect(() => {
     if (isPublicViewer) {
-      setLogs(publicViewerLogs);
+      setTimeout(() => {
+        setLogs(viewerPreviewData?.logs || []);
+      }, 0);
       return;
     }
 
@@ -331,7 +334,7 @@ function App() {
     };
 
     fetchLogs();
-  }, [token, activeBatchId, clearSession, isPublicViewer]);
+  }, [token, activeBatchId, clearSession, isPublicViewer, viewerPreviewData]);
 
   // --- LOGIN HANDLER ---
   const handleLogin = (userData, authToken) => {
@@ -342,13 +345,49 @@ function App() {
     localStorage.setItem('octavioToken', authToken);
   };
 
-  const handleViewerAccess = () => {
-    setUser(publicViewerUser);
-    setToken(null);
-    setActiveBatch(publicViewerBatch);
-    setTransactions([]);
-    setLogs(publicViewerLogs);
-    setActiveScreen('dashboard');
+  const handleViewerAccess = async () => {
+    setIsViewerLoading(true);
+    setViewerError('');
+
+    try {
+      const response = await fetch(`${API_BASE}/api/public/current-batch`);
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Current batch is unavailable.');
+      }
+
+      const liveBatch = data.batch || data.batches?.[0] || null;
+
+      if (!liveBatch) {
+        throw new Error('No current batch is available for viewer access.');
+      }
+
+      const nextSnapshot = {
+        ...data,
+        batch: liveBatch,
+        batches: data.batches?.length ? data.batches : [liveBatch],
+        logs: data.logs || [],
+      };
+
+      setViewerSnapshot(nextSnapshot);
+      setUser({
+        ...publicViewerUser,
+        username: 'viewer.live',
+        email: 'viewer@octavio.live',
+      });
+      setToken(null);
+      setActiveBatch(liveBatch);
+      setBatches(nextSnapshot.batches);
+      setTransactions([]);
+      setLogs(nextSnapshot.logs);
+      setActiveScreen('today');
+    } catch (error) {
+      console.error('Failed to open viewer mode:', error);
+      setViewerError(error.message || 'Cannot open the current batch right now.');
+    } finally {
+      setIsViewerLoading(false);
+    }
   };
 
   const handleLogout = () => {
@@ -374,6 +413,8 @@ function App() {
       <IntroPage
         onContinueAsViewer={handleViewerAccess}
         onMemberLogin={() => setAuthView('login')}
+        isViewerLoading={isViewerLoading}
+        viewerError={viewerError}
       />
     );
   }

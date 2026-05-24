@@ -191,12 +191,14 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
 
   useEffect(() => {
     if (!token && previewData) {
-      setItems(previewData.inventoryItems || []);
-      setMovements(previewData.inventoryMovements || []);
-      setBuildings(['All', ...(previewData.buildings || []).map((building) => building.name)]);
-      setStakeholders(previewData.stakeholders || []);
-      setError('');
-      setIsLoading(false);
+      setTimeout(() => {
+        setItems(previewData.inventoryItems || []);
+        setMovements(previewData.inventoryMovements || []);
+        setBuildings(['All', ...(previewData.buildings || []).map((building) => building.name)]);
+        setStakeholders(previewData.stakeholders || []);
+        setError('');
+        setIsLoading(false);
+      }, 0);
       return;
     }
 

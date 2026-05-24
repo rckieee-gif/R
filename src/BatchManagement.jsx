@@ -104,15 +104,17 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
 
   useEffect(() => {
     if (!token && previewData) {
-      setBatches(previewData.batches || []);
-      setBuildings(previewData.buildings || []);
-      setLoadings((previewData.loadings || []).map((row) => ({
-        building: row.building,
-        owner: row.owner || getBuildingOwner(row.building),
-        chicksLoaded: String(row.chicksLoaded || ''),
-        loadingSharePct: row.loadingSharePct || 0,
-        remarks: row.remarks || ''
-      })));
+      setTimeout(() => {
+        setBatches(previewData.batches || []);
+        setBuildings(previewData.buildings || []);
+        setLoadings((previewData.loadings || []).map((row) => ({
+          building: row.building,
+          owner: row.owner || getBuildingOwner(row.building),
+          chicksLoaded: String(row.chicksLoaded || ''),
+          loadingSharePct: row.loadingSharePct || 0,
+          remarks: row.remarks || ''
+        })));
+      }, 0);
       return;
     }
 
