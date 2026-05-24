@@ -422,10 +422,10 @@ function App() {
   // If they ARE logged in, show the App!
   const getNavLinkClass = (screen) => {
     const isActive = activeScreen === screen;
-    return `px-4 py-2 rounded-full font-bold text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
+    return `px-3.5 py-1.5 rounded uppercase tracking-wider font-bold text-[10px] sm:text-xs whitespace-nowrap transition-all duration-200 ${
       isActive
-        ? 'bg-app-accent text-app-on-accent shadow-md scale-105'
-        : 'bg-app-card text-app-text-secondary border border-app-border hover:bg-slate-100 dark:hover:bg-stitch-surface-container-high'
+        ? 'bg-app-accent text-app-on-accent shadow-sm scale-[1.02]'
+        : 'bg-app-card text-app-text-secondary border border-app-border hover:bg-app-bg hover:text-app-text'
     }`;
   };
 
@@ -434,7 +434,7 @@ function App() {
       <div className="bg-app-bg text-app-text min-h-screen pb-10 transition-colors duration-300 font-sans">
         
         {/* --- TOP NAVIGATION MENU --- */}
-        <div className="no-print bg-app-card/95 backdrop-blur-md shadow-sm border-b border-app-border p-3 sm:p-4 mb-4 flex justify-between items-center sticky top-0 z-10 transition-colors duration-300">
+        <div className="no-print bg-app-card border-b border-app-border p-3 mb-4 flex justify-between items-center sticky top-0 z-10 transition-colors duration-300">
           
           <div className="flex space-x-2 overflow-x-auto ag-scrollbar py-1">
             <button onClick={() => setActiveScreen('today')} className={getNavLinkClass('today')}>Today</button>
@@ -482,7 +482,7 @@ function App() {
                   value={activeBatch?.id || ''}
                   onChange={handleBatchSelectorChange}
                   disabled={isBatchListLoading || batches.length === 0}
-                  className="h-10 w-[8.5rem] sm:w-48 rounded-full border border-app-border bg-app-card px-3 text-xs sm:text-sm font-bold text-app-text shadow-sm outline-none transition focus:ring-2 focus:ring-app-accent disabled:cursor-not-allowed disabled:opacity-60"
+                  className="h-10 w-[8.5rem] sm:w-48 rounded border border-app-border bg-app-card px-3 text-xs sm:text-sm font-bold text-app-text shadow-sm outline-none transition focus:ring-2 focus:ring-app-accent disabled:cursor-not-allowed disabled:opacity-60"
                   title="Active batch"
                 >
                   {isBatchListLoading && <option value="">Loading batches</option>}
@@ -498,7 +498,7 @@ function App() {
             {allowedScreens.includes('settings') && (
               <button
                 onClick={() => setActiveScreen('settings')}
-                className={`h-10 w-10 inline-flex items-center justify-center rounded-full border shadow-sm hover:scale-105 transition-transform ${
+                className={`h-10 w-10 inline-flex items-center justify-center rounded border shadow-sm hover:scale-105 transition-transform ${
                   activeScreen === 'settings'
                     ? 'bg-app-accent text-app-on-accent border-app-accent'
                     : 'bg-app-card text-app-text-secondary border-app-border hover:text-app-text'
@@ -511,7 +511,7 @@ function App() {
             )}
             <button
               onClick={() => setIsDarkMode(!isDarkMode)}
-              className="h-10 w-10 inline-flex items-center justify-center rounded-full bg-app-card text-app-text-secondary border border-app-border shadow-sm hover:scale-105 transition-transform hover:text-app-text"
+              className="h-10 w-10 inline-flex items-center justify-center rounded bg-app-card text-app-text-secondary border border-app-border shadow-sm hover:scale-105 transition-transform hover:text-app-text"
               aria-label={isDarkMode ? 'Use Light Mode' : 'Use Dark Mode'}
               title={isDarkMode ? 'Use Light Mode' : 'Use Dark Mode'}
             >
