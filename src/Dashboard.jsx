@@ -4,6 +4,7 @@ import {
   getAgeDay,
   getLastBroilerTargetDay
 } from './broilerTargets';
+import WeatherForecast from './Components/WeatherForecast';
 
 function todayInput() {
   const now = new Date();
@@ -204,6 +205,9 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
           <p className="text-sm font-bold mt-1 font-jetbrains">{todaysLogs.length}</p>
         </div>
       </div>
+
+      {/* Weather Forecast */}
+      <WeatherForecast />
 
       {/* Quick Action buttons */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
