@@ -12,36 +12,42 @@ const WMO_CODES = {
   2: { label: 'Partly cloudy', icon: 'partly_cloudy_day', tone: 'text-slate-300' },
   3: { label: 'Overcast', icon: 'cloud', tone: 'text-slate-400' },
   45: { label: 'Fog', icon: 'foggy', tone: 'text-slate-400' },
-  48: { label: 'Depositing rime fog', icon: 'foggy', tone: 'text-slate-400' },
+  48: { label: 'Rime fog', icon: 'foggy', tone: 'text-slate-400' },
   51: { label: 'Light drizzle', icon: 'rainy_light', tone: 'text-blue-300' },
-  53: { label: 'Moderate drizzle', icon: 'rainy_light', tone: 'text-blue-400' },
+  53: { label: 'Drizzle', icon: 'rainy_light', tone: 'text-blue-400' },
   55: { label: 'Dense drizzle', icon: 'rainy', tone: 'text-blue-400' },
   61: { label: 'Slight rain', icon: 'rainy_light', tone: 'text-blue-300' },
   63: { label: 'Moderate rain', icon: 'rainy', tone: 'text-blue-400' },
   65: { label: 'Heavy rain', icon: 'rainy_heavy', tone: 'text-blue-500' },
-  80: { label: 'Slight showers', icon: 'rainy_light', tone: 'text-blue-300' },
-  81: { label: 'Moderate showers', icon: 'rainy', tone: 'text-blue-400' },
-  82: { label: 'Violent showers', icon: 'rainy_heavy', tone: 'text-blue-500' },
+  80: { label: 'Light showers', icon: 'rainy_light', tone: 'text-blue-300' },
+  81: { label: 'Showers', icon: 'rainy', tone: 'text-blue-400' },
+  82: { label: 'Heavy showers', icon: 'rainy_heavy', tone: 'text-blue-500' },
   95: { label: 'Thunderstorm', icon: 'thunderstorm', tone: 'text-purple-400' },
-  96: { label: 'Thunderstorm w/ hail', icon: 'thunderstorm', tone: 'text-purple-500' },
-  99: { label: 'Thunderstorm w/ heavy hail', icon: 'thunderstorm', tone: 'text-purple-500' },
+  96: { label: 'T-storm + hail', icon: 'thunderstorm', tone: 'text-purple-500' },
+  99: { label: 'Severe storm', icon: 'thunderstorm', tone: 'text-purple-500' },
 };
 
 function getWeatherInfo(code) {
   return WMO_CODES[code] || { label: 'Unknown', icon: 'help', tone: 'text-slate-400' };
 }
 
-function formatDay(dateStr) {
+function formatDayShort(dateStr) {
   const date = new Date(dateStr + 'T00:00:00');
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
-
   if (date.getTime() === today.getTime()) return 'Today';
-  if (date.getTime() === tomorrow.getTime()) return 'Tomorrow';
+  if (date.getTime() === tomorrow.getTime()) return 'Tmrw';
+  return date.toLocaleDateString(undefined, { weekday: 'short' });
+}
 
-  return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+function formatDayLong(dateStr) {
+  const date = new Date(dateStr + 'T00:00:00');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (date.getTime() === today.getTime()) return 'Today';
+  return date.toLocaleDateString(undefined, { weekday: 'long' });
 }
 
 function getCachedData() {
@@ -63,6 +69,61 @@ function setCachedData(data) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data }));
   } catch { /* ignore quota errors */ }
+}
+
+/* ── Stat pill used in the Today hero card ── */
+function StatChip({ icon, value, unit, iconColor }) {
+  return (
+    <div className="flex items-center gap-1.5 bg-white/[0.06] rounded-lg px-2.5 py-1.5">
+      <span className={`material-symbols-outlined text-sm ${iconColor}`}>{icon}</span>
+      <span className="text-[11px] font-bold font-jetbrains text-dashboard-text">
+        {value}<span className="text-[9px] font-normal text-dashboard-text-secondary ml-0.5">{unit}</span>
+      </span>
+    </div>
+  );
+}
+
+/* ── Single upcoming-day row ── */
+function ForecastRow({ day }) {
+  const weather = getWeatherInfo(day.weatherCode);
+  return (
+    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors">
+      {/* Day name */}
+      <span className="text-[11px] font-bold font-jetbrains text-dashboard-text-secondary w-10 shrink-0 uppercase tracking-wide">
+        {formatDayShort(day.date)}
+      </span>
+
+      {/* Icon */}
+      <span className={`material-symbols-outlined text-xl ${weather.tone} shrink-0`}>
+        {weather.icon}
+      </span>
+
+      {/* Rain bar — visual precipitation indicator */}
+      <div className="flex-1 mx-1">
+        <div className="h-1 rounded-full bg-white/[0.06] overflow-hidden">
+          <div
+            className="h-full rounded-full bg-blue-400/60 transition-all duration-500"
+            style={{ width: `${Math.min((day.precipitation / 30) * 100, 100)}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Precipitation value */}
+      <span className="text-[10px] font-bold font-jetbrains text-blue-400/80 w-11 text-right shrink-0">
+        {day.precipitation.toFixed(1)}<span className="text-[8px] font-normal ml-0.5">mm</span>
+      </span>
+
+      {/* Temperature range */}
+      <div className="flex items-baseline gap-1 shrink-0 w-16 justify-end">
+        <span className="text-[12px] font-black font-jetbrains text-dashboard-text">
+          {Math.round(day.tempMax)}°
+        </span>
+        <span className="text-[10px] font-semibold font-jetbrains text-dashboard-text-secondary">
+          {Math.round(day.tempMin)}°
+        </span>
+      </div>
+    </div>
+  );
 }
 
 export default function WeatherForecast() {
@@ -109,35 +170,23 @@ export default function WeatherForecast() {
     fetchWeather();
   }, [fetchWeather]);
 
-  return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <h3 className="text-dashboard-text-secondary font-bold tracking-widest uppercase text-xs font-jetbrains">
-            Weather Forecast
-          </h3>
-          <span className="text-[10px] text-dashboard-text-secondary/70 font-inter">
-            {LOCATION_NAME}
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={() => { localStorage.removeItem(CACHE_KEY); fetchWeather(); }}
-          className="text-[10px] font-bold text-dashboard-accent bg-dashboard-accent/15 px-2 py-1 rounded-lg hover:bg-dashboard-accent/25 transition-colors font-jetbrains cursor-pointer"
-        >
-          Refresh
-        </button>
-      </div>
-
-      {loading && (
-        <div className="bg-dashboard-card border border-dashboard-border rounded-xl p-6 text-center">
+  /* ── Loading state ── */
+  if (loading) {
+    return (
+      <div className="mb-6">
+        <div className="bg-dashboard-card border border-dashboard-border rounded-xl p-8 text-center">
           <span className="material-symbols-outlined text-dashboard-text-secondary animate-spin text-2xl">progress_activity</span>
-          <p className="text-xs text-dashboard-text-secondary mt-2 font-inter">Loading forecast...</p>
+          <p className="text-xs text-dashboard-text-secondary mt-2 font-inter">Fetching weather…</p>
         </div>
-      )}
+      </div>
+    );
+  }
 
-      {error && !loading && (
-        <div className="bg-dashboard-card border border-dashboard-border rounded-xl p-5 text-center">
+  /* ── Error state ── */
+  if (error) {
+    return (
+      <div className="mb-6">
+        <div className="bg-dashboard-card border border-dashboard-border rounded-xl p-6 text-center">
           <span className="material-symbols-outlined text-dashboard-danger text-2xl">cloud_off</span>
           <p className="text-xs text-dashboard-text-secondary mt-2 font-inter">{error}</p>
           <button
@@ -148,79 +197,98 @@ export default function WeatherForecast() {
             Try again
           </button>
         </div>
-      )}
+      </div>
+    );
+  }
 
-      {!loading && !error && forecast && (
-        <div className="grid grid-cols-5 gap-2">
-          {forecast.map((day) => {
-            const weather = getWeatherInfo(day.weatherCode);
-            const isHeavyRain = day.precipitation > 20;
-            const isRainy = day.precipitation > 5;
+  if (!forecast) return null;
 
-            return (
-              <div
-                key={day.date}
-                className={`bg-dashboard-card border rounded-xl p-3 sm:p-4 transition-colors hover:border-dashboard-accent relative overflow-hidden group ${
-                  isHeavyRain
-                    ? 'border-blue-500/40'
-                    : isRainy
-                    ? 'border-blue-400/20'
-                    : 'border-dashboard-border'
-                }`}
-              >
-                {/* Day label */}
-                <p className="text-[9px] sm:text-[10px] font-bold text-dashboard-text-secondary uppercase tracking-wide font-jetbrains truncate">
-                  {formatDay(day.date)}
-                </p>
+  const today = forecast[0];
+  const upcoming = forecast.slice(1);
+  const todayWeather = getWeatherInfo(today.weatherCode);
 
-                {/* Weather icon */}
-                <div className="flex justify-center my-2 sm:my-3">
-                  <span className={`material-symbols-outlined text-3xl sm:text-4xl ${weather.tone} drop-shadow-sm`}>
-                    {weather.icon}
-                  </span>
-                </div>
+  return (
+    <div className="mb-6">
+      {/* Section header */}
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-dashboard-text-secondary font-bold tracking-widest uppercase text-xs font-jetbrains">
+          Weather Forecast
+        </h3>
+        <button
+          type="button"
+          onClick={() => { localStorage.removeItem(CACHE_KEY); fetchWeather(); }}
+          className="text-[10px] font-bold text-dashboard-accent bg-dashboard-accent/15 px-2 py-1 rounded-lg hover:bg-dashboard-accent/25 transition-colors font-jetbrains cursor-pointer"
+        >
+          Refresh
+        </button>
+      </div>
 
-                {/* Weather label */}
-                <p className="text-[8px] sm:text-[9px] text-center text-dashboard-text-secondary font-inter leading-tight truncate mb-2">
-                  {weather.label}
-                </p>
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_1.2fr] gap-3">
 
-                {/* Temperature */}
-                <div className="text-center mb-2">
-                  <span className="text-sm sm:text-base font-black font-jetbrains text-dashboard-text">
-                    {Math.round(day.tempMax)}°
-                  </span>
-                  <span className="text-[10px] sm:text-xs text-dashboard-text-secondary font-jetbrains ml-1">
-                    {Math.round(day.tempMin)}°
-                  </span>
-                </div>
+        {/* ── TODAY hero card ── */}
+        <div className="bg-dashboard-card border border-dashboard-border rounded-xl p-5 relative overflow-hidden group hover:border-dashboard-accent transition-colors">
+          {/* Decorative bg icon */}
+          <div className="absolute -top-4 -right-4 opacity-[0.06] group-hover:opacity-[0.10] transition-opacity duration-500 pointer-events-none">
+            <span className={`material-symbols-outlined text-[120px] ${todayWeather.tone}`}>
+              {todayWeather.icon}
+            </span>
+          </div>
 
-                {/* Stats */}
-                <div className="space-y-1 border-t border-dashboard-border/50 pt-2">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="material-symbols-outlined text-blue-400 text-xs">water_drop</span>
-                    <span className="text-[9px] sm:text-[10px] font-bold font-jetbrains text-dashboard-text-secondary">
-                      {day.precipitation.toFixed(1)}<span className="text-[7px] font-normal ml-0.5">mm</span>
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="material-symbols-outlined text-teal-400 text-xs">humidity_percentage</span>
-                    <span className="text-[9px] sm:text-[10px] font-bold font-jetbrains text-dashboard-text-secondary">
-                      {day.humidity}<span className="text-[7px] font-normal ml-0.5">%</span>
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="material-symbols-outlined text-slate-400 text-xs">air</span>
-                    <span className="text-[9px] sm:text-[10px] font-bold font-jetbrains text-dashboard-text-secondary">
-                      {day.windSpeed.toFixed(0)}<span className="text-[7px] font-normal ml-0.5">km/h</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {/* Top row: location + day */}
+          <div className="relative z-10 flex items-center justify-between mb-4">
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-dashboard-text-secondary font-jetbrains">
+                {formatDayLong(today.date)}
+              </p>
+              <p className="text-[10px] text-dashboard-text-secondary/60 font-inter mt-0.5 flex items-center gap-1">
+                <span className="material-symbols-outlined text-[12px]">location_on</span>
+                {LOCATION_NAME}
+              </p>
+            </div>
+          </div>
+
+          {/* Main temperature + icon + condition */}
+          <div className="relative z-10 flex items-center gap-4 mb-4">
+            <span className={`material-symbols-outlined text-5xl ${todayWeather.tone} drop-shadow-lg`}>
+              {todayWeather.icon}
+            </span>
+            <div>
+              <p className="text-4xl font-black font-jetbrains text-dashboard-text leading-none">
+                {Math.round(today.tempMax)}°
+                <span className="text-lg font-semibold text-dashboard-text-secondary ml-1">
+                  / {Math.round(today.tempMin)}°
+                </span>
+              </p>
+              <p className="text-xs text-dashboard-text-secondary font-inter mt-1 font-medium">
+                {todayWeather.label}
+              </p>
+            </div>
+          </div>
+
+          {/* Stats chips */}
+          <div className="relative z-10 flex flex-wrap gap-2">
+            <StatChip icon="water_drop" value={today.precipitation.toFixed(1)} unit="mm" iconColor="text-blue-400" />
+            <StatChip icon="humidity_percentage" value={today.humidity} unit="%" iconColor="text-teal-400" />
+            <StatChip icon="air" value={today.windSpeed.toFixed(0)} unit="km/h" iconColor="text-slate-400" />
+          </div>
         </div>
-      )}
+
+        {/* ── UPCOMING days list ── */}
+        <div className="bg-dashboard-card border border-dashboard-border rounded-xl py-2 px-1 hover:border-dashboard-accent transition-colors">
+          <div className="px-3 pt-2 pb-1">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-dashboard-text-secondary font-jetbrains">
+              Next {upcoming.length} Days
+            </p>
+          </div>
+
+          <div className="divide-y divide-dashboard-border/40">
+            {upcoming.map((day) => (
+              <ForecastRow key={day.date} day={day} />
+            ))}
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }
