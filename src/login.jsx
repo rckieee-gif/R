@@ -28,19 +28,21 @@ export default function Login({ onLogin, onBack }) {
 
     const rect = card.getBoundingClientRect();
     
-    // Calculate position relative to card center (-1 to 1)
-    const x = (clientX - rect.left - rect.width / 2) / (rect.width / 2);
-    const y = (clientY - rect.top - rect.height / 2) / (rect.height / 2);
+    // Calculate position relative to card center (-1 to 1) and clamp it
+    const rawX = (clientX - rect.left - rect.width / 2) / (rect.width / 2);
+    const rawY = (clientY - rect.top - rect.height / 2) / (rect.height / 2);
+    const x = Math.max(-1, Math.min(1, rawX));
+    const y = Math.max(-1, Math.min(1, rawY));
 
-    // Limit the rotation angle
-    const maxRotate = 6;
+    // Limit the rotation angle to a very subtle tilt
+    const maxRotate = 3;
     const rotateX = -y * maxRotate;
     const rotateY = x * maxRotate;
 
     // Dynamic shadow based on tilt
-    const shadowX = -x * 12;
-    const shadowY = -y * 12;
-    const shadowBlur = 30 + Math.abs(x) * 10 + Math.abs(y) * 10;
+    const shadowX = -x * 8;
+    const shadowY = -y * 8;
+    const shadowBlur = 35 + Math.abs(x) * 5;
 
     card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
     card.style.boxShadow = `
