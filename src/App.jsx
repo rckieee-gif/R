@@ -142,24 +142,6 @@ function App() {
     });
   };
 
-  const screensMeta = useMemo(() => [
-    { id: 'today', label: 'Today', icon: 'today' },
-    { id: 'dashboard', label: 'Home', icon: 'home' },
-    { id: 'batches', label: 'Batches', icon: 'layers' },
-    { id: 'employees', label: 'Employees', icon: 'group' },
-    { id: 'paySummary', label: 'Pay Summary', icon: 'payments' },
-    { id: 'ledger', label: 'Ledger', icon: 'receipt_long' },
-    { id: 'harvest', label: 'Harvest', icon: 'agriculture' },
-    { id: 'dailyLog', label: 'Daily Logs', icon: 'edit_note' },
-    { id: 'inventory', label: 'Inventory', icon: 'inventory' },
-    { id: 'analytics', label: 'Analytics', icon: 'monitoring' },
-    { id: 'statement', label: 'Statement', icon: 'description' },
-  ], []);
-
-  const visibleNavItems = useMemo(() => {
-    return screensMeta.filter((item) => allowedScreens.includes(item.id));
-  }, [allowedScreens, screensMeta]);
-
   const [activeScreen, setActiveScreen] = useState('today');
   // --- LEDGER DATABASE (NOW CONNECTED TO POSTGRESQL!) ---
   const [transactions, setTransactions] = useState([]);
@@ -194,6 +176,24 @@ function App() {
       ...(canManageOperations ? ['employees', 'ledger', 'harvest', 'statement'] : []),
     ];
   }, [canManageOperations, isPublicViewer]);
+
+  const screensMeta = useMemo(() => [
+    { id: 'today', label: 'Today', icon: 'today' },
+    { id: 'dashboard', label: 'Home', icon: 'home' },
+    { id: 'batches', label: 'Batches', icon: 'layers' },
+    { id: 'employees', label: 'Employees', icon: 'group' },
+    { id: 'paySummary', label: 'Pay Summary', icon: 'payments' },
+    { id: 'ledger', label: 'Ledger', icon: 'receipt_long' },
+    { id: 'harvest', label: 'Harvest', icon: 'agriculture' },
+    { id: 'dailyLog', label: 'Daily Logs', icon: 'edit_note' },
+    { id: 'inventory', label: 'Inventory', icon: 'inventory' },
+    { id: 'analytics', label: 'Analytics', icon: 'monitoring' },
+    { id: 'statement', label: 'Statement', icon: 'description' },
+  ], []);
+
+  const visibleNavItems = useMemo(() => {
+    return screensMeta.filter((item) => allowedScreens.includes(item.id));
+  }, [allowedScreens, screensMeta]);
 
   const clearSession = useCallback(() => {
     setUser(null);
