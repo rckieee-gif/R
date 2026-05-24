@@ -159,6 +159,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
   const [loadings, setLoadings] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [feedItems, setFeedItems] = useState([]);
+  const [harvestProductionSummary, setHarvestProductionSummary] = useState(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const today = todayInput();
@@ -172,6 +173,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
         setLoadings(previewData.loadings || []);
         setAssignments(previewData.assignments || []);
         setFeedItems(previewData.feedItems || []);
+        setHarvestProductionSummary(previewData.harvestProductionSummary || null);
         setError('');
         setIsLoading(false);
       }, 0);
@@ -183,6 +185,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
         setLoadings([]);
         setAssignments([]);
         setFeedItems([]);
+        setHarvestProductionSummary(null);
       }, 0);
       return;
     }
@@ -195,16 +198,18 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
       setError('');
 
       try {
-        const [loadingResponse, assignmentResponse, feedResponse] = await Promise.all([
+        const [loadingResponse, assignmentResponse, feedResponse, harvestResponse] = await Promise.all([
           fetch(`${API_BASE}/api/batches/${activeBatch.id}/loadings`, { headers }),
           fetch(`${API_BASE}/api/batches/${activeBatch.id}/employee-assignments`, { headers }),
-          fetch(`${API_BASE}/api/inventory/items?category=Feed`, { headers })
+          fetch(`${API_BASE}/api/inventory/items?category=Feed`, { headers }),
+          fetch(`${API_BASE}/api/batches/${activeBatch.id}/harvest-production-summary`, { headers })
         ]);
 
-        const [loadingData, assignmentData, feedData] = await Promise.all([
+        const [loadingData, assignmentData, feedData, harvestData] = await Promise.all([
           loadingResponse.json(),
           assignmentResponse.json(),
-          feedResponse.json()
+          feedResponse.json(),
+          harvestResponse.json().catch(() => null)
         ]);
 
         if (!isMounted) return;
@@ -217,6 +222,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
         setLoadings(loadingData);
         setAssignments(assignmentData);
         setFeedItems(feedData);
+        setHarvestProductionSummary(harvestResponse.ok ? harvestData : null);
       } catch (err) {
         console.error(err);
         if (isMounted) setError('Cannot connect to today operations.');
@@ -412,6 +418,17 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     const totalFeedKg = batchTotals.feed * BAG_WEIGHT_KG;
     const latestBatchWeightLog = getLatestWeightLog(logs);
     const latestWeightLogsByBuilding = new Map();
+    const harvestTotals = harvestProductionSummary?.totals || {};
+    const harvestSoldBirds = harvestProductionSummary?.hasActualSales ? Number(harvestTotals.birds || 0) : null;
+    const harvestKilos = harvestProductionSummary?.hasActualSales ? Number(harvestTotals.kilos || 0) : null;
+    const harvestAverageWeightKg = harvestSoldBirds && harvestKilos
+      ? harvestKilos / harvestSoldBirds
+      : Number(harvestTotals.averageWeightKg || 0) || null;
+    const harvestYieldRate = loadedBirds > 0 && harvestSoldBirds !== null
+      ? (harvestSoldBirds / loadedBirds) * 100
+      : null;
+    const harvestFcr = harvestKilos && harvestKilos > 0 ? totalFeedKg / harvestKilos : null;
+    const estimatedVsSoldGap = harvestSoldBirds !== null ? estimatedLiveBirds - harvestSoldBirds : null;
 
     [...logs]
       .filter((log) => Number(log.averageWeightGrams || 0) > 0)
@@ -481,9 +498,21 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
       latestWeightDate: latestBatchWeightLog?.date || '',
       actualFcr,
       targetFcr: targetFeed?.fcr ?? null,
+      harvest: {
+        ...harvestProductionSummary,
+        hasReport: Boolean(harvestProductionSummary?.hasReport),
+        hasActualSales: Boolean(harvestProductionSummary?.hasActualSales),
+        soldBirds: harvestSoldBirds,
+        kilos: harvestKilos,
+        averageWeightKg: harvestAverageWeightKg,
+        yieldRate: harvestYieldRate,
+        fcr: harvestFcr,
+        estimatedVsSoldGap,
+        perHarvest: harvestProductionSummary?.perHarvest || []
+      },
       buildingSummaries
     };
-  }, [activeBatch, activeLoadings, assignments, lastTargetDay, logs, today]);
+  }, [activeBatch, activeLoadings, assignments, harvestProductionSummary, lastTargetDay, logs, today]);
 
   const postChecklist = useMemo(() => {
     if (!postSummary) return [];
@@ -511,6 +540,15 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
         value: activeLoadings.length ? `${activeLoadings.length} loaded` : 'None',
         detail: `${formatNumber(postSummary.loadedBirds)} birds loaded`,
         tone: activeLoadings.length ? 'success' : 'warning'
+      },
+      {
+        key: 'harvest-report',
+        label: 'Harvest report',
+        value: postSummary.harvest.hasActualSales ? 'Actuals loaded' : postSummary.harvest.hasReport ? 'No totals' : 'Missing',
+        detail: postSummary.harvest.hasActualSales
+          ? `${formatNumber(postSummary.harvest.soldBirds)} birds / ${formatNumber(postSummary.harvest.kilos, 1)} kg`
+          : 'No sold birds or kilos recorded',
+        tone: postSummary.harvest.hasActualSales ? 'success' : 'warning'
       },
       {
         key: 'feed-inventory',
@@ -558,6 +596,14 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     const fcrTone = postSummary.actualFcr === null || postSummary.targetFcr === null
       ? 'neutral'
       : postSummary.actualFcr > postSummary.targetFcr + 0.15
+        ? 'warning'
+        : 'success';
+    const harvestRows = postSummary.harvest.perHarvest.filter((row) => (
+      row.harvestDate || Number(row.birds || 0) > 0 || Number(row.kilos || 0) > 0
+    ));
+    const harvestFcrTone = postSummary.harvest.fcr === null || postSummary.targetFcr === null
+      ? 'neutral'
+      : postSummary.harvest.fcr > postSummary.targetFcr + 0.15
         ? 'warning'
         : 'success';
 
@@ -632,6 +678,79 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
             tone={fcrTone}
           />
         </div>
+
+        <section className="mt-6">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h3 className="text-sm font-extrabold uppercase tracking-wide text-primary dark:text-primary-light">Harvest Yield</h3>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              {postSummary.harvest.hasActualSales ? postSummary.harvest.status || 'Recorded' : 'Awaiting actuals'}
+            </span>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-4">
+            <SummaryMetric
+              label="Actual sold"
+              value={postSummary.harvest.soldBirds === null ? '--' : formatNumber(postSummary.harvest.soldBirds)}
+              detail={`Est. live ${formatNumber(postSummary.estimatedLiveBirds)}`}
+              tone={postSummary.harvest.hasActualSales ? 'success' : 'neutral'}
+            />
+            <SummaryMetric
+              label="Actual kilos"
+              value={postSummary.harvest.kilos === null ? '--' : `${formatNumber(postSummary.harvest.kilos, 1)} kg`}
+              detail={postSummary.harvest.averageWeightKg ? `${formatNumber(postSummary.harvest.averageWeightKg, 2)} kg average` : 'No sold kilos recorded'}
+              tone={postSummary.harvest.hasActualSales ? 'success' : 'neutral'}
+            />
+            <SummaryMetric
+              label="Harvest yield"
+              value={formatPercent(postSummary.harvest.yieldRate)}
+              detail={postSummary.harvest.estimatedVsSoldGap === null ? 'Waiting for sold birds' : `${formatNumber(postSummary.harvest.estimatedVsSoldGap)} est. vs sold gap`}
+              tone={postSummary.harvest.hasActualSales ? 'success' : 'neutral'}
+            />
+            <SummaryMetric
+              label="Actual FCR"
+              value={postSummary.harvest.fcr === null ? '--' : formatNumber(postSummary.harvest.fcr, 2)}
+              detail={postSummary.harvest.fcr === null ? 'Needs sold kilos' : 'Feed kg divided by sold kg'}
+              tone={harvestFcrTone}
+            />
+          </div>
+
+          {harvestRows.length > 0 && (
+            <div className="mt-3 overflow-x-auto rounded-xl border border-neutral-border bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+              <table className="min-w-full text-left text-sm">
+                <thead className="bg-neutral-light text-[10px] font-black uppercase tracking-wider text-gray-400 dark:bg-gray-900">
+                  <tr>
+                    <th className="px-4 py-3">Harvest</th>
+                    <th className="px-4 py-3 text-right">Date</th>
+                    <th className="px-4 py-3 text-right">Birds</th>
+                    <th className="px-4 py-3 text-right">Kilos</th>
+                    <th className="px-4 py-3 text-right">Avg wt</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-border dark:divide-gray-700">
+                  {harvestRows.map((row) => (
+                    <tr key={row.harvestOrder}>
+                      <td className="px-4 py-3 font-black text-gray-900 dark:text-white">
+                        {row.harvestOrder}
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-gray-500 dark:text-gray-300">
+                        {formatDate(row.harvestDate)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-200">
+                        {formatNumber(row.birds)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-200">
+                        {formatNumber(row.kilos, 1)} kg
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-200">
+                        {row.averageWeightKg ? `${formatNumber(row.averageWeightKg, 2)} kg` : '--'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
         <section className="mt-6">
           <div className="mb-3 flex items-center justify-between gap-3">
