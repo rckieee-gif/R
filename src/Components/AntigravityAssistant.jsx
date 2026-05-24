@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { BAG_WEIGHT_KG, getAgeDay } from '../broilerTargets';
+import { API_BASE } from '../api';
 
 const quickActionClass = "text-[10px] font-black py-1.5 px-2.5 rounded-full bg-white/90 dark:bg-[#202a22] text-[#263128] dark:text-[#eef5df] border border-[#d8dfca] dark:border-[#40513f] hover:bg-[#f6edc7] dark:hover:bg-[#2c392c] active:scale-95 transition-all cursor-pointer flex items-center space-x-1 shadow-sm";
 
@@ -87,7 +88,8 @@ export default function AntigravityAssistant({
   allowedScreens = [],
   canEnterDaily = false,
   canViewFinancial = false,
-  isPublicViewer = false
+  isPublicViewer = false,
+  token = null
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const particles = useMemo(() => (isZeroGravity ? createParticles() : []), [isZeroGravity]);
@@ -165,6 +167,22 @@ export default function AntigravityAssistant({
     };
   }, [activeBatch, logs, today]);
 
+  const financialSummary = useMemo(() => {
+    const income = transactions
+      .filter((transaction) => ['revenue', 'income'].includes(String(transaction.type || '').toLowerCase()))
+      .reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0);
+    const expenses = transactions
+      .filter((transaction) => String(transaction.type || '').toLowerCase() === 'expense')
+      .reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0);
+
+    return {
+      income,
+      expenses,
+      net: income - expenses,
+      transactionCount: transactions.length
+    };
+  }, [transactions]);
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
@@ -194,6 +212,64 @@ export default function AntigravityAssistant({
       ]);
     }, 900);
   };
+
+  const addUserMessage = (text) => {
+    setMessages(prev => [
+      ...prev,
+      {
+        id: String(Date.now()),
+        sender: 'user',
+        text,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+    ]);
+  };
+
+  const addAssistantMessage = (text) => {
+    setMessages(prev => [
+      ...prev,
+      {
+        id: String(Date.now() + 1),
+        sender: 'assistant',
+        text,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+    ]);
+  };
+
+  const buildFlockOpsContext = () => ({
+    isZeroGravity,
+    availableFlows: quickActions.map((action) => action.label),
+    activeBatch: activeBatch
+      ? {
+          id: activeBatch.id,
+          batchCode: activeBatch.batchCode,
+          startDate: activeBatch.startDate,
+          targetHarvestDate: activeBatch.targetHarvestDate,
+          status: activeBatch.status,
+          totalChicksLoaded: activeBatch.totalChicksLoaded,
+          plannedFlock: activeBatch.plannedFlock,
+          targetFeedKg: activeBatch.targetFeedKg
+        }
+      : null,
+    metrics: {
+      ...batchMetrics,
+      todayLogCount: batchMetrics.todayLogs.length,
+      todayLogs: undefined
+    },
+    recentLogs: [...logs]
+      .sort((left, right) => String(right.date || '').localeCompare(String(left.date || '')))
+      .slice(0, 6)
+      .map((log) => ({
+        date: log.date,
+        building: log.building,
+        mortality: log.mortality,
+        feed: log.feed,
+        averageWeightGrams: log.averageWeightGrams,
+        remarks: log.remarks
+      })),
+    financials: canRunFinancePulse ? financialSummary : null
+  });
 
   const pauseForBatch = (actionName) => {
     simulateResponse(
@@ -361,12 +437,45 @@ export default function AntigravityAssistant({
     ...(canRunFinancePulse ? [{ key: 'finance', label: 'Finance Pulse', icon: 'payments', onClick: handleFinancePulse }] : [])
   ];
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || isTyping) return;
 
-    const query = inputValue;
+    const query = inputValue.trim();
     setInputValue('');
+
+    if (token && !isPublicViewer) {
+      addUserMessage(query);
+      setIsTyping(true);
+
+      try {
+        const response = await fetch(`${API_BASE}/api/flockops-chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            message: query,
+            context: buildFlockOpsContext()
+          })
+        });
+
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(payload.error || 'FlockOps chat is unavailable.');
+        }
+
+        addAssistantMessage(payload.reply || 'FlockOps is online, but I did not receive a usable reply. Try a shorter farm operations question.');
+      } catch (error) {
+        addAssistantMessage(`FlockOps AI is offline right now: ${error.message}\n\nTry the quick actions below for farm-safe guidance while the backend catches up.`);
+      } finally {
+        setIsTyping(false);
+      }
+
+      return;
+    }
 
     let reply;
     const lowerQuery = query.toLowerCase();
@@ -546,7 +655,7 @@ export default function AntigravityAssistant({
             />
             <button
               type="submit"
-              disabled={!inputValue.trim()}
+              disabled={!inputValue.trim() || isTyping}
               className="h-8 w-8 rounded-xl bg-[#2f7d32] text-white flex items-center justify-center shadow-md active:scale-95 disabled:opacity-40 disabled:scale-100 transition-all cursor-pointer"
               aria-label="Send message"
             >

@@ -831,6 +831,7 @@ function App() {
               canEnterDaily={canEnterDaily}
               canViewFinancial={canViewFinancial}
               isPublicViewer={isPublicViewer}
+              token={apiToken}
             />
           </div>
         </div>
