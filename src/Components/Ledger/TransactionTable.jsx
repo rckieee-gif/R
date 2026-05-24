@@ -4,14 +4,16 @@ export default function TransactionTable({
   readOnly,
   canEditOrDelete,
   handleEditClick,
-  handleDeleteTransaction
+  handleDeleteTransaction,
+  heading = 'Recent Records',
+  emptyMessage = 'No transactions logged yet.'
 }) {
   return (
     <>
       {/* SCREEN VERSION */}
       <div className="screen-only min-w-0">
         <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 ml-1">
-          Recent Records
+          {heading}
         </h3>
 
         <div className="grid gap-3 2xl:grid-cols-2">
@@ -81,7 +83,7 @@ export default function TransactionTable({
 
           {transactions.length === 0 && (
             <p className="text-center text-gray-500 text-sm mt-4">
-              No transactions logged yet.
+              {emptyMessage}
             </p>
           )}
         </div>
@@ -121,7 +123,7 @@ export default function TransactionTable({
             ))}
             {transactions.length === 0 && (
               <tr>
-                <td colSpan="9">No transactions logged yet.</td>
+                <td colSpan="9">{emptyMessage}</td>
               </tr>
             )}
           </tbody>

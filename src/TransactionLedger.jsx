@@ -26,6 +26,32 @@ function normalizeStakeholderName(name) {
   return name === 'Yanyan' ? 'Others' : name;
 }
 
+function normalizeSearchValue(value) {
+  return String(value ?? '').toLowerCase();
+}
+
+function getTransactionDateValue(value) {
+  if (!value) return '';
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+    return value.slice(0, 10);
+  }
+
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) return '';
+  return parsedDate.toISOString().slice(0, 10);
+}
+
+function formatLedgerMoney(amount) {
+  return `PHP ${Number(amount || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
+}
+
+function getUniqueOptions(values) {
+  return Array.from(new Set(values.filter(Boolean))).sort((left, right) => left.localeCompare(right));
+}
+
 function uniqueStakeholders(stakeholders) {
   const seen = new Set();
   return stakeholders.reduce((list, stakeholder) => {
@@ -63,6 +89,13 @@ export default function TransactionLedger({ transactions, setTransactions, activ
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState('');
   const [isLoadingMasters, setIsLoadingMasters] = useState(false);
+  const [ledgerSearch, setLedgerSearch] = useState('');
+  const [ledgerFundingFilter, setLedgerFundingFilter] = useState('all');
+  const [ledgerTypeFilter, setLedgerTypeFilter] = useState('all');
+  const [ledgerBuildingFilter, setLedgerBuildingFilter] = useState('all');
+  const [ledgerCategoryFilter, setLedgerCategoryFilter] = useState('all');
+  const [ledgerDateFrom, setLedgerDateFrom] = useState('');
+  const [ledgerDateTo, setLedgerDateTo] = useState('');
 
   const fundingNatures = useMemo(
     () => Object.keys(categoriesByFunding),
@@ -93,6 +126,89 @@ export default function TransactionLedger({ transactions, setTransactions, activ
   const isFeedLedgerRecord = category === 'Feed'
     && ['OPEX', 'CAPEX', 'CAPEX-Recoverable'].includes(fundingNature)
     && transactionType === 'Expense';
+
+  const ledgerFilterOptions = useMemo(() => ({
+    buildings: getUniqueOptions(transactions.map((tx) => tx.building || 'All')),
+    categories: getUniqueOptions(transactions.map((tx) => tx.category)),
+    fundingNatures: getUniqueOptions(transactions.map((tx) => tx.fundingNature)),
+    types: getUniqueOptions(transactions.map((tx) => tx.type))
+  }), [transactions]);
+
+  const filteredTransactions = useMemo(() => {
+    const query = ledgerSearch.trim().toLowerCase();
+
+    return transactions.filter((tx) => {
+      const txDate = getTransactionDateValue(tx.date);
+
+      if (ledgerDateFrom && (!txDate || txDate < ledgerDateFrom)) return false;
+      if (ledgerDateTo && (!txDate || txDate > ledgerDateTo)) return false;
+      if (ledgerFundingFilter !== 'all' && tx.fundingNature !== ledgerFundingFilter) return false;
+      if (ledgerTypeFilter !== 'all' && tx.type !== ledgerTypeFilter) return false;
+      if (ledgerBuildingFilter !== 'all' && (tx.building || 'All') !== ledgerBuildingFilter) return false;
+      if (ledgerCategoryFilter !== 'all' && tx.category !== ledgerCategoryFilter) return false;
+
+      if (!query) return true;
+
+      return [
+        tx.id,
+        tx.date,
+        tx.building,
+        tx.type,
+        tx.fundingNature,
+        tx.category,
+        tx.description,
+        tx.paidBy,
+        tx.paidTo,
+        tx.reference,
+        tx.remarks,
+        tx.feedItemName,
+        Number(tx.amount || 0).toFixed(2)
+      ].some((value) => normalizeSearchValue(value).includes(query));
+    });
+  }, [
+    transactions,
+    ledgerSearch,
+    ledgerDateFrom,
+    ledgerDateTo,
+    ledgerFundingFilter,
+    ledgerTypeFilter,
+    ledgerBuildingFilter,
+    ledgerCategoryFilter
+  ]);
+
+  const ledgerSummary = useMemo(() => {
+    return filteredTransactions.reduce((summary, tx) => {
+      const amountValue = Number(tx.amount || 0);
+      if (tx.fundingNature === 'Revenue') {
+        summary.revenue += amountValue;
+      } else {
+        summary.outflow += amountValue;
+      }
+      summary.entryCount += 1;
+      return summary;
+    }, { entryCount: 0, revenue: 0, outflow: 0 });
+  }, [filteredTransactions]);
+
+  const ledgerNetTotal = ledgerSummary.revenue - ledgerSummary.outflow;
+  const hasLedgerFilters = Boolean(
+    ledgerSearch.trim()
+    || ledgerFundingFilter !== 'all'
+    || ledgerTypeFilter !== 'all'
+    || ledgerBuildingFilter !== 'all'
+    || ledgerCategoryFilter !== 'all'
+    || ledgerDateFrom
+    || ledgerDateTo
+  );
+
+  const resetLedgerFilters = () => {
+    setLedgerSearch('');
+    setLedgerFundingFilter('all');
+    setLedgerTypeFilter('all');
+    setLedgerBuildingFilter('all');
+    setLedgerCategoryFilter('all');
+    setLedgerDateFrom('');
+    setLedgerDateTo('');
+  };
 
 
   useEffect(() => {
@@ -595,14 +711,164 @@ export default function TransactionLedger({ transactions, setTransactions, activ
           </div>
         )}
 
-        <TransactionTable
-          transactions={transactions}
-          editingId={editingId}
-          readOnly={readOnly}
-          canEditOrDelete={canEditOrDelete}
-          handleEditClick={handleEditClick}
-          handleDeleteTransaction={handleDeleteTransaction}
-        />
+        <div className="min-w-0 space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="bg-white dark:bg-gray-800 border border-neutral-border dark:border-gray-700 rounded-xl p-4 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">Visible Entries</p>
+              <p className="mt-2 text-2xl font-black text-gray-900 dark:text-white">
+                {ledgerSummary.entryCount.toLocaleString()}
+              </p>
+              <p className="text-[11px] font-bold text-gray-400">
+                of {transactions.length.toLocaleString()} total
+              </p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 border border-neutral-border dark:border-gray-700 rounded-xl p-4 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">Revenue</p>
+              <p className="mt-2 text-lg font-black text-semantic-success">
+                {formatLedgerMoney(ledgerSummary.revenue)}
+              </p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 border border-neutral-border dark:border-gray-700 rounded-xl p-4 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">Outflow</p>
+              <p className="mt-2 text-lg font-black text-secondary">
+                {formatLedgerMoney(ledgerSummary.outflow)}
+              </p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 border border-neutral-border dark:border-gray-700 rounded-xl p-4 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">Net</p>
+              <p className={`mt-2 text-lg font-black ${ledgerNetTotal >= 0 ? 'text-semantic-success' : 'text-semantic-danger'}`}>
+                {formatLedgerMoney(ledgerNetTotal)}
+              </p>
+            </div>
+          </div>
+
+          <div className="no-print bg-white dark:bg-gray-800 border border-neutral-border dark:border-gray-700 rounded-xl p-4 shadow-sm">
+            <div className="grid gap-3 xl:grid-cols-[minmax(240px,1.2fr)_repeat(3,minmax(140px,0.7fr))]">
+              <label className="block">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">
+                  Entry Search
+                </span>
+                <input
+                  type="search"
+                  value={ledgerSearch}
+                  onChange={(event) => setLedgerSearch(event.target.value)}
+                  placeholder="Search description, ref, payee, amount..."
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm font-bold text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </label>
+
+              <label className="block">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">
+                  Funding
+                </span>
+                <select
+                  value={ledgerFundingFilter}
+                  onChange={(event) => setLedgerFundingFilter(event.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm font-bold text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="all">All funding</option>
+                  {ledgerFilterOptions.fundingNatures.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">
+                  Type
+                </span>
+                <select
+                  value={ledgerTypeFilter}
+                  onChange={(event) => setLedgerTypeFilter(event.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm font-bold text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="all">All types</option>
+                  {ledgerFilterOptions.types.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">
+                  Building
+                </span>
+                <select
+                  value={ledgerBuildingFilter}
+                  onChange={(event) => setLedgerBuildingFilter(event.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm font-bold text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="all">All buildings</option>
+                  {ledgerFilterOptions.buildings.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-[repeat(3,minmax(140px,0.7fr))_auto] xl:items-end">
+              <label className="block">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">
+                  Category
+                </span>
+                <select
+                  value={ledgerCategoryFilter}
+                  onChange={(event) => setLedgerCategoryFilter(event.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm font-bold text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="all">All categories</option>
+                  {ledgerFilterOptions.categories.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">
+                  From
+                </span>
+                <input
+                  type="date"
+                  value={ledgerDateFrom}
+                  onChange={(event) => setLedgerDateFrom(event.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm font-bold text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </label>
+
+              <label className="block">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">
+                  To
+                </span>
+                <input
+                  type="date"
+                  value={ledgerDateTo}
+                  onChange={(event) => setLedgerDateTo(event.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm font-bold text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={resetLedgerFilters}
+                disabled={!hasLedgerFilters}
+                className="h-10 px-4 rounded-lg bg-gray-900 text-white text-xs font-black uppercase tracking-wider disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 dark:disabled:bg-gray-700 dark:disabled:text-gray-500"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+
+          <TransactionTable
+            transactions={filteredTransactions}
+            editingId={editingId}
+            readOnly={readOnly}
+            canEditOrDelete={canEditOrDelete}
+            handleEditClick={handleEditClick}
+            handleDeleteTransaction={handleDeleteTransaction}
+            heading="Ledger Records"
+            emptyMessage={hasLedgerFilters ? 'No ledger entries match your search or filters.' : 'No transactions logged yet.'}
+          />
+        </div>
       </div>
     </div>
   );
