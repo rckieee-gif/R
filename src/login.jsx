@@ -1,10 +1,66 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { API_BASE } from './api';
 
 export default function Login({ onLogin, onBack }) {
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+
+  const cardRef = useRef(null);
+  const containerRef = useRef(null);
+
+  const handleMouseMove = (e) => {
+    const card = cardRef.current;
+    if (!card) return;
+
+    let clientX, clientY;
+    if (e.type === 'touchmove' || e.type === 'touchstart') {
+      if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        return;
+      }
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    const rect = card.getBoundingClientRect();
+    
+    // Calculate position relative to card center (-1 to 1)
+    const x = (clientX - rect.left - rect.width / 2) / (rect.width / 2);
+    const y = (clientY - rect.top - rect.height / 2) / (rect.height / 2);
+
+    // Limit the rotation angle
+    const maxRotate = 15;
+    const rotateX = -y * maxRotate;
+    const rotateY = x * maxRotate;
+
+    // Dynamic shadow based on tilt
+    const shadowX = -x * 30;
+    const shadowY = -y * 30;
+    const shadowBlur = 40 + Math.abs(x) * 20 + Math.abs(y) * 20;
+
+    card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    card.style.boxShadow = `
+      ${shadowX}px ${shadowY + 20}px ${shadowBlur}px rgba(0,0,0,0.5),
+      inset 0 1px 0 rgba(255,255,255,0.2),
+      inset 0 -1px 0 rgba(0,0,0,0.2)
+    `;
+  };
+
+  const handleMouseLeave = () => {
+    const card = cardRef.current;
+    if (!card) return;
+
+    card.style.transform = 'rotateX(0deg) rotateY(0deg)';
+    card.style.boxShadow = `
+      0px 20px 40px rgba(0,0,0,0.4),
+      inset 0 1px 0 rgba(255,255,255,0.2),
+      inset 0 -1px 0 rgba(0,0,0,0.2)
+    `;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,7 +76,6 @@ export default function Login({ onLogin, onBack }) {
       const data = await response.json();
 
       if (response.ok) {
-        // Success! Pass the user data and token up to App.jsx
         onLogin(data.user, data.token);
       } else {
         setError(data.error || 'Login failed. Please try again.');
@@ -32,74 +87,125 @@ export default function Login({ onLogin, onBack }) {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-light dark:bg-gray-900 flex items-center justify-center p-4 font-sans transition-colors duration-300">
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg border border-neutral-border dark:border-gray-700 w-full max-w-sm">
-        {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            className="mb-5 text-xs font-black uppercase tracking-wider text-gray-400 transition hover:text-primary"
-          >
-            Back
-          </button>
-        )}
+    <div 
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onTouchMove={handleMouseMove}
+      onTouchEnd={handleMouseLeave}
+      className="login-app-bg text-white font-sans min-h-screen flex flex-col items-center justify-center p-4 antialiased selection:bg-brand selection:text-surface"
+    >
+      <main className="w-full max-w-[400px] flex flex-col relative overflow-hidden perspective-container py-8">
         
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-primary text-white rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-md">
-            🐔
-          </div>
-          <h1 className="text-2xl font-black text-gray-800 dark:text-white tracking-tight">Octavio Poultry</h1>
-          <p className="text-sm font-bold text-gray-400 mt-1 uppercase tracking-widest">Farm Management</p>
-        </div>
-
-        {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold mb-4 text-center border border-red-200">
-            {error}
-          </div>
+        {/* Header / Back Button */}
+        {onBack && (
+          <header className="mb-6 flex justify-start z-30">
+            <button 
+              type="button"
+              onClick={onBack}
+              aria-label="Go back" 
+              className="flex items-center transition-colors btn-login-3d back-btn-3d py-2 rounded-full inline-flex justify-center transition-all duration-150 active:scale-95 text-gray-900 font-bold px-4 text-sm"
+            >
+              <svg className="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round"></path>
+              </svg>
+              <span>Back</span>
+            </button>
+          </header>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1 pl-1">Username or Email</label>
-            <input 
-              type="text" 
-              required 
-              value={login} 
-              onChange={(e) => setLogin(e.target.value)}
-              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-primary outline-none transition-all"
-              placeholder="admin.roland"
-            />
-          </div>
+        {/* Login Content Area */}
+        <section className="flex-grow flex items-center justify-center z-10 w-full relative">
           
-          <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1 pl-1">Password</label>
-            <input 
-              type="password" 
-              required 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-primary outline-none transition-all"
-              placeholder="••••••••"
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            className="w-full bg-secondary text-white p-4 rounded-xl font-bold text-lg hover:bg-opacity-90 transition-all active:scale-95 shadow-md mt-2"
+          {/* Glassmorphism Login Card */}
+          <div 
+            ref={cardRef}
+            className="glass-card w-full rounded-[32px] p-8 flex flex-col items-center justify-center transition-all duration-100"
+            style={{
+              transform: 'rotateX(0deg) rotateY(0deg)',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.2)'
+            }}
           >
-            Sign In
-          </button>
-        </form>
+            <div className="card-content-3d w-full flex flex-col items-center">
+              
+              {/* Logo Section */}
+              <div className="flex flex-col items-center mb-8 text-center w-full blend-logo">
+                <div className="w-24 h-24 mb-4 relative flex items-center justify-center rounded-full overflow-hidden bg-transparent">
+                  <img 
+                    alt="Octavio Poultry Logo" 
+                    className="w-full h-full object-cover" 
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuABNsQ960Pmrnk68ERL8H1V7nTNgR3VcAhTQXfjz54-FzDhXtDujsFIH0JzNSozB1jq8KcKbnBMU0gkAWJTk9GX9myEeB1tWAyvtANgNNFQ66WQ31VJbRwGVC8BY0mhR-bRO0HPeLoB8xtdcQ1nOIzlL20AQ01eQQe5-PICHUimZgBgPMPZESXFLDMNCpO0Bv7p9mVW78U-HcnNZyRrppjA3inwLIZGJI2_o6DNMav2H25TGm0xApDdSwy_jmRqO97c9Q8yvn7ketUJ"
+                  />
+                </div>
+                <h1 className="text-3xl font-extrabold tracking-tight leading-none mb-1 text-white drop-shadow-md font-hanken">
+                  Octavio Poultry
+                </h1>
+                <h2 className="text-[10px] font-bold tracking-widest text-white/70 uppercase mt-1 font-jetbrains">
+                  Farm Management
+                </h2>
+              </div>
 
-        <div className="mt-6 text-center">
-          <p className="text-xs text-gray-400">  </p>
-          <p className="text-[10px] text-gray-500 mt-1">  </p>
-          <p className="text-[10px] text-gray-500">  </p>
-          <p className="text-[10px] text-gray-500">  </p>
-          <p className="text-[10px] text-gray-500">  </p>
-        </div>
+              {/* Error Alert */}
+              {error && (
+                <div className="w-full bg-red-900/60 border border-red-500/40 text-red-200 px-4 py-3 rounded-full text-xs font-semibold text-center mb-5 backdrop-blur-md">
+                  {error}
+                </div>
+              )}
 
-      </div>
+              {/* Login Form */}
+              <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4 z-20 relative">
+                
+                {/* Username Input */}
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/50">
+                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"></path>
+                    </svg>
+                  </div>
+                  <input 
+                    type="text"
+                    id="username"
+                    name="username"
+                    required
+                    value={login}
+                    onChange={(e) => setLogin(e.target.value)}
+                    className="input-glass block w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-full text-white placeholder-white/40 focus:ring-2 focus:ring-[#f9c324] focus:border-[#f9c324] focus:outline-none transition-all text-sm"
+                    placeholder="Username or Email"
+                  />
+                </div>
+
+                {/* Password Input */}
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/50">
+                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"></path>
+                    </svg>
+                  </div>
+                  <input 
+                    type="password"
+                    id="password"
+                    name="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="input-glass block w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-full text-white placeholder-white/40 focus:ring-2 focus:ring-[#f9c324] focus:border-[#f9c324] focus:outline-none transition-all text-sm"
+                    placeholder="Password"
+                  />
+                </div>
+
+                {/* Submit Button */}
+                <button 
+                  type="submit"
+                  className="mt-2 w-full text-gray-900 font-extrabold py-3.5 px-4 rounded-full text-base tracking-wide btn-login-3d cursor-pointer hover:scale-[1.01] active:scale-[0.98] transition-all"
+                >
+                  Sign In
+                </button>
+
+              </form>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }

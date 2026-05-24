@@ -431,3 +431,70 @@ body {
   /* Retained class name but cleared overrides to preserve original theme backgrounds */
 }
 
+/* ==========================================
+   STITCH MODERN LOGIN GRAPHICS & UTILITIES
+   ========================================== */
+
+.login-app-bg {
+  background: linear-gradient(to bottom, #0d3261, #041021);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-right-color: rgba(255, 255, 255, 0.1);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+  transform-style: preserve-3d;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  box-shadow: 
+    0 20px 40px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.2),
+    inset 0 -1px 0 rgba(0,0,0,0.2);
+}
+
+.card-content-3d {
+  transform: translateZ(30px);
+}
+
+.input-glass::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.input-glass {
+  transform: translateZ(10px);
+  transition: transform 0.3s ease;
+}
+
+.input-glass:focus {
+  transform: translateZ(15px);
+}
+
+.btn-login-3d {
+  background: linear-gradient(to bottom, #f9c324, #d6a110);
+  box-shadow: 0 6px 0 #b3850b, 0 10px 15px rgba(0,0,0,0.3);
+  transition: all 0.15s ease-in-out;
+  transform: translateZ(20px);
+}
+
+.btn-login-3d:hover {
+  background: linear-gradient(to bottom, #fad04b, #e0af20);
+  transform: translateZ(20px) translateY(2px);
+  box-shadow: 0 4px 0 #b3850b, 0 8px 10px rgba(0,0,0,0.3);
+}
+
+.btn-login-3d:active {
+  transform: translateZ(20px) translateY(6px);
+  box-shadow: 0 0px 0 #b3850b, 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.back-btn-3d {
+  transform: translateZ(10px);
+}
+
+.blend-logo {
+  mix-blend-mode: screen; 
+  transform: translateZ(40px);
+}
+
