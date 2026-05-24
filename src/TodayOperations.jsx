@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { API_BASE } from './api';
 import {
   BAG_WEIGHT_KG,
+  calculateActualFcr,
   calculateTargetFeedForHeads,
   getAgeDay,
   getLastBroilerTargetDay
@@ -66,6 +67,34 @@ function buildLogTotals(logRows) {
   }), { feed: 0, mortality: 0 });
 }
 
+function getBatchStatus(batch) {
+  return String(batch?.status || '').trim().toUpperCase();
+}
+
+function isPostBatch(batch) {
+  const status = getBatchStatus(batch);
+  return Boolean(batch?.actualHarvestEndDate) || ['HARVESTED', 'CLOSED', 'POSTED'].includes(status);
+}
+
+function getLatestLogDate(logRows) {
+  return logRows.reduce((latest, log) => {
+    if (!log.date) return latest;
+    if (!latest || String(log.date) > String(latest)) return log.date;
+    return latest;
+  }, '');
+}
+
+function getLatestWeightLog(logRows) {
+  return [...logRows]
+    .filter((log) => Number(log.averageWeightGrams || 0) > 0)
+    .sort((left, right) => String(right.date || '').localeCompare(String(left.date || '')))[0] || null;
+}
+
+function formatPercent(value, digits = 1) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return '--';
+  return `${formatNumber(value, digits)}%`;
+}
+
 function AttentionCard({ label, value, detail, tone = 'neutral', onClick }) {
   const toneClass = {
     danger: 'border-red-200 bg-red-50 text-semantic-danger dark:border-red-800/40 dark:bg-red-900/20',
@@ -105,6 +134,23 @@ function WarningRow({ warning }) {
           {warning.severity}
         </span>
       </div>
+    </div>
+  );
+}
+
+function SummaryMetric({ label, value, detail, tone = 'neutral' }) {
+  const toneClass = {
+    neutral: 'border-neutral-border bg-white text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white',
+    success: 'border-green-200 bg-green-50 text-semantic-success dark:border-green-800/40 dark:bg-green-900/20',
+    warning: 'border-amber-200 bg-amber-50 text-semantic-warning dark:border-amber-800/40 dark:bg-amber-900/20',
+    danger: 'border-red-200 bg-red-50 text-semantic-danger dark:border-red-800/40 dark:bg-red-900/20'
+  }[tone];
+
+  return (
+    <div className={`rounded-xl border p-4 shadow-sm ${toneClass}`}>
+      <p className="text-[10px] font-black uppercase tracking-wider opacity-75">{label}</p>
+      <p className="mt-1 text-2xl font-black">{value}</p>
+      <p className="mt-2 text-xs font-bold leading-snug opacity-80">{detail}</p>
     </div>
   );
 }
@@ -348,6 +394,133 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
   const noEmployeeCount = buildingChecks.filter((check) => !check.hasAssignedEmployee).length;
   const dangerCount = abnormalWarnings.filter((warning) => warning.severity === 'danger').length;
   const todayTotals = buildLogTotals(todayLogs);
+  const isPostSummaryMode = isPostBatch(activeBatch);
+
+  const postSummary = useMemo(() => {
+    if (!activeBatch) return null;
+
+    const latestLogDate = getLatestLogDate(logs);
+    const summaryDate = activeBatch.actualHarvestEndDate || latestLogDate || today;
+    const summaryAgeDay = activeBatch.startDate ? getAgeDay(activeBatch.startDate, summaryDate) : null;
+    const targetDay = summaryAgeDay ? Math.min(summaryAgeDay, lastTargetDay) : null;
+    const batchTotals = buildLogTotals(logs);
+    const loadedFromLoadings = activeLoadings.reduce((sum, loading) => sum + Number(loading.chicksLoaded || 0), 0);
+    const loadedBirds = Number(activeBatch.totalChicksLoaded || 0) || loadedFromLoadings;
+    const estimatedLiveBirds = loadedBirds > 0 ? Math.max(loadedBirds - batchTotals.mortality, 0) : 0;
+    const mortalityRate = loadedBirds > 0 ? (batchTotals.mortality / loadedBirds) * 100 : null;
+    const survivalRate = loadedBirds > 0 ? (estimatedLiveBirds / loadedBirds) * 100 : null;
+    const totalFeedKg = batchTotals.feed * BAG_WEIGHT_KG;
+    const latestBatchWeightLog = getLatestWeightLog(logs);
+    const latestWeightLogsByBuilding = new Map();
+
+    [...logs]
+      .filter((log) => Number(log.averageWeightGrams || 0) > 0)
+      .sort((left, right) => String(right.date || '').localeCompare(String(left.date || '')))
+      .forEach((log) => {
+        const buildingKey = getBuildingKey(log.building);
+        if (buildingKey && !latestWeightLogsByBuilding.has(buildingKey)) {
+          latestWeightLogsByBuilding.set(buildingKey, log);
+        }
+      });
+
+    const buildingSummaries = activeLoadings.map((loading) => {
+      const buildingKey = getBuildingKey(loading.building);
+      const buildingLogs = logs.filter((log) => getBuildingKey(log.building) === buildingKey);
+      const buildingTotals = buildLogTotals(buildingLogs);
+      const buildingLoaded = Number(loading.chicksLoaded || 0);
+      const buildingLiveBirds = Math.max(buildingLoaded - buildingTotals.mortality, 0);
+      const latestWeightLog = latestWeightLogsByBuilding.get(buildingKey) || getLatestWeightLog(buildingLogs);
+      const averageWeightGrams = Number(latestWeightLog?.averageWeightGrams || 0) || null;
+      const feedKg = buildingTotals.feed * BAG_WEIGHT_KG;
+      const fcr = calculateActualFcr(feedKg, buildingLiveBirds, averageWeightGrams);
+      const assignedEmployees = assignments.filter((assignment) => (
+        getAssignmentBuilding(assignment) === buildingKey && Number(assignment.handledBirds || 0) > 0
+      ));
+
+      return {
+        building: loading.building,
+        loadedBirds: buildingLoaded,
+        estimatedLiveBirds: buildingLiveBirds,
+        mortality: buildingTotals.mortality,
+        mortalityRate: buildingLoaded > 0 ? (buildingTotals.mortality / buildingLoaded) * 100 : null,
+        feedBags: buildingTotals.feed,
+        feedKg,
+        averageWeightGrams,
+        latestLogDate: getLatestLogDate(buildingLogs),
+        latestWeightDate: latestWeightLog?.date || '',
+        fcr,
+        employeeCount: assignedEmployees.length
+      };
+    });
+
+    const weightedWeightSources = buildingSummaries.filter((summary) => (
+      summary.averageWeightGrams && summary.estimatedLiveBirds > 0
+    ));
+    const weightedLiveBirds = weightedWeightSources.reduce((sum, summary) => sum + summary.estimatedLiveBirds, 0);
+    const averageWeightGrams = weightedLiveBirds > 0
+      ? weightedWeightSources.reduce((sum, summary) => (
+        sum + (summary.averageWeightGrams * summary.estimatedLiveBirds)
+      ), 0) / weightedLiveBirds
+      : Number(latestBatchWeightLog?.averageWeightGrams || 0) || null;
+    const actualFcr = calculateActualFcr(totalFeedKg, estimatedLiveBirds, averageWeightGrams);
+    const targetFeed = targetDay ? calculateTargetFeedForHeads(loadedBirds, targetDay) : null;
+
+    return {
+      status: getBatchStatus(activeBatch),
+      summaryDate,
+      summaryAgeDay,
+      latestLogDate,
+      loadedBirds,
+      estimatedLiveBirds,
+      mortality: batchTotals.mortality,
+      mortalityRate,
+      survivalRate,
+      totalFeedBags: batchTotals.feed,
+      totalFeedKg,
+      averageWeightGrams,
+      latestWeightDate: latestBatchWeightLog?.date || '',
+      actualFcr,
+      targetFcr: targetFeed?.fcr ?? null,
+      buildingSummaries
+    };
+  }, [activeBatch, activeLoadings, assignments, lastTargetDay, logs, today]);
+
+  const postChecklist = useMemo(() => {
+    if (!postSummary) return [];
+
+    return [
+      {
+        key: 'harvest-status',
+        label: 'Harvest status',
+        value: activeBatch?.actualHarvestEndDate ? 'Dated' : postSummary.status || 'Closed',
+        detail: activeBatch?.actualHarvestEndDate
+          ? `Harvested ${formatDate(activeBatch.actualHarvestEndDate)}`
+          : `Status ${postSummary.status || '--'}`,
+        tone: 'success'
+      },
+      {
+        key: 'daily-logs',
+        label: 'Daily logs',
+        value: logs.length ? `${formatNumber(logs.length)} row${logs.length === 1 ? '' : 's'}` : 'No logs',
+        detail: postSummary.latestLogDate ? `Last log ${formatDate(postSummary.latestLogDate)}` : 'No production logs found',
+        tone: logs.length ? 'success' : 'warning'
+      },
+      {
+        key: 'building-loadings',
+        label: 'Buildings',
+        value: activeLoadings.length ? `${activeLoadings.length} loaded` : 'None',
+        detail: `${formatNumber(postSummary.loadedBirds)} birds loaded`,
+        tone: activeLoadings.length ? 'success' : 'warning'
+      },
+      {
+        key: 'feed-inventory',
+        label: 'Feed inventory',
+        value: lowFeedItems.length ? `${lowFeedItems.length} low` : 'Clear',
+        detail: lowFeedItems.length ? 'Feed stock has items below reorder level' : 'Feed items are above reorder level',
+        tone: lowFeedItems.length ? 'warning' : 'success'
+      }
+    ];
+  }, [activeBatch, activeLoadings.length, logs.length, lowFeedItems.length, postSummary]);
 
   if (!activeBatch) {
     return (
@@ -370,6 +543,197 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
             Open Batches
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (isPostSummaryMode && postSummary) {
+    const mortalityTone = postSummary.mortalityRate === null
+      ? 'neutral'
+      : postSummary.mortalityRate >= 5
+        ? 'danger'
+        : postSummary.mortalityRate >= 3
+          ? 'warning'
+          : 'success';
+    const fcrTone = postSummary.actualFcr === null || postSummary.targetFcr === null
+      ? 'neutral'
+      : postSummary.actualFcr > postSummary.targetFcr + 0.15
+        ? 'warning'
+        : 'success';
+
+    return (
+      <div className="app-page">
+        <div className="mb-5 mt-2">
+          <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Operations</p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-3xl font-extrabold text-primary tracking-tight">Post Summary</h2>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Batch {activeBatch.id} - {postSummary.status || 'Closed'} - {formatDate(postSummary.summaryDate)}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:min-w-72">
+              <button
+                type="button"
+                onClick={() => setActiveScreen('dailyLog')}
+                className="rounded-xl bg-primary px-3 py-3 text-xs font-black text-white shadow-sm active:scale-95"
+              >
+                Open Logs
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveScreen('analytics')}
+                className="rounded-xl border border-neutral-border bg-white px-3 py-3 text-xs font-black text-primary shadow-sm active:scale-95 dark:border-gray-700 dark:bg-gray-800 dark:text-primary-light"
+              >
+                Analytics
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-200">
+            {error}
+          </div>
+        )}
+
+        <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+          <SummaryMetric
+            label="Loaded"
+            value={formatNumber(postSummary.loadedBirds)}
+            detail={`${postSummary.buildingSummaries.length} building${postSummary.buildingSummaries.length === 1 ? '' : 's'}`}
+          />
+          <SummaryMetric
+            label="Est. live"
+            value={formatNumber(postSummary.estimatedLiveBirds)}
+            detail={`${formatPercent(postSummary.survivalRate)} survival`}
+            tone={postSummary.survivalRate !== null && postSummary.survivalRate < 95 ? 'warning' : 'success'}
+          />
+          <SummaryMetric
+            label="Mortality"
+            value={formatNumber(postSummary.mortality)}
+            detail={`${formatPercent(postSummary.mortalityRate)} of loaded birds`}
+            tone={mortalityTone}
+          />
+          <SummaryMetric
+            label="Total feed"
+            value={`${formatNumber(postSummary.totalFeedBags, 2)} sx`}
+            detail={`${formatNumber(postSummary.totalFeedKg, 0)} kg consumed`}
+          />
+          <SummaryMetric
+            label="Avg weight"
+            value={postSummary.averageWeightGrams ? `${formatNumber(postSummary.averageWeightGrams / 1000, 2)} kg` : '--'}
+            detail={postSummary.latestWeightDate ? `Latest ${formatDate(postSummary.latestWeightDate)}` : 'No weight logs'}
+          />
+          <SummaryMetric
+            label="FCR"
+            value={postSummary.actualFcr === null ? '--' : formatNumber(postSummary.actualFcr, 2)}
+            detail={postSummary.targetFcr === null ? 'Needs weight logs' : `Target ${formatNumber(postSummary.targetFcr, 2)}`}
+            tone={fcrTone}
+          />
+        </div>
+
+        <section className="mt-6">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h3 className="text-sm font-extrabold uppercase tracking-wide text-secondary">Building Closeout</h3>
+            <span className="text-[10px] font-bold text-gray-400">
+              {isLoading ? 'Loading...' : `${postSummary.buildingSummaries.length} building${postSummary.buildingSummaries.length === 1 ? '' : 's'}`}
+            </span>
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border border-neutral-border bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-neutral-light text-[10px] font-black uppercase tracking-wider text-gray-400 dark:bg-gray-900">
+                <tr>
+                  <th className="px-4 py-3">Building</th>
+                  <th className="px-4 py-3 text-right">Loaded</th>
+                  <th className="px-4 py-3 text-right">Est. live</th>
+                  <th className="px-4 py-3 text-right">Mortality</th>
+                  <th className="px-4 py-3 text-right">Feed</th>
+                  <th className="px-4 py-3 text-right">Avg wt</th>
+                  <th className="px-4 py-3 text-right">FCR</th>
+                  <th className="px-4 py-3 text-right">Last log</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-border dark:divide-gray-700">
+                {postSummary.buildingSummaries.map((summary) => (
+                  <tr key={summary.building}>
+                    <td className="px-4 py-3">
+                      <p className="font-black text-gray-900 dark:text-white">Building {summary.building}</p>
+                      <p className="text-xs font-bold text-gray-400">
+                        {summary.employeeCount} employee{summary.employeeCount === 1 ? '' : 's'}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-200">
+                      {formatNumber(summary.loadedBirds)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-200">
+                      {formatNumber(summary.estimatedLiveBirds)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <p className="font-black text-semantic-danger">{formatNumber(summary.mortality)}</p>
+                      <p className="text-xs font-bold text-gray-400">{formatPercent(summary.mortalityRate)}</p>
+                    </td>
+                    <td className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-200">
+                      {formatNumber(summary.feedBags, 2)} sx
+                    </td>
+                    <td className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-200">
+                      {summary.averageWeightGrams ? `${formatNumber(summary.averageWeightGrams / 1000, 2)} kg` : '--'}
+                    </td>
+                    <td className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-200">
+                      {summary.fcr === null ? '--' : formatNumber(summary.fcr, 2)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-bold text-gray-500 dark:text-gray-300">
+                      {formatDate(summary.latestLogDate)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {!postSummary.buildingSummaries.length && (
+              <div className="p-5 text-center">
+                <p className="text-sm font-bold text-gray-500">No building loadings found for this batch.</p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="mt-6">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h3 className="text-sm font-extrabold uppercase tracking-wide text-primary dark:text-primary-light">Closeout Checks</h3>
+            <span className="text-[10px] font-bold text-gray-400">
+              Day {postSummary.summaryAgeDay || '--'}
+            </span>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-4">
+            {postChecklist.map((item) => (
+              <div
+                key={item.key}
+                className={`rounded-xl border p-4 shadow-sm ${
+                  item.tone === 'success'
+                    ? 'border-green-200 bg-green-50 dark:border-green-800/40 dark:bg-green-900/20'
+                    : item.tone === 'warning'
+                      ? 'border-amber-200 bg-amber-50 dark:border-amber-800/40 dark:bg-amber-900/20'
+                      : 'border-neutral-border bg-white dark:border-gray-700 dark:bg-gray-800'
+                }`}
+              >
+                <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">{item.label}</p>
+                <p className={`mt-1 text-lg font-black ${
+                  item.tone === 'success'
+                    ? 'text-semantic-success'
+                    : item.tone === 'warning'
+                      ? 'text-semantic-warning'
+                      : 'text-gray-900 dark:text-white'
+                }`}>
+                  {item.value}
+                </p>
+                <p className="mt-1 text-xs font-bold leading-snug text-gray-500 dark:text-gray-300">{item.detail}</p>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     );
   }
