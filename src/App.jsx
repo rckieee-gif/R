@@ -42,6 +42,34 @@ function hasMinimumRole(role, minimumRole) {
   return (roleRank[normalizeRole(role)] || 0) >= (roleRank[minimumRole] || 0);
 }
 
+function getBatchPreferenceKey(user) {
+  const identifier = user?.username || user?.email || user?.role || 'member';
+  return `octavioActiveBatchId:${identifier}`;
+}
+
+function isCurrentBatch(batch) {
+  const status = String(batch?.status || '').trim().toLowerCase();
+  return status === 'ongoing' || status === 'active';
+}
+
+function pickPreferredBatch(batches, user) {
+  const list = Array.isArray(batches) ? batches : [];
+  const savedBatchId = localStorage.getItem(getBatchPreferenceKey(user));
+
+  return (
+    list.find((batch) => String(batch.id) === String(savedBatchId)) ||
+    list.find(isCurrentBatch) ||
+    list[0] ||
+    null
+  );
+}
+
+function formatBatchOption(batch) {
+  const status = batch.status ? String(batch.status) : 'No status';
+  const startDate = batch.startDate ? String(batch.startDate).slice(0, 10) : 'No start date';
+  return `${batch.id} - ${status} - ${startDate}`;
+}
+
 function CogIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -107,6 +135,9 @@ function App() {
   // --- LEDGER DATABASE (NOW CONNECTED TO POSTGRESQL!) ---
   const [transactions, setTransactions] = useState([]);
   const [activeBatch, setActiveBatch] = useState(null);
+  const [batches, setBatches] = useState([]);
+  const [isBatchListLoading, setIsBatchListLoading] = useState(false);
+  const [batchListError, setBatchListError] = useState('');
   const isPublicViewer = Boolean(user?.isPublicViewer);
   const apiToken = isPublicViewer ? null : token;
   const viewerPreviewData = isPublicViewer ? publicViewerData : null;
@@ -139,6 +170,8 @@ function App() {
     setUser(null);
     setToken(null);
     setActiveBatch(null);
+    setBatches([]);
+    setBatchListError('');
     setTransactions([]);
     setLogs([]);
     localStorage.removeItem('octavioUser');
@@ -149,7 +182,10 @@ function App() {
 
   useEffect(() => {
     if (isPublicViewer) {
-      setActiveBatch(publicViewerBatch);
+      setTimeout(() => {
+        setBatches([publicViewerBatch]);
+        setActiveBatch(publicViewerBatch);
+      }, 0);
       return;
     }
 
@@ -162,9 +198,14 @@ function App() {
       return;
     }
 
-    const fetchActiveBatch = async () => {
+    let isCancelled = false;
+
+    const fetchBatches = async () => {
+      setIsBatchListLoading(true);
+      setBatchListError('');
+
       try {
-        const response = await fetch(`${API_BASE}/api/batches/active`, {
+        const response = await fetch(`${API_BASE}/api/batches`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -175,15 +216,57 @@ function App() {
 
         if (response.ok) {
           const data = await response.json();
-          setActiveBatch(data);
+          const nextBatches = Array.isArray(data) ? data : [];
+
+          if (isCancelled) return;
+
+          setBatches(nextBatches);
+          setActiveBatch((currentBatch) => {
+            const currentMatch = nextBatches.find((batch) => String(batch.id) === String(currentBatch?.id));
+            const nextBatch = currentMatch || pickPreferredBatch(nextBatches, user);
+
+            if (nextBatch?.id) {
+              localStorage.setItem(getBatchPreferenceKey(user), String(nextBatch.id));
+            }
+
+            return nextBatch;
+          });
+        } else {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.error || 'Failed to load batches.');
         }
       } catch (error) {
-        console.error("Failed to fetch active batch:", error);
+        if (isCancelled) return;
+        console.error("Failed to fetch batches:", error);
+        setBatches([]);
+        setActiveBatch(null);
+        setBatchListError('Batch list is unavailable. Try refreshing or open Batches after the connection recovers.');
+      } finally {
+        if (!isCancelled) {
+          setIsBatchListLoading(false);
+        }
       }
     };
 
-    fetchActiveBatch();
+    fetchBatches();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [token, clearSession, isPublicViewer, user]);
+
+  const selectActiveBatch = useCallback((batch) => {
+    setActiveBatch(batch || null);
+
+    if (!isPublicViewer && batch?.id) {
+      localStorage.setItem(getBatchPreferenceKey(user), String(batch.id));
+    }
+  }, [isPublicViewer, user]);
+
+  const handleBatchSelectorChange = useCallback((event) => {
+    const nextBatch = batches.find((batch) => String(batch.id) === event.target.value) || null;
+    selectActiveBatch(nextBatch);
+  }, [batches, selectActiveBatch]);
 
   const refreshTransactions = useCallback(async () => {
     if (isPublicViewer || !token || !activeBatchId || !canViewFinancial) {
@@ -347,7 +430,30 @@ function App() {
             )}
           </div>
           
-          <div className="flex items-center space-x-3 ml-4">
+          <div className="flex items-center gap-2 sm:gap-3 ml-3 sm:ml-4 shrink-0">
+            {!isPublicViewer && (
+              <div className="flex items-center">
+                <label htmlFor="app-batch-selector" className="sr-only">
+                  Active batch
+                </label>
+                <select
+                  id="app-batch-selector"
+                  value={activeBatch?.id || ''}
+                  onChange={handleBatchSelectorChange}
+                  disabled={isBatchListLoading || batches.length === 0}
+                  className="h-10 w-[8.5rem] sm:w-48 rounded-full border border-neutral-border dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-100 shadow-sm outline-none transition focus:ring-2 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+                  title="Active batch"
+                >
+                  {isBatchListLoading && <option value="">Loading batches</option>}
+                  {!isBatchListLoading && batches.length === 0 && <option value="">No batches</option>}
+                  {batches.map((batch) => (
+                    <option key={batch.id} value={batch.id}>
+                      {formatBatchOption(batch)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             {allowedScreens.includes('settings') && (
               <button
                 onClick={() => setActiveScreen('settings')}
@@ -377,6 +483,12 @@ function App() {
           </div>
         </div>
 
+        {!isPublicViewer && batchListError && (
+          <div className="no-print mx-3 sm:mx-4 mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+            {batchListError}
+          </div>
+        )}
+
         {/* --- SCREEN DISPLAY LOGIC --- */}
         {activeScreen === 'today' && (
   <TodayOperations
@@ -391,7 +503,7 @@ function App() {
         {activeScreen === 'batches' && (
   <BatchManagement
     activeBatch={activeBatch}
-    setActiveBatch={setActiveBatch}
+    setActiveBatch={selectActiveBatch}
     token={apiToken}
     readOnly={!canManageOperations}
     canEditOrDelete={canEditOrDelete}
