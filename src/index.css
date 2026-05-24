@@ -15,6 +15,74 @@
   --color-semantic-success: #15803D;
   --color-semantic-warning: #D97706;
   --color-semantic-info: #0284C7;
+
+  /* Stitch UI Colors */
+  --color-stitch-bg: #0F172A;
+  --color-stitch-primary: #4be277;
+  --color-stitch-on-primary: #003915;
+  --color-stitch-primary-container: #22c55e;
+  --color-stitch-primary-fixed: #6bff8f;
+  --color-stitch-primary-fixed-dim: #4ae176;
+  --color-stitch-secondary: #bec6e0;
+  --color-stitch-secondary-container: #3f465c;
+  --color-stitch-secondary-fixed: #dae2fd;
+  --color-stitch-secondary-fixed-dim: #bec6e0;
+  --color-stitch-on-secondary: #283044;
+  --color-stitch-on-secondary-container: #adb4ce;
+  --color-stitch-surface: #101415;
+  --color-stitch-surface-dim: #101415;
+  --color-stitch-surface-bright: #363a3b;
+  --color-stitch-surface-container: #1d2022;
+  --color-stitch-surface-container-low: #191c1e;
+  --color-stitch-surface-container-high: #272a2c;
+  --color-stitch-surface-container-highest: #323537;
+  --color-stitch-surface-container-lowest: #0b0f10;
+  --color-stitch-on-surface: #e0e3e5;
+  --color-stitch-on-surface-variant: #bccbb9;
+  --color-stitch-outline: #869585;
+  --color-stitch-outline-variant: #3d4a3d;
+  --color-stitch-error: #ffb4ab;
+  --color-stitch-error-container: #93000a;
+
+  /* Stitch Typography */
+  --font-hanken: "Hanken Grotesk", sans-serif;
+  --font-jetbrains: "JetBrains Mono", monospace;
+  --font-inter: "Inter", sans-serif;
+}
+
+/* Stitch custom 3D utilities and animations (only active on desktop viewports) */
+@media (min-width: 768px) {
+  .btn-3d {
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+    transform-style: preserve-3d;
+  }
+  
+  .btn-3d:hover {
+    transform: perspective(500px) translateZ(10px) rotateX(5deg) translateY(-4px);
+    box-shadow: 0 15px 25px -5px rgba(0,0,0,0.5);
+  }
+
+  .perspective-container {
+    perspective: 1200px;
+  }
+
+  @keyframes float-3d {
+    0% { transform: rotateY(-12deg) rotateX(8deg) translateY(0); }
+    50% { transform: rotateY(-8deg) rotateX(4deg) translateY(-15px); }
+    100% { transform: rotateY(-12deg) rotateX(8deg) translateY(0); }
+  }
+
+  .model-3d {
+    transform-style: preserve-3d;
+    animation: float-3d 6s ease-in-out infinite;
+    box-shadow: -30px 30px 50px -15px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(255,255,255,0.05);
+    transform: rotateY(-12deg) rotateX(8deg);
+  }
+}
+
+.tonal-layer-1 {
+  background-color: #1E293B;
+  border: 1px solid #334155;
 }
 
 :root {
