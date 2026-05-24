@@ -129,6 +129,37 @@ function App() {
     }
   }, [isDarkMode]);
 
+  const [isNavMinimized, setIsNavMinimized] = useState(() => {
+    const saved = localStorage.getItem('octavioNavMinimized');
+    return saved ? saved === 'true' : false;
+  });
+
+  const toggleNavMinimized = () => {
+    setIsNavMinimized((prev) => {
+      const next = !prev;
+      localStorage.setItem('octavioNavMinimized', String(next));
+      return next;
+    });
+  };
+
+  const screensMeta = useMemo(() => [
+    { id: 'today', label: 'Today', icon: 'today' },
+    { id: 'dashboard', label: 'Home', icon: 'home' },
+    { id: 'batches', label: 'Batches', icon: 'layers' },
+    { id: 'employees', label: 'Employees', icon: 'group' },
+    { id: 'paySummary', label: 'Pay Summary', icon: 'payments' },
+    { id: 'ledger', label: 'Ledger', icon: 'receipt_long' },
+    { id: 'harvest', label: 'Harvest', icon: 'agriculture' },
+    { id: 'dailyLog', label: 'Daily Logs', icon: 'edit_note' },
+    { id: 'inventory', label: 'Inventory', icon: 'inventory' },
+    { id: 'analytics', label: 'Analytics', icon: 'monitoring' },
+    { id: 'statement', label: 'Statement', icon: 'description' },
+  ], []);
+
+  const visibleNavItems = useMemo(() => {
+    return screensMeta.filter((item) => allowedScreens.includes(item.id));
+  }, [allowedScreens, screensMeta]);
+
   const [activeScreen, setActiveScreen] = useState('today');
   // --- LEDGER DATABASE (NOW CONNECTED TO POSTGRESQL!) ---
   const [transactions, setTransactions] = useState([]);
@@ -431,189 +462,320 @@ function App() {
 
   return (
     <div className={`${isDarkMode ? 'dark' : ''}`}>
-      <div className="bg-app-bg text-app-text min-h-screen pb-10 transition-colors duration-300 font-sans">
+      <div className="bg-app-bg text-app-text min-h-screen flex flex-col md:flex-row transition-colors duration-300 font-sans">
         
-        {/* --- TOP NAVIGATION MENU --- */}
-        <div className="no-print bg-app-card border-b border-app-border p-3 mb-4 flex justify-between items-center sticky top-0 z-10 transition-colors duration-300">
-          
-          <div className="flex space-x-2 overflow-x-auto ag-scrollbar py-1">
-            <button onClick={() => setActiveScreen('today')} className={getNavLinkClass('today')}>Today</button>
-            <button onClick={() => setActiveScreen('dashboard')} className={getNavLinkClass('dashboard')}>Home</button>
-            {allowedScreens.includes('batches') && (
-              <button onClick={() => setActiveScreen('batches')} className={getNavLinkClass('batches')}>Batches</button>
-            )}
-            {canManageOperations && (
-              <button onClick={() => setActiveScreen('employees')} className={getNavLinkClass('employees')}>Employees</button>
-            )}
-            {allowedScreens.includes('paySummary') && (
-              <button onClick={() => setActiveScreen('paySummary')} className={getNavLinkClass('paySummary')}>Pay Summary</button>
-            )}
-            {/* RBAC: Only show Ledger and Statement to Admins/OpManagers */}
-            {canViewFinancial && (
-              <button onClick={() => setActiveScreen('ledger')} className={getNavLinkClass('ledger')}>Ledger</button>
-            )}
-            {canViewFinancial && (
-              <button onClick={() => setActiveScreen('harvest')} className={getNavLinkClass('harvest')}>Harvest</button>
+        {/* --- DESKTOP SIDE NAVIGATION (md and up) --- */}
+        <aside 
+          className={`no-print hidden md:flex flex-col h-screen sticky top-0 left-0 z-40 bg-app-card border-r border-app-border transition-all duration-300 flex-shrink-0 overflow-hidden ${
+            isNavMinimized ? 'w-16' : 'w-56'
+          }`}
+        >
+          {/* Header */}
+          <div className={`p-4 flex items-center justify-between border-b border-app-border shrink-0 ${isNavMinimized ? 'justify-center' : ''}`}>
+            {!isNavMinimized ? (
+              <div className="min-w-0">
+                <h2 className="text-sm font-bold text-app-text tracking-tighter truncate uppercase font-hanken">Octavio Farms</h2>
+                <p className="text-[9px] font-mono text-app-text-secondary truncate mt-0.5 uppercase tracking-widest font-jetbrains">
+                  {user?.role || 'Viewer'}
+                </p>
+              </div>
+            ) : (
+              <span className="material-symbols-outlined text-app-accent text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>terminal</span>
             )}
             
-            {allowedScreens.includes('dailyLog') && (
-              <button onClick={() => setActiveScreen('dailyLog')} className={getNavLinkClass('dailyLog')}>Daily Logs</button>
-            )}
-            {allowedScreens.includes('inventory') && (
-              <button onClick={() => setActiveScreen('inventory')} className={getNavLinkClass('inventory')}>Inventory</button>
-            )}
-            {allowedScreens.includes('analytics') && (
-              <button onClick={() => setActiveScreen('analytics')} className={getNavLinkClass('analytics')}>Analytics</button>
-            )}
-            
-            {canViewFinancial && (
-              <button onClick={() => setActiveScreen('statement')} className={getNavLinkClass('statement')}>Statement</button>
-            )}
+            <button 
+              onClick={toggleNavMinimized}
+              className={`p-1.5 rounded hover:bg-app-bg text-app-text-secondary hover:text-app-text transition-colors ${isNavMinimized ? 'absolute right-2 top-2' : ''}`}
+              title={isNavMinimized ? "Expand Sidebar" : "Minimize Sidebar"}
+            >
+              <span className="material-symbols-outlined text-base">
+                {isNavMinimized ? 'menu' : 'menu_open'}
+              </span>
+            </button>
           </div>
-          
-          <div className="flex items-center gap-2 sm:gap-3 ml-3 sm:ml-4 shrink-0">
+
+          {/* Navigation links */}
+          <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1.5 ag-scrollbar">
+            {visibleNavItems.map((item) => {
+              const isActive = activeScreen === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveScreen(item.id)}
+                  className={`w-full group flex items-center gap-3 py-2 transition-all rounded ${
+                    isNavMinimized ? 'justify-center px-0' : 'px-3'
+                  } ${
+                    isActive
+                      ? 'bg-gradient-to-r from-app-accent/10 to-transparent border-l-[3px] border-app-accent text-app-text font-bold'
+                      : 'text-app-text-secondary hover:bg-app-bg/50 hover:text-app-text'
+                  }`}
+                  title={item.label}
+                >
+                  <span 
+                    className={`material-symbols-outlined text-[18px] transition-colors ${
+                      isActive ? 'text-app-accent' : 'text-app-text-secondary group-hover:text-app-text'
+                    }`}
+                    style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}
+                  >
+                    {item.icon}
+                  </span>
+                  
+                  {!isNavMinimized && (
+                    <span className="text-[10px] font-bold tracking-wider uppercase truncate">
+                      {item.label}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Footer controls */}
+          <div className="p-3 border-t border-app-border shrink-0 flex flex-col gap-3">
+            {/* Active Batch Indicator / Selector */}
             {!isPublicViewer && (
-              <div className="flex items-center">
-                <label htmlFor="app-batch-selector" className="sr-only">
-                  Active batch
-                </label>
+              <div>
+                {!isNavMinimized ? (
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="desktop-batch-selector" className="text-[9px] font-bold uppercase tracking-wider text-app-text-secondary">
+                      Active Batch
+                    </label>
+                    <select
+                      id="desktop-batch-selector"
+                      value={activeBatch?.id || ''}
+                      onChange={handleBatchSelectorChange}
+                      disabled={isBatchListLoading || batches.length === 0}
+                      className="w-full h-8 rounded border border-app-border bg-app-bg px-2 text-xs font-bold text-app-text outline-none transition focus:ring-1 focus:ring-app-accent disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isBatchListLoading && <option value="">Loading...</option>}
+                      {!isBatchListLoading && batches.length === 0 && <option value="">None</option>}
+                      {batches.map((batch) => (
+                        <option key={batch.id} value={batch.id}>
+                          {batch.id} ({batch.status || 'No status'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="flex justify-center" title={`Active Batch: ${activeBatch?.id || 'None'}`}>
+                    <span className="px-1.5 py-0.5 bg-app-accent/15 border border-app-accent/20 rounded text-[9px] font-bold text-app-accent font-jetbrains">
+                      B:{activeBatch?.id || 'N/A'}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Utility Buttons */}
+            <div className={`flex gap-1.5 ${isNavMinimized ? 'flex-col items-center' : 'items-center justify-between'}`}>
+              <div className={`flex gap-1.5 ${isNavMinimized ? 'flex-col' : 'items-center'}`}>
+                {allowedScreens.includes('settings') && (
+                  <button
+                    onClick={() => setActiveScreen('settings')}
+                    className={`h-8 w-8 inline-flex items-center justify-center rounded border transition hover:scale-105 ${
+                      activeScreen === 'settings'
+                        ? 'bg-app-accent text-app-on-accent border-app-accent'
+                        : 'bg-app-card text-app-text-secondary border-app-border hover:text-app-text hover:border-app-text'
+                    }`}
+                    title="Settings"
+                  >
+                    <CogIcon />
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsDarkMode(!isDarkMode)}
+                  className="h-8 w-8 inline-flex items-center justify-center rounded bg-app-card text-app-text-secondary border border-app-border transition hover:scale-105 hover:text-app-text hover:border-app-text"
+                  title={isDarkMode ? "Use Light Mode" : "Use Dark Mode"}
+                >
+                  <ThemeIcon isDarkMode={isDarkMode} />
+                </button>
+              </div>
+
+              <button 
+                onClick={handleLogout} 
+                className={`flex items-center justify-center rounded border border-app-border p-1.5 bg-gradient-to-b from-app-card to-app-bg text-app-text-secondary hover:text-app-danger hover:border-app-danger/30 transition-all duration-75 ${
+                  isNavMinimized ? 'w-8 h-8' : 'w-9 h-8'
+                }`}
+                title={isPublicViewer ? "Exit Preview" : "Logout"}
+              >
+                <span className="material-symbols-outlined text-[16px]">logout</span>
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        {/* --- MAIN PAGE CONTENT CONTAINER --- */}
+        <div className="flex-1 min-h-screen flex flex-col overflow-x-hidden">
+          
+          {/* --- MOBILE NAVIGATION BAR (md:hidden) --- */}
+          <div className="no-print bg-app-card border-b border-app-border p-3 flex justify-between items-center sticky top-0 z-10 transition-colors duration-300 md:hidden">
+            <div className="flex space-x-2 overflow-x-auto ag-scrollbar py-1">
+              <button onClick={() => setActiveScreen('today')} className={getNavLinkClass('today')}>Today</button>
+              <button onClick={() => setActiveScreen('dashboard')} className={getNavLinkClass('dashboard')}>Home</button>
+              {allowedScreens.includes('batches') && (
+                <button onClick={() => setActiveScreen('batches')} className={getNavLinkClass('batches')}>Batches</button>
+              )}
+              {canManageOperations && (
+                <button onClick={() => setActiveScreen('employees')} className={getNavLinkClass('employees')}>Employees</button>
+              )}
+              {allowedScreens.includes('paySummary') && (
+                <button onClick={() => setActiveScreen('paySummary')} className={getNavLinkClass('paySummary')}>Pay Summary</button>
+              )}
+              {canViewFinancial && (
+                <button onClick={() => setActiveScreen('ledger')} className={getNavLinkClass('ledger')}>Ledger</button>
+              )}
+              {canViewFinancial && (
+                <button onClick={() => setActiveScreen('harvest')} className={getNavLinkClass('harvest')}>Harvest</button>
+              )}
+              {allowedScreens.includes('dailyLog') && (
+                <button onClick={() => setActiveScreen('dailyLog')} className={getNavLinkClass('dailyLog')}>Daily Logs</button>
+              )}
+              {allowedScreens.includes('inventory') && (
+                <button onClick={() => setActiveScreen('inventory')} className={getNavLinkClass('inventory')}>Inventory</button>
+              )}
+              {allowedScreens.includes('analytics') && (
+                <button onClick={() => setActiveScreen('analytics')} className={getNavLinkClass('analytics')}>Analytics</button>
+              )}
+              {canViewFinancial && (
+                <button onClick={() => setActiveScreen('statement')} className={getNavLinkClass('statement')}>Statement</button>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2 ml-3 shrink-0">
+              {!isPublicViewer && (
                 <select
-                  id="app-batch-selector"
                   value={activeBatch?.id || ''}
                   onChange={handleBatchSelectorChange}
                   disabled={isBatchListLoading || batches.length === 0}
-                  className="h-10 w-[8.5rem] sm:w-48 rounded border border-app-border bg-app-card px-3 text-xs sm:text-sm font-bold text-app-text shadow-sm outline-none transition focus:ring-2 focus:ring-app-accent disabled:cursor-not-allowed disabled:opacity-60"
-                  title="Active batch"
+                  className="h-8 w-24 rounded border border-app-border bg-app-card px-2 text-[10px] font-bold text-app-text outline-none transition focus:ring-1 focus:ring-app-accent"
                 >
-                  {isBatchListLoading && <option value="">Loading batches</option>}
-                  {!isBatchListLoading && batches.length === 0 && <option value="">No batches</option>}
+                  {isBatchListLoading && <option value="">Loading...</option>}
+                  {!isBatchListLoading && batches.length === 0 && <option value="">None</option>}
                   {batches.map((batch) => (
                     <option key={batch.id} value={batch.id}>
-                      {formatBatchOption(batch)}
+                      {batch.id}
                     </option>
                   ))}
                 </select>
-              </div>
-            )}
-            {allowedScreens.includes('settings') && (
+              )}
+              {allowedScreens.includes('settings') && (
+                <button
+                  onClick={() => setActiveScreen('settings')}
+                  className={`h-8 w-8 inline-flex items-center justify-center rounded border transition ${
+                    activeScreen === 'settings'
+                      ? 'bg-app-accent text-app-on-accent border-app-accent'
+                      : 'bg-app-card text-app-text-secondary border-app-border'
+                  }`}
+                  aria-label="Settings"
+                >
+                  <CogIcon />
+                </button>
+              )}
               <button
-                onClick={() => setActiveScreen('settings')}
-                className={`h-10 w-10 inline-flex items-center justify-center rounded border shadow-sm hover:scale-105 transition-transform ${
-                  activeScreen === 'settings'
-                    ? 'bg-app-accent text-app-on-accent border-app-accent'
-                    : 'bg-app-card text-app-text-secondary border-app-border hover:text-app-text'
-                }`}
-                aria-label="Settings"
-                title="Settings"
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="h-8 w-8 inline-flex items-center justify-center rounded bg-app-card text-app-text-secondary border border-app-border transition"
               >
-                <CogIcon />
+                <ThemeIcon isDarkMode={isDarkMode} />
               </button>
+            </div>
+          </div>
+
+          {/* Batch list error overlay */}
+          {!isPublicViewer && batchListError && (
+            <div className="no-print mx-4 mt-4 mb-2 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+              {batchListError}
+            </div>
+          )}
+
+          {/* Screen Content Render */}
+          <div className="flex-1">
+            {activeScreen === 'today' && (
+              <TodayOperations
+                token={apiToken}
+                activeBatch={activeBatch}
+                logs={logs}
+                setActiveScreen={setActiveScreen}
+                previewData={viewerPreviewData}
+              />
             )}
-            <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className="h-10 w-10 inline-flex items-center justify-center rounded bg-app-card text-app-text-secondary border border-app-border shadow-sm hover:scale-105 transition-transform hover:text-app-text"
-              aria-label={isDarkMode ? 'Use Light Mode' : 'Use Dark Mode'}
-              title={isDarkMode ? 'Use Light Mode' : 'Use Dark Mode'}
-            >
-              <ThemeIcon isDarkMode={isDarkMode} />
-            </button>
-            {/* NEW LOGOUT BUTTON */}
-            <button onClick={handleLogout} className="p-2 text-xs font-bold text-app-text-secondary hover:text-app-danger transition-colors">
-              {isPublicViewer ? 'Exit Preview' : 'Logout'}
-            </button>
+
+            {activeScreen === 'batches' && (
+              <BatchManagement
+                activeBatch={activeBatch}
+                setActiveBatch={selectActiveBatch}
+                token={apiToken}
+                readOnly={!canManageOperations}
+                canEditOrDelete={canEditOrDelete}
+                previewData={viewerPreviewData}
+              />
+            )}
+            
+            {activeScreen === 'dashboard' && (
+              <Dashboard setActiveScreen={setActiveScreen} logs={logs} activeBatch={activeBatch} user={user} />
+            )}
+
+            {activeScreen === 'employees' && canManageOperations && (
+              <EmployeeManagement
+                token={token}
+                transactions={transactions}
+                dailyLogs={logs}
+                activeBatch={activeBatch}
+                canEditOrDelete={canEditOrDelete}
+              />
+            )}
+
+            {activeScreen === 'paySummary' && (
+              <EmployeePaySummary token={token} activeBatch={activeBatch} />
+            )}
+
+            {activeScreen === 'ledger' && canViewFinancial && (
+              <TransactionLedger
+                transactions={transactions}
+                setTransactions={setTransactions}
+                activeBatch={activeBatch}
+                token={token}
+                readOnly={!canManageOperations}
+                canEditOrDelete={canEditOrDelete}
+              />
+            )}
+
+            {activeScreen === 'harvest' && canViewFinancial && (
+              <HarvestRecording
+                activeBatch={activeBatch}
+                token={token}
+                readOnly={!canManageOperations}
+                onLedgerPosted={refreshTransactions}
+              />
+            )}
+
+            {activeScreen === 'dailyLog' && (
+              <DailyLog logs={logs} setLogs={setLogs} activeBatch={activeBatch} token={apiToken} readOnly={!canEnterDaily} canEditOrDelete={canEditOrDelete} />
+            )}
+
+            {activeScreen === 'inventory' && (
+              <InventoryManagement activeBatch={activeBatch} token={apiToken} readOnly={!canManageOperations} canEditOrDelete={canEditOrDelete} previewData={viewerPreviewData} />
+            )}
+
+            {activeScreen === 'analytics' && (
+              <Analytics transactions={canViewFinancial ? transactions : []} logs={logs} activeBatch={activeBatch} showFinancials={canViewFinancial} />
+            )}
+
+            {activeScreen === 'statement' && canViewFinancial && (
+              <FinancialStatement transactions={transactions} activeBatch={activeBatch} />
+            )}
+
+            {activeScreen === 'settings' && (
+              <Settings user={user} token={token} activeBatch={activeBatch} />
+            )}
+            
+            <AntigravityAssistant
+              activeBatch={activeBatch}
+              logs={logs}
+              transactions={transactions}
+              user={user}
+            />
           </div>
         </div>
-
-        {!isPublicViewer && batchListError && (
-          <div className="no-print mx-3 sm:mx-4 mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
-            {batchListError}
-          </div>
-        )}
-
-        {/* --- SCREEN DISPLAY LOGIC --- */}
-        {activeScreen === 'today' && (
-  <TodayOperations
-    token={apiToken}
-    activeBatch={activeBatch}
-    logs={logs}
-    setActiveScreen={setActiveScreen}
-    previewData={viewerPreviewData}
-  />
-)}
-
-        {activeScreen === 'batches' && (
-  <BatchManagement
-    activeBatch={activeBatch}
-    setActiveBatch={selectActiveBatch}
-    token={apiToken}
-    readOnly={!canManageOperations}
-    canEditOrDelete={canEditOrDelete}
-    previewData={viewerPreviewData}
-  />
-)}
-{activeScreen === 'dashboard' && (
-  <Dashboard setActiveScreen={setActiveScreen} logs={logs} activeBatch={activeBatch} user={user} />
-)}
-
-{activeScreen === 'employees' && canManageOperations && (
-  <EmployeeManagement
-    token={token}
-    transactions={transactions}
-    dailyLogs={logs}
-    activeBatch={activeBatch}
-    canEditOrDelete={canEditOrDelete}
-  />
-)}
-
-{activeScreen === 'paySummary' && (
-  <EmployeePaySummary token={token} activeBatch={activeBatch} />
-)}
-
-{activeScreen === 'ledger' && canViewFinancial && (
-  <TransactionLedger
-    transactions={transactions}
-    setTransactions={setTransactions}
-    activeBatch={activeBatch}
-    token={token}
-    readOnly={!canManageOperations}
-    canEditOrDelete={canEditOrDelete}
-  />
-)}
-
-{activeScreen === 'harvest' && canViewFinancial && (
-  <HarvestRecording
-    activeBatch={activeBatch}
-    token={token}
-    readOnly={!canManageOperations}
-    onLedgerPosted={refreshTransactions}
-  />
-)}
-
-{activeScreen === 'dailyLog' && (
-  <DailyLog logs={logs} setLogs={setLogs} activeBatch={activeBatch} token={apiToken} readOnly={!canEnterDaily} canEditOrDelete={canEditOrDelete} />
-)}
-
-{activeScreen === 'inventory' && (
-  <InventoryManagement activeBatch={activeBatch} token={apiToken} readOnly={!canManageOperations} canEditOrDelete={canEditOrDelete} previewData={viewerPreviewData} />
-)}
-
-{activeScreen === 'analytics' && (
-  <Analytics transactions={canViewFinancial ? transactions : []} logs={logs} activeBatch={activeBatch} showFinancials={canViewFinancial} />
-)}
-
-{activeScreen === 'statement' && canViewFinancial && (
-  <FinancialStatement transactions={transactions} activeBatch={activeBatch} />
-)}
-
-{activeScreen === 'settings' && (
-  <Settings user={user} token={token} activeBatch={activeBatch} />
-)}
-        <AntigravityAssistant
-          activeBatch={activeBatch}
-          logs={logs}
-          transactions={transactions}
-          user={user}
-        />
       </div>
     </div>
   );
