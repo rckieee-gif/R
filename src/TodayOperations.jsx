@@ -97,40 +97,40 @@ function formatPercent(value, digits = 1) {
 
 function AttentionCard({ label, value, detail, tone = 'neutral', onClick }) {
   const toneClass = {
-    danger: 'border-red-200 bg-red-50 text-semantic-danger dark:border-red-800/40 dark:bg-red-900/20',
-    warning: 'border-amber-200 bg-amber-50 text-semantic-warning dark:border-amber-800/40 dark:bg-amber-900/20',
-    success: 'border-green-200 bg-green-50 text-semantic-success dark:border-green-800/40 dark:bg-green-900/20',
-    neutral: 'border-neutral-border bg-white text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white'
+    danger: 'border-app-danger/30 bg-app-danger-bg text-app-danger hover:border-app-danger',
+    warning: 'border-app-warning/30 bg-app-warning-bg text-app-warning hover:border-app-warning',
+    success: 'border-app-success/30 bg-app-success-bg text-app-success hover:border-app-success',
+    neutral: 'border-app-border bg-app-card text-app-text hover:border-app-accent'
   }[tone];
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`min-h-28 rounded-xl border p-4 text-left shadow-sm transition active:scale-[0.98] ${toneClass}`}
+      className={`min-h-28 rounded-xl border p-4 text-left shadow-sm transition-all duration-200 active:scale-[0.98] ${toneClass}`}
     >
-      <p className="text-[10px] font-black uppercase tracking-wider opacity-75">{label}</p>
-      <p className="text-3xl font-black mt-1">{value}</p>
-      <p className="text-xs font-bold mt-2 leading-snug opacity-80">{detail}</p>
+      <p className="text-[10px] font-black uppercase tracking-wider opacity-85 font-jetbrains">{label}</p>
+      <p className="text-3xl font-black mt-1 font-hanken">{value}</p>
+      <p className="text-xs font-bold mt-2 leading-snug opacity-90 font-inter">{detail}</p>
     </button>
   );
 }
 
 function WarningRow({ warning }) {
   const toneClass = warning.severity === 'danger'
-    ? 'border-red-200 bg-red-50 dark:border-red-800/40 dark:bg-red-900/20'
-    : 'border-amber-200 bg-amber-50 dark:border-amber-800/40 dark:bg-amber-900/20';
-  const labelClass = warning.severity === 'danger' ? 'text-semantic-danger' : 'text-semantic-warning';
+    ? 'border-app-danger/30 bg-app-danger-bg'
+    : 'border-app-warning/30 bg-app-warning-bg';
+  const labelClass = warning.severity === 'danger' ? 'text-app-danger' : 'text-app-warning';
 
   return (
-    <div className={`rounded-xl border p-3 ${toneClass}`}>
+    <div className={`rounded-xl border p-3 transition-colors ${toneClass}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className={`text-[10px] font-black uppercase tracking-wider ${labelClass}`}>{warning.label}</p>
-          <p className="text-sm font-black text-gray-900 dark:text-white mt-1">{warning.title}</p>
-          <p className="text-xs font-bold text-gray-500 dark:text-gray-300 mt-1 leading-snug">{warning.detail}</p>
+          <p className={`text-[10px] font-black uppercase tracking-wider font-jetbrains ${labelClass}`}>{warning.label}</p>
+          <p className="text-sm font-black text-app-text mt-1 font-hanken">{warning.title}</p>
+          <p className="text-xs font-bold text-app-text-secondary mt-1 leading-snug font-inter">{warning.detail}</p>
         </div>
-        <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-black uppercase ${labelClass} bg-white/80 dark:bg-slate-900/70`}>
+        <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-black uppercase font-jetbrains ${labelClass} bg-app-card/85 border border-app-border`}>
           {warning.severity}
         </span>
       </div>
@@ -140,17 +140,17 @@ function WarningRow({ warning }) {
 
 function SummaryMetric({ label, value, detail, tone = 'neutral' }) {
   const toneClass = {
-    neutral: 'border-neutral-border bg-white text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white',
-    success: 'border-green-200 bg-green-50 text-semantic-success dark:border-green-800/40 dark:bg-green-900/20',
-    warning: 'border-amber-200 bg-amber-50 text-semantic-warning dark:border-amber-800/40 dark:bg-amber-900/20',
-    danger: 'border-red-200 bg-red-50 text-semantic-danger dark:border-red-800/40 dark:bg-red-900/20'
+    neutral: 'border-app-border bg-app-card text-app-text',
+    success: 'border-app-success/30 bg-app-success-bg text-app-success',
+    warning: 'border-app-warning/30 bg-app-warning-bg text-app-warning',
+    danger: 'border-app-danger/30 bg-app-danger-bg text-app-danger'
   }[tone];
 
   return (
-    <div className={`rounded-xl border p-4 shadow-sm ${toneClass}`}>
-      <p className="text-[10px] font-black uppercase tracking-wider opacity-75">{label}</p>
-      <p className="mt-1 text-2xl font-black">{value}</p>
-      <p className="mt-2 text-xs font-bold leading-snug opacity-80">{detail}</p>
+    <div className={`rounded-xl border p-4 shadow-sm transition-colors ${toneClass}`}>
+      <p className="text-[10px] font-black uppercase tracking-wider opacity-85 font-jetbrains">{label}</p>
+      <p className="mt-1 text-2xl font-black font-jetbrains">{value}</p>
+      <p className="mt-2 text-xs font-bold leading-snug opacity-90 font-inter">{detail}</p>
     </div>
   );
 }
@@ -562,21 +562,21 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
 
   if (!activeBatch) {
     return (
-      <div className="app-page">
+      <div className="app-page text-app-text">
         <div className="mb-5 mt-2">
-          <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Operations</p>
-          <h2 className="text-3xl font-extrabold text-primary tracking-tight mt-1">Today</h2>
+          <p className="text-xs font-bold uppercase tracking-wider text-app-text-secondary font-jetbrains">Operations</p>
+          <h2 className="text-3xl font-extrabold text-app-accent tracking-tight mt-1 font-hanken">Today</h2>
         </div>
 
-        <div className="rounded-2xl border border-neutral-border bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <p className="text-lg font-black text-gray-900 dark:text-white">No active batch selected</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+        <div className="rounded-2xl border border-app-border bg-app-card p-5 shadow-sm">
+          <p className="text-lg font-black font-hanken">No active batch selected</p>
+          <p className="text-sm text-app-text-secondary mt-2 font-inter">
             Select an active batch before today&apos;s operations can be checked.
           </p>
           <button
             type="button"
             onClick={() => setActiveScreen('batches')}
-            className="mt-4 w-full rounded-xl bg-primary p-3 font-bold text-white shadow-sm active:scale-95"
+            className="mt-4 w-full rounded-xl bg-app-accent p-3 font-bold text-app-on-accent shadow-sm active:scale-95 transition-all duration-150 cursor-pointer"
           >
             Open Batches
           </button>
@@ -608,13 +608,13 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
         : 'success';
 
     return (
-      <div className="app-page">
+      <div className="app-page text-app-text">
         <div className="mb-5 mt-2">
-          <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Operations</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-app-text-secondary font-jetbrains">Operations</p>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 className="text-3xl font-extrabold text-primary tracking-tight">Post Summary</h2>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <h2 className="text-3xl font-extrabold text-app-accent tracking-tight font-hanken">Post Summary</h2>
+              <p className="mt-1 text-sm text-app-text-secondary font-jetbrains">
                 Batch {activeBatch.id} - {postSummary.status || 'Closed'} - {formatDate(postSummary.summaryDate)}
               </p>
             </div>
@@ -622,14 +622,14 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
               <button
                 type="button"
                 onClick={() => setActiveScreen('dailyLog')}
-                className="rounded-xl bg-primary px-3 py-3 text-xs font-black text-white shadow-sm active:scale-95"
+                className="rounded-xl bg-app-accent px-3 py-3 text-xs font-black text-app-on-accent shadow-sm active:scale-95 hover:opacity-90 transition-all cursor-pointer font-jetbrains"
               >
                 Open Logs
               </button>
               <button
                 type="button"
                 onClick={() => setActiveScreen('analytics')}
-                className="rounded-xl border border-neutral-border bg-white px-3 py-3 text-xs font-black text-primary shadow-sm active:scale-95 dark:border-gray-700 dark:bg-gray-800 dark:text-primary-light"
+                className="rounded-xl border border-app-border bg-app-card px-3 py-3 text-xs font-black text-app-text-secondary shadow-sm active:scale-95 hover:text-app-text transition-all cursor-pointer font-jetbrains"
               >
                 Analytics
               </button>
@@ -638,7 +638,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
         </div>
 
         {error && (
-          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-200">
+          <div className="mb-5 rounded-xl border border-app-danger/30 bg-app-danger-bg p-3 text-sm font-bold text-app-danger">
             {error}
           </div>
         )}
@@ -681,8 +681,8 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
 
         <section className="mt-6">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h3 className="text-sm font-extrabold uppercase tracking-wide text-primary dark:text-primary-light">Harvest Yield</h3>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+            <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent font-hanken">Harvest Yield</h3>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary font-jetbrains">
               {postSummary.harvest.hasActualSales ? postSummary.harvest.status || 'Recorded' : 'Awaiting actuals'}
             </span>
           </div>
@@ -715,9 +715,9 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           </div>
 
           {harvestRows.length > 0 && (
-            <div className="mt-3 overflow-x-auto rounded-xl border border-neutral-border bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <div className="mt-3 overflow-x-auto rounded-xl border border-app-border bg-app-card shadow-sm">
               <table className="min-w-full text-left text-sm">
-                <thead className="bg-neutral-light text-[10px] font-black uppercase tracking-wider text-gray-400 dark:bg-gray-900">
+                <thead className="bg-app-bg text-[10px] font-black uppercase tracking-wider text-app-text-secondary">
                   <tr>
                     <th className="px-4 py-3">Harvest</th>
                     <th className="px-4 py-3 text-right">Date</th>
@@ -726,22 +726,22 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
                     <th className="px-4 py-3 text-right">Avg wt</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-border dark:divide-gray-700">
+                <tbody className="divide-y divide-app-border">
                   {harvestRows.map((row) => (
                     <tr key={row.harvestOrder}>
-                      <td className="px-4 py-3 font-black text-gray-900 dark:text-white">
+                      <td className="px-4 py-3 font-black text-app-text">
                         {row.harvestOrder}
                       </td>
-                      <td className="px-4 py-3 text-right font-bold text-gray-500 dark:text-gray-300">
+                      <td className="px-4 py-3 text-right font-bold text-app-text-secondary font-jetbrains">
                         {formatDate(row.harvestDate)}
                       </td>
-                      <td className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-200">
+                      <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
                         {formatNumber(row.birds)}
                       </td>
-                      <td className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-200">
+                      <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
                         {formatNumber(row.kilos, 1)} kg
                       </td>
-                      <td className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-200">
+                      <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
                         {row.averageWeightKg ? `${formatNumber(row.averageWeightKg, 2)} kg` : '--'}
                       </td>
                     </tr>
@@ -754,15 +754,15 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
 
         <section className="mt-6">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h3 className="text-sm font-extrabold uppercase tracking-wide text-secondary">Building Closeout</h3>
-            <span className="text-[10px] font-bold text-gray-400">
+            <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent font-hanken">Building Closeout</h3>
+            <span className="text-[10px] font-bold text-app-text-secondary font-jetbrains">
               {isLoading ? 'Loading...' : `${postSummary.buildingSummaries.length} building${postSummary.buildingSummaries.length === 1 ? '' : 's'}`}
             </span>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-neutral-border bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <div className="overflow-x-auto rounded-xl border border-app-border bg-app-card shadow-sm">
             <table className="min-w-full text-left text-sm">
-              <thead className="bg-neutral-light text-[10px] font-black uppercase tracking-wider text-gray-400 dark:bg-gray-900">
+              <thead className="bg-app-bg text-[10px] font-black uppercase tracking-wider text-app-text-secondary">
                 <tr>
                   <th className="px-4 py-3">Building</th>
                   <th className="px-4 py-3 text-right">Loaded</th>
@@ -774,35 +774,35 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
                   <th className="px-4 py-3 text-right">Last log</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-border dark:divide-gray-700">
+              <tbody className="divide-y divide-app-border">
                 {postSummary.buildingSummaries.map((summary) => (
                   <tr key={summary.building}>
                     <td className="px-4 py-3">
-                      <p className="font-black text-gray-900 dark:text-white">Building {summary.building}</p>
-                      <p className="text-xs font-bold text-gray-400">
+                      <p className="font-black text-app-text">Building {summary.building}</p>
+                      <p className="text-xs font-bold text-app-text-secondary">
                         {summary.employeeCount} employee{summary.employeeCount === 1 ? '' : 's'}
                       </p>
                     </td>
-                    <td className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-200">
+                    <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
                       {formatNumber(summary.loadedBirds)}
                     </td>
-                    <td className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-200">
+                    <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
                       {formatNumber(summary.estimatedLiveBirds)}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <p className="font-black text-semantic-danger">{formatNumber(summary.mortality)}</p>
-                      <p className="text-xs font-bold text-gray-400">{formatPercent(summary.mortalityRate)}</p>
+                      <p className="font-black text-app-danger font-jetbrains">{formatNumber(summary.mortality)}</p>
+                      <p className="text-xs font-bold text-app-text-secondary font-jetbrains">{formatPercent(summary.mortalityRate)}</p>
                     </td>
-                    <td className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-200">
+                    <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
                       {formatNumber(summary.feedBags, 2)} sx
                     </td>
-                    <td className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-200">
+                    <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
                       {summary.averageWeightGrams ? `${formatNumber(summary.averageWeightGrams / 1000, 2)} kg` : '--'}
                     </td>
-                    <td className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-200">
+                    <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
                       {summary.fcr === null ? '--' : formatNumber(summary.fcr, 2)}
                     </td>
-                    <td className="px-4 py-3 text-right font-bold text-gray-500 dark:text-gray-300">
+                    <td className="px-4 py-3 text-right font-bold text-app-text-secondary font-jetbrains">
                       {formatDate(summary.latestLogDate)}
                     </td>
                   </tr>
@@ -812,7 +812,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
 
             {!postSummary.buildingSummaries.length && (
               <div className="p-5 text-center">
-                <p className="text-sm font-bold text-gray-500">No building loadings found for this batch.</p>
+                <p className="text-sm font-bold text-app-text-secondary font-inter">No building loadings found for this batch.</p>
               </div>
             )}
           </div>
@@ -820,8 +820,8 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
 
         <section className="mt-6">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h3 className="text-sm font-extrabold uppercase tracking-wide text-primary dark:text-primary-light">Closeout Checks</h3>
-            <span className="text-[10px] font-bold text-gray-400">
+            <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent font-hanken">Closeout Checks</h3>
+            <span className="text-[10px] font-bold text-app-text-secondary font-jetbrains">
               Day {postSummary.summaryAgeDay || '--'}
             </span>
           </div>
@@ -832,23 +832,23 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
                 key={item.key}
                 className={`rounded-xl border p-4 shadow-sm ${
                   item.tone === 'success'
-                    ? 'border-green-200 bg-green-50 dark:border-green-800/40 dark:bg-green-900/20'
+                    ? 'border-app-success/30 bg-app-success-bg'
                     : item.tone === 'warning'
-                      ? 'border-amber-200 bg-amber-50 dark:border-amber-800/40 dark:bg-amber-900/20'
-                      : 'border-neutral-border bg-white dark:border-gray-700 dark:bg-gray-800'
+                      ? 'border-app-warning/30 bg-app-warning-bg'
+                      : 'border-app-border bg-app-card'
                 }`}
               >
-                <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">{item.label}</p>
-                <p className={`mt-1 text-lg font-black ${
+                <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-jetbrains">{item.label}</p>
+                <p className={`mt-1 text-lg font-black font-jetbrains ${
                   item.tone === 'success'
-                    ? 'text-semantic-success'
+                    ? 'text-app-success'
                     : item.tone === 'warning'
-                      ? 'text-semantic-warning'
-                      : 'text-gray-900 dark:text-white'
+                      ? 'text-app-warning'
+                      : 'text-app-text'
                 }`}>
                   {item.value}
                 </p>
-                <p className="mt-1 text-xs font-bold leading-snug text-gray-500 dark:text-gray-300">{item.detail}</p>
+                <p className="mt-1 text-xs font-bold leading-snug text-app-text-secondary font-inter">{item.detail}</p>
               </div>
             ))}
           </div>
@@ -858,26 +858,26 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
   }
 
   return (
-    <div className="app-page">
+    <div className="app-page text-app-text">
       <div className="mb-5 mt-2">
-        <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Operations</p>
+        <p className="text-xs font-bold uppercase tracking-wider text-app-text-secondary font-jetbrains">Operations</p>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-3xl font-extrabold text-primary tracking-tight">Today</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <h2 className="text-3xl font-extrabold text-app-accent tracking-tight font-hanken">Today</h2>
+            <p className="text-sm text-app-text-secondary mt-1 font-jetbrains">
               Batch {activeBatch.id} - {formatDate(today)}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:min-w-72">
-            <div className="rounded-xl border border-neutral-border bg-white px-3 py-2 text-right shadow-sm dark:border-gray-700 dark:bg-gray-800">
-              <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">Age</p>
-              <p className={`text-xl font-black ${ageDay > lastTargetDay ? 'text-semantic-warning' : 'text-secondary'}`}>
+            <div className="rounded-xl border border-app-border bg-app-card px-3 py-2 text-right shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-jetbrains">Age</p>
+              <p className={`text-xl font-black font-jetbrains ${ageDay > lastTargetDay ? 'text-app-warning' : 'text-app-accent'}`}>
                 D{ageDay || '--'}
               </p>
             </div>
-            <div className="rounded-xl border border-neutral-border bg-white px-3 py-2 text-right shadow-sm dark:border-gray-700 dark:bg-gray-800">
-              <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">Harvest</p>
-              <p className={`text-xl font-black ${daysToHarvest !== null && daysToHarvest <= HARVEST_SOON_DAYS ? 'text-semantic-warning' : 'text-gray-900 dark:text-white'}`}>
+            <div className="rounded-xl border border-app-border bg-app-card px-3 py-2 text-right shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-jetbrains">Harvest</p>
+              <p className={`text-xl font-black font-jetbrains ${daysToHarvest !== null && daysToHarvest <= HARVEST_SOON_DAYS ? 'text-app-warning' : 'text-app-text'}`}>
                 {daysToHarvest === null ? '--' : daysToHarvest < 0 ? `${Math.abs(daysToHarvest)}d late` : `${daysToHarvest}d`}
               </p>
             </div>
@@ -886,7 +886,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
       </div>
 
       {error && (
-        <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-200">
+        <div className="mb-5 rounded-xl border border-app-danger/30 bg-app-danger-bg p-3 text-sm font-bold text-app-danger">
           {error}
         </div>
       )}
@@ -925,8 +925,8 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
       <div className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <section>
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h3 className="text-sm font-extrabold uppercase tracking-wide text-secondary">Building Checklist</h3>
-            <span className="text-[10px] font-bold text-gray-400">
+            <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent font-hanken">Building Checklist</h3>
+            <span className="text-[10px] font-bold text-app-text-secondary font-jetbrains">
               {isLoading ? 'Loading...' : `${todayLogs.length} log${todayLogs.length === 1 ? '' : 's'} today`}
             </span>
           </div>
@@ -937,25 +937,25 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
               return (
                 <div
                   key={check.building}
-                  className={`rounded-xl border bg-white p-4 shadow-sm dark:bg-gray-800 ${
+                  className={`rounded-xl border bg-app-card p-4 shadow-sm hover:border-app-accent transition-all duration-200 ${
                     !check.hasLogToday || !check.hasAssignedEmployee
-                      ? 'border-red-200 dark:border-red-800/40'
+                      ? 'border-app-danger/30'
                       : varianceIsHigh
-                        ? 'border-amber-200 dark:border-amber-800/40'
-                        : 'border-neutral-border dark:border-gray-700'
+                        ? 'border-app-warning/30'
+                        : 'border-app-border'
                   }`}
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className={`flex h-10 w-10 items-center justify-center rounded-full text-lg font-black ${
-                          check.hasLogToday ? 'bg-green-100 text-semantic-success dark:bg-green-900/30' : 'bg-red-100 text-semantic-danger dark:bg-red-900/30'
+                        <span className={`flex h-10 w-10 items-center justify-center rounded-full text-lg font-black font-hanken ${
+                          check.hasLogToday ? 'bg-app-success-bg text-app-success' : 'bg-app-danger-bg text-app-danger'
                         }`}>
                           {check.building}
                         </span>
                         <div className="min-w-0">
-                          <p className="font-black text-gray-900 dark:text-white">Building {check.building}</p>
-                          <p className="text-xs font-bold text-gray-400">
+                          <p className="font-black text-app-text">Building {check.building}</p>
+                          <p className="text-xs font-bold text-app-text-secondary font-inter">
                             {formatNumber(check.chicksLoaded)} loaded - {check.assignedEmployees.length} employee{check.assignedEmployees.length === 1 ? '' : 's'}
                           </p>
                         </div>
@@ -963,33 +963,33 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-right">
                       <div>
-                        <p className="text-[10px] font-bold uppercase text-gray-400">Feed Today</p>
-                        <p className="text-sm font-black text-gray-900 dark:text-white">{formatNumber(check.todaysTotals.feed, 2)} sx</p>
+                        <p className="text-[10px] font-bold uppercase text-app-text-secondary font-jetbrains">Feed Today</p>
+                        <p className="text-sm font-black text-app-text font-jetbrains">{formatNumber(check.todaysTotals.feed, 2)} sx</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase text-gray-400">Mortality</p>
-                        <p className={`text-sm font-black ${check.todaysTotals.mortality > 0 ? 'text-semantic-danger' : 'text-semantic-success'}`}>
+                        <p className="text-[10px] font-bold uppercase text-app-text-secondary font-jetbrains">Mortality</p>
+                        <p className={`text-sm font-black font-jetbrains ${check.todaysTotals.mortality > 0 ? 'text-app-danger' : 'text-app-success'}`}>
                           {formatNumber(check.todaysTotals.mortality)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase text-gray-400">Variance</p>
-                        <p className={`text-sm font-black ${varianceIsHigh ? 'text-semantic-warning' : 'text-gray-900 dark:text-white'}`}>
+                        <p className="text-[10px] font-bold uppercase text-app-text-secondary font-jetbrains">Variance</p>
+                        <p className={`text-sm font-black font-jetbrains ${varianceIsHigh ? 'text-app-warning' : 'text-app-text'}`}>
                           {check.variancePercent === null ? '--' : `${check.variancePercent > 0 ? '+' : ''}${formatNumber(check.variancePercent, 1)}%`}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-wider">
-                    <span className={`rounded-full px-2 py-1 ${check.hasLogToday ? 'bg-green-100 text-semantic-success dark:bg-green-900/30' : 'bg-red-100 text-semantic-danger dark:bg-red-900/30'}`}>
+                  <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-wider font-jetbrains">
+                    <span className={`rounded-full px-2.5 py-1 ${check.hasLogToday ? 'bg-app-success-bg text-app-success' : 'bg-app-danger-bg text-app-danger'}`}>
                       {check.hasLogToday ? 'Logged today' : 'Needs log'}
                     </span>
-                    <span className={`rounded-full px-2 py-1 ${check.hasAssignedEmployee ? 'bg-green-100 text-semantic-success dark:bg-green-900/30' : 'bg-red-100 text-semantic-danger dark:bg-red-900/30'}`}>
+                    <span className={`rounded-full px-2.5 py-1 ${check.hasAssignedEmployee ? 'bg-app-success-bg text-app-success' : 'bg-app-danger-bg text-app-danger'}`}>
                       {check.hasAssignedEmployee ? 'Employee assigned' : 'No employee'}
                     </span>
                     {check.feedTarget && (
-                      <span className="rounded-full bg-blue-50 px-2 py-1 text-primary dark:bg-blue-900/20 dark:text-primary-light">
+                      <span className="rounded-full bg-app-accent/15 px-2.5 py-1 text-app-accent">
                         Target {formatNumber(check.feedTarget.targetBags, 2)} sx
                       </span>
                     )}
@@ -999,8 +999,8 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
             })}
 
             {!buildingChecks.length && (
-              <div className="rounded-xl border border-neutral-border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                <p className="text-sm font-bold text-gray-500">No building loadings found for this batch.</p>
+              <div className="rounded-xl border border-app-border bg-app-card p-4 text-center shadow-sm">
+                <p className="text-sm font-bold text-app-text-secondary font-inter">No building loadings found for this batch.</p>
               </div>
             )}
           </div>
@@ -1008,8 +1008,8 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
 
         <section>
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h3 className="text-sm font-extrabold uppercase tracking-wide text-primary dark:text-primary-light">Warnings</h3>
-            <span className="text-[10px] font-bold text-gray-400">
+            <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent font-hanken">Warnings</h3>
+            <span className="text-[10px] font-bold text-app-text-secondary font-jetbrains">
               {dangerCount} urgent
             </span>
           </div>
@@ -1020,45 +1020,45 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
             ))}
 
             {!abnormalWarnings.length && (
-              <div className="rounded-xl border border-green-200 bg-green-50 p-4 shadow-sm dark:border-green-800/40 dark:bg-green-900/20">
-                <p className="text-sm font-black text-semantic-success">No abnormal values today</p>
-                <p className="mt-1 text-xs font-bold text-green-700 dark:text-green-200">
+              <div className="rounded-xl border border-app-success/30 bg-app-success-bg p-4 shadow-sm text-app-success">
+                <p className="text-sm font-black">No abnormal values today</p>
+                <p className="mt-1 text-xs font-bold opacity-90 font-inter">
                   Logs, feed stock, employee assignment, age, and harvest checks look clear.
                 </p>
               </div>
             )}
           </div>
 
-          <div className="mt-6 rounded-xl border border-neutral-border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <div className="mt-6 rounded-xl border border-app-border bg-app-card p-4 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">Today totals</p>
-                <p className="mt-1 text-lg font-black text-gray-900 dark:text-white">
+                <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-jetbrains">Today totals</p>
+                <p className="mt-1 text-lg font-black text-app-text font-jetbrains">
                   {formatNumber(todayTotals.feed, 2)} sx feed
                 </p>
-                <p className={`text-sm font-black ${todayTotals.mortality > 0 ? 'text-semantic-danger' : 'text-semantic-success'}`}>
+                <p className={`text-sm font-black font-jetbrains ${todayTotals.mortality > 0 ? 'text-app-danger' : 'text-app-success'}`}>
                   {formatNumber(todayTotals.mortality)} mortality
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setActiveScreen('dailyLog')}
-                className="rounded-xl bg-primary px-3 py-2 text-xs font-black text-white shadow-sm active:scale-95"
+                className="rounded-xl bg-app-accent px-3 py-2 text-xs font-black text-app-on-accent shadow-sm active:scale-95 hover:opacity-90 transition-all cursor-pointer font-jetbrains"
               >
                 Open Logs
               </button>
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-              <div className="rounded-lg bg-neutral-light p-3 dark:bg-gray-900">
-                <p className="font-bold uppercase text-gray-400">Feed stock after target</p>
-                <p className={`mt-1 font-black ${feedStockAfterTodayTarget !== null && feedStockAfterTodayTarget < 0 ? 'text-semantic-danger' : 'text-gray-900 dark:text-white'}`}>
+              <div className="rounded-lg bg-app-bg p-3">
+                <p className="font-bold uppercase text-app-text-secondary font-jetbrains">Feed stock after target</p>
+                <p className={`mt-1 font-black font-jetbrains ${feedStockAfterTodayTarget !== null && feedStockAfterTodayTarget < 0 ? 'text-app-danger' : 'text-app-text'}`}>
                   {feedStockAfterTodayTarget === null ? '--' : `${formatNumber(feedStockAfterTodayTarget, 2)} sx`}
                 </p>
               </div>
-              <div className="rounded-lg bg-neutral-light p-3 dark:bg-gray-900">
-                <p className="font-bold uppercase text-gray-400">Harvest target</p>
-                <p className="mt-1 font-black text-gray-900 dark:text-white">{formatDate(activeBatch.targetHarvestDate)}</p>
+              <div className="rounded-lg bg-app-bg p-3">
+                <p className="font-bold uppercase text-app-text-secondary font-jetbrains">Harvest target</p>
+                <p className="mt-1 font-black text-app-text font-jetbrains">{formatDate(activeBatch.targetHarvestDate)}</p>
               </div>
             </div>
           </div>

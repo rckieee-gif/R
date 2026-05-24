@@ -420,54 +420,54 @@ function App() {
   }
 
   // If they ARE logged in, show the App!
+  const getNavLinkClass = (screen) => {
+    const isActive = activeScreen === screen;
+    return `px-4 py-2 rounded-full font-bold text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
+      isActive
+        ? 'bg-app-accent text-app-on-accent shadow-md scale-105'
+        : 'bg-app-card text-app-text-secondary border border-app-border hover:bg-slate-100 dark:hover:bg-stitch-surface-container-high'
+    }`;
+  };
+
   return (
     <div className={`${isDarkMode ? 'dark' : ''}`}>
-      <div className="bg-neutral-light dark:bg-slate-950 text-gray-900 dark:text-gray-100 min-h-screen pb-10 transition-colors duration-300 font-sans">
+      <div className="bg-app-bg text-app-text min-h-screen pb-10 transition-colors duration-300 font-sans">
         
         {/* --- TOP NAVIGATION MENU --- */}
-        <div className="no-print bg-white/95 dark:bg-slate-900/95 shadow-sm border-b border-neutral-border dark:border-slate-800 p-3 sm:p-4 mb-2 sm:mb-4 flex justify-between items-center sticky top-0 z-10 transition-colors duration-300">
+        <div className="no-print bg-app-card/95 backdrop-blur-md shadow-sm border-b border-app-border p-3 sm:p-4 mb-4 flex justify-between items-center sticky top-0 z-10 transition-colors duration-300">
           
-          <div className="flex space-x-2 overflow-x-auto">
-            <button onClick={() => setActiveScreen('today')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'today' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Today</button>
-            <button onClick={() => setActiveScreen('dashboard')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'dashboard' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Home</button>
+          <div className="flex space-x-2 overflow-x-auto ag-scrollbar py-1">
+            <button onClick={() => setActiveScreen('today')} className={getNavLinkClass('today')}>Today</button>
+            <button onClick={() => setActiveScreen('dashboard')} className={getNavLinkClass('dashboard')}>Home</button>
             {allowedScreens.includes('batches') && (
-            <button
-  onClick={() => setActiveScreen('batches')}
-  className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${
-    activeScreen === 'batches'
-      ? 'bg-primary text-white shadow-md'
-      : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'
-  }`}
->
-  Batches
-</button>
+              <button onClick={() => setActiveScreen('batches')} className={getNavLinkClass('batches')}>Batches</button>
             )}
             {canManageOperations && (
-              <button onClick={() => setActiveScreen('employees')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'employees' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Employees</button>
+              <button onClick={() => setActiveScreen('employees')} className={getNavLinkClass('employees')}>Employees</button>
             )}
             {allowedScreens.includes('paySummary') && (
-              <button onClick={() => setActiveScreen('paySummary')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'paySummary' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Pay Summary</button>
+              <button onClick={() => setActiveScreen('paySummary')} className={getNavLinkClass('paySummary')}>Pay Summary</button>
             )}
             {/* RBAC: Only show Ledger and Statement to Admins/OpManagers */}
             {canViewFinancial && (
-              <button onClick={() => setActiveScreen('ledger')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'ledger' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Ledger</button>
+              <button onClick={() => setActiveScreen('ledger')} className={getNavLinkClass('ledger')}>Ledger</button>
             )}
             {canViewFinancial && (
-              <button onClick={() => setActiveScreen('harvest')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'harvest' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Harvest</button>
+              <button onClick={() => setActiveScreen('harvest')} className={getNavLinkClass('harvest')}>Harvest</button>
             )}
             
             {allowedScreens.includes('dailyLog') && (
-              <button onClick={() => setActiveScreen('dailyLog')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'dailyLog' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Daily Logs</button>
+              <button onClick={() => setActiveScreen('dailyLog')} className={getNavLinkClass('dailyLog')}>Daily Logs</button>
             )}
             {allowedScreens.includes('inventory') && (
-              <button onClick={() => setActiveScreen('inventory')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'inventory' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Inventory</button>
+              <button onClick={() => setActiveScreen('inventory')} className={getNavLinkClass('inventory')}>Inventory</button>
             )}
             {allowedScreens.includes('analytics') && (
-              <button onClick={() => setActiveScreen('analytics')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'analytics' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Analytics</button>
+              <button onClick={() => setActiveScreen('analytics')} className={getNavLinkClass('analytics')}>Analytics</button>
             )}
             
             {canViewFinancial && (
-              <button onClick={() => setActiveScreen('statement')} className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${activeScreen === 'statement' ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-neutral-border dark:border-slate-700'}`}>Statement</button>
+              <button onClick={() => setActiveScreen('statement')} className={getNavLinkClass('statement')}>Statement</button>
             )}
           </div>
           
@@ -482,7 +482,7 @@ function App() {
                   value={activeBatch?.id || ''}
                   onChange={handleBatchSelectorChange}
                   disabled={isBatchListLoading || batches.length === 0}
-                  className="h-10 w-[8.5rem] sm:w-48 rounded-full border border-neutral-border dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-100 shadow-sm outline-none transition focus:ring-2 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+                  className="h-10 w-[8.5rem] sm:w-48 rounded-full border border-app-border bg-app-card px-3 text-xs sm:text-sm font-bold text-app-text shadow-sm outline-none transition focus:ring-2 focus:ring-app-accent disabled:cursor-not-allowed disabled:opacity-60"
                   title="Active batch"
                 >
                   {isBatchListLoading && <option value="">Loading batches</option>}
@@ -500,8 +500,8 @@ function App() {
                 onClick={() => setActiveScreen('settings')}
                 className={`h-10 w-10 inline-flex items-center justify-center rounded-full border shadow-sm hover:scale-105 transition-transform ${
                   activeScreen === 'settings'
-                    ? 'bg-primary text-white border-primary'
-                    : 'bg-white text-gray-700 border-neutral-border dark:bg-slate-800 dark:text-gray-200 dark:border-slate-700'
+                    ? 'bg-app-accent text-app-on-accent border-app-accent'
+                    : 'bg-app-card text-app-text-secondary border-app-border hover:text-app-text'
                 }`}
                 aria-label="Settings"
                 title="Settings"
@@ -511,14 +511,14 @@ function App() {
             )}
             <button
               onClick={() => setIsDarkMode(!isDarkMode)}
-              className="h-10 w-10 inline-flex items-center justify-center rounded-full bg-white dark:bg-slate-800 text-secondary dark:text-primary-light border border-neutral-border dark:border-slate-700 shadow-sm hover:scale-105 transition-transform"
+              className="h-10 w-10 inline-flex items-center justify-center rounded-full bg-app-card text-app-text-secondary border border-app-border shadow-sm hover:scale-105 transition-transform hover:text-app-text"
               aria-label={isDarkMode ? 'Use Light Mode' : 'Use Dark Mode'}
               title={isDarkMode ? 'Use Light Mode' : 'Use Dark Mode'}
             >
               <ThemeIcon isDarkMode={isDarkMode} />
             </button>
             {/* NEW LOGOUT BUTTON */}
-            <button onClick={handleLogout} className="p-2 text-xs font-bold text-gray-500 hover:text-semantic-danger transition-colors">
+            <button onClick={handleLogout} className="p-2 text-xs font-bold text-app-text-secondary hover:text-app-danger transition-colors">
               {isPublicViewer ? 'Exit Preview' : 'Logout'}
             </button>
           </div>

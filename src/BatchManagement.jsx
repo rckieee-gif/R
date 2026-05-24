@@ -300,57 +300,57 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
   };
 
   return (
-    <div className="app-page">
+    <div className="app-page text-app-text">
       <div className="mb-6 mt-2">
-        <h2 className="text-3xl font-extrabold text-primary tracking-tight">
+        <h2 className="text-3xl font-extrabold text-app-accent tracking-tight font-hanken">
           Batches
         </h2>
-        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+        <p className="text-app-text-secondary text-sm mt-1 font-inter">
           {readOnly ? 'Review flock production cycles.' : 'Create and manage flock production cycles.'}
         </p>
       </div>
 
       {readOnly && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-xl p-3 mb-6">
-          <p className="text-xs font-black uppercase tracking-wider text-primary">Read-only access</p>
-          <p className="text-sm font-bold text-blue-700 dark:text-blue-200 mt-1">
+        <div className="bg-app-accent/15 border border-app-accent/30 rounded-xl p-3 mb-6">
+          <p className="text-xs font-black uppercase tracking-wider text-app-accent font-jetbrains">Read-only access</p>
+          <p className="text-sm font-bold text-app-text-secondary mt-1 font-inter">
             You can select and review batches, but changes are restricted to operation managers and owners.
           </p>
         </div>
       )}
 
       {activeBatch && (
-        <div className="bg-primary text-white p-4 rounded-2xl shadow-sm mb-6">
-          <p className="text-xs font-bold uppercase opacity-80">Current Active Batch</p>
-          <p className="text-2xl font-black mt-1">{activeBatch.id}</p>
-          <p className="text-sm mt-1 opacity-90">
+        <div className="bg-app-accent text-app-on-accent p-4 rounded-2xl shadow-sm mb-6">
+          <p className="text-xs font-bold uppercase opacity-80 font-jetbrains">Current Active Batch</p>
+          <p className="text-2xl font-black mt-1 font-jetbrains">{activeBatch.id}</p>
+          <p className="text-sm mt-1 opacity-90 font-inter">
             Started: {toDateInput(activeBatch.startDate)}
           </p>
         </div>
       )}
 
       {!readOnly && (
-      <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700 mb-6">
+      <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-app-text-secondary font-jetbrains">
             {editingBatchId ? 'Edit Batch' : 'New Batch'}
           </h3>
           {editingBatchId && (
-            <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-secondary/10 text-secondary">
+            <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-app-accent/15 text-app-accent font-jetbrains">
               {editingBatchId}
             </span>
           )}
         </div>
 
         {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold mb-4 border border-red-200">
+          <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger/30">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSaveBatch} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">
+            <label className="block text-xs font-bold text-app-text-secondary mb-1 font-jetbrains">
               Loading / Start Date
             </label>
             <input
@@ -358,25 +358,25 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
               required
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+              className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">
+            <label className="block text-xs font-bold text-app-text-secondary mb-1 font-jetbrains">
               Target Harvest Date
             </label>
             <input
               type="date"
               value={targetHarvestDate}
               onChange={(e) => setTargetHarvestDate(e.target.value)}
-              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+              className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">
+              <label className="block text-xs font-bold text-app-text-secondary mb-1 font-jetbrains">
                 Total Chicks Loaded
               </label>
               <input
@@ -384,16 +384,16 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
                 min="0"
                 readOnly
                 value={loadingTotal || ''}
-                className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-white outline-none font-bold"
+                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none font-bold font-jetbrains"
                 placeholder="0"
               />
-              <p className="text-[10px] text-gray-400 mt-1">
+              <p className="text-[10px] text-app-text-secondary mt-1 font-inter">
                 Calculated from building chicks.
               </p>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">
+              <label className="block text-xs font-bold text-app-text-secondary mb-1 font-jetbrains">
                 Planned Flock
               </label>
               <input
@@ -401,14 +401,14 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
                 min="0"
                 value={plannedFlock}
                 onChange={(e) => setPlannedFlock(e.target.value)}
-                className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-jetbrains"
                 placeholder="0"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">
+            <label className="block text-xs font-bold text-app-text-secondary mb-1 font-jetbrains">
               Target Feed Kg
             </label>
             <input
@@ -417,38 +417,38 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
               min="0"
               value={targetFeedKg}
               onChange={(e) => setTargetFeedKg(e.target.value)}
-              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+              className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-jetbrains"
               placeholder="0"
             />
           </div>
 
-          <div className="border border-neutral-border dark:border-gray-700 rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between bg-neutral-light dark:bg-gray-700 px-3 py-2">
-              <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-300">
+          <div className="border border-app-border rounded-xl overflow-hidden bg-app-card">
+            <div className="flex items-center justify-between bg-app-bg px-3 py-2 border-b border-app-border">
+              <p className="text-xs font-bold uppercase tracking-wider text-app-text-secondary font-jetbrains">
                 Building Loading
               </p>
-              <span className="text-[10px] font-bold text-primary">
+              <span className="text-[10px] font-bold text-app-accent font-jetbrains">
                 Shares locked to chicks
               </span>
             </div>
 
-            <div className="divide-y divide-neutral-border dark:divide-gray-700">
+            <div className="divide-y divide-app-border">
               {loadingsWithShares.map((row, index) => (
-                <div key={row.building} className="p-3 grid grid-cols-[72px_1fr_84px] gap-2 items-end">
+                <div key={row.building} className="p-3 grid grid-cols-[80px_1fr_90px] gap-2 items-end">
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-400 mb-1">
-                      Owner
+                    <label className="block text-[10px] font-bold text-app-text-secondary mb-1 font-jetbrains">
+                      Building
                     </label>
-                    <div className="min-h-12 flex flex-col items-center justify-center rounded-lg bg-white dark:bg-gray-800 border border-neutral-border dark:border-gray-600">
-                      <span className="font-black text-primary leading-none">{row.building}</span>
-                      <span className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight text-center mt-1">
+                    <div className="min-h-12 flex flex-col items-center justify-center rounded-lg bg-app-bg border border-app-border">
+                      <span className="font-black text-app-accent font-hanken leading-none">{row.building}</span>
+                      <span className="text-[9px] text-app-text-secondary leading-tight text-center mt-1 font-inter">
                         {row.owner}
                       </span>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-400 mb-1">
+                    <label className="block text-[10px] font-bold text-app-text-secondary mb-1 font-jetbrains">
                       Chicks
                     </label>
                     <input
@@ -456,13 +456,13 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
                       min="0"
                       value={row.chicksLoaded}
                       onChange={(e) => updateLoading(index, 'chicksLoaded', e.target.value)}
-                      className="w-full h-10 px-3 border border-neutral-border dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-white outline-none"
+                      className="w-full h-10 px-3 border border-app-border rounded-lg bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-jetbrains"
                       placeholder="0"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-400 mb-1">
+                    <label className="block text-[10px] font-bold text-app-text-secondary mb-1 font-jetbrains">
                       Share %
                     </label>
                     <input
@@ -472,42 +472,42 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
                       max="100"
                       readOnly
                       value={formatPercent(row.loadingSharePct)}
-                      className="w-full h-10 px-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-white outline-none font-bold"
+                      className="w-full h-10 px-2 border border-app-border rounded-lg bg-app-bg text-app-text outline-none font-bold font-jetbrains"
                     />
                   </div>
                 </div>
               ))}
 
               {loadings.length === 0 && (
-                <p className="p-3 text-sm text-gray-500">
+                <p className="p-3 text-sm text-app-text-secondary font-inter">
                   No active buildings found.
                 </p>
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-2 bg-neutral-light dark:bg-gray-700 px-3 py-2 text-xs">
-              <p className="font-bold text-gray-500 dark:text-gray-300">
+            <div className="grid grid-cols-2 gap-2 bg-app-bg px-3 py-2 text-xs font-jetbrains">
+              <p className="font-bold text-app-text-secondary">
                 Total chicks: {loadingTotal.toLocaleString()}
               </p>
-              <p className={`font-bold text-right ${Number(shareTotal.toFixed(2)) === 100 ? 'text-semantic-success' : 'text-red-500'}`}>
+              <p className={`font-bold text-right ${Number(shareTotal.toFixed(2)) === 100 ? 'text-app-success' : 'text-app-danger'}`}>
                 Shares: {shareTotal.toFixed(2)}%
               </p>
             </div>
           </div>
 
           {isLoadingLoadings && (
-            <p className="text-xs text-gray-500">Loading building rows...</p>
+            <p className="text-xs text-app-text-secondary font-jetbrains">Loading building rows...</p>
           )}
 
           <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">
+            <label className="block text-xs font-bold text-app-text-secondary mb-1 font-jetbrains">
               Notes
             </label>
             <input
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+              className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent"
               placeholder="Optional"
             />
           </div>
@@ -517,7 +517,7 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
               <button
                 type="button"
                 onClick={resetForm}
-                className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-3 rounded-xl font-bold shadow-sm active:scale-95 transition-all"
+                className="flex-1 bg-app-card border border-app-border text-app-text-secondary p-3 rounded-xl font-bold shadow-sm active:scale-95 transition-all cursor-pointer font-hanken"
               >
                 Cancel
               </button>
@@ -525,7 +525,7 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
 
             <button
               type="submit"
-              className="flex-[2] bg-secondary text-white p-3 rounded-xl font-bold shadow-md active:scale-95 transition-all"
+              className="flex-[2] bg-app-accent text-app-on-accent p-3 rounded-xl font-bold shadow-md active:scale-95 transition-all cursor-pointer font-hanken"
             >
               {editingBatchId ? 'Update Batch' : 'Create Batch'}
             </button>
@@ -535,7 +535,7 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
       )}
 
       <div>
-        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 ml-1">
+        <h3 className="text-xs font-bold text-app-text-secondary uppercase tracking-wider mb-3 ml-1 font-jetbrains">
           Batch History
         </h3>
 
@@ -543,21 +543,21 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
           {batches.map((batch) => (
             <div
               key={batch.id}
-              className={`bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border ${
+              className={`bg-app-card p-4 rounded-xl shadow-sm border transition-all ${
                 activeBatch?.id === batch.id
-                  ? 'border-primary'
-                  : 'border-neutral-border dark:border-gray-700'
+                  ? 'border-app-accent shadow-[0_0_12px_rgba(75,226,119,0.15)]'
+                  : 'border-app-border'
               }`}
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-lg font-black text-gray-900 dark:text-white">
+                  <p className="text-lg font-black text-app-text font-jetbrains">
                     {batch.id}
                   </p>
-                  <p className="text-xs text-gray-400 font-bold uppercase mt-1">
+                  <p className="text-xs text-app-text-secondary font-bold uppercase mt-1 font-jetbrains">
                     Status: {batch.status}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-sm text-app-text-secondary mt-1 font-jetbrains">
                     Chicks: {Number(batch.totalChicksLoaded || 0).toLocaleString()}
                   </p>
                 </div>
@@ -565,10 +565,10 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
                 <div className="flex flex-col gap-2">
                   <button
                     onClick={() => setActiveBatch(batch)}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold ${
+                    className={`px-3 py-2 rounded-xl text-xs font-bold cursor-pointer transition ${
                       activeBatch?.id === batch.id
-                        ? 'bg-primary text-white'
-                        : 'bg-neutral-light dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                        ? 'bg-app-accent text-app-on-accent'
+                        : 'bg-app-bg text-app-text-secondary border border-app-border hover:text-app-text'
                     }`}
                   >
                     {activeBatch?.id === batch.id ? 'Selected' : 'Select'}
@@ -578,14 +578,14 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
                     <>
                       <button
                         onClick={() => handleEditBatch(batch)}
-                        className="px-3 py-2 rounded-xl text-xs font-bold bg-secondary text-white"
+                        className="px-3 py-2 rounded-xl text-xs font-bold bg-app-accent text-app-on-accent cursor-pointer"
                       >
                         Edit
                       </button>
 
                       <button
                         onClick={() => handleDeleteBatch(batch.id)}
-                        className="px-3 py-2 rounded-xl text-xs font-bold bg-red-100 text-red-600 border border-red-200"
+                        className="px-3 py-2 rounded-xl text-xs font-bold bg-app-danger-bg text-app-danger border border-app-danger/30 hover:border-app-danger cursor-pointer"
                       >
                         Delete
                       </button>
@@ -595,7 +595,7 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
               </div>
 
               {batch.notes && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 italic mt-3">
+                <p className="text-xs text-app-text-secondary italic mt-3 font-inter">
                   "{batch.notes}"
                 </p>
               )}
@@ -603,7 +603,7 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
           ))}
 
           {batches.length === 0 && (
-            <p className="text-center text-gray-500 text-sm mt-4">
+            <p className="text-center text-app-text-secondary text-sm mt-4 font-inter">
               No batches created yet.
             </p>
           )}
