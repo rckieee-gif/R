@@ -663,17 +663,17 @@ export default function TransactionLedger({ transactions, setTransactions, activ
       <div className="mb-6 mt-2">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="print-title text-3xl font-extrabold text-primary tracking-tight">
+            <h2 className="print-title text-3xl font-extrabold text-app-text tracking-tight font-hanken">
               Ledger Entry
             </h2>
-            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+            <p className="text-app-text-secondary text-sm mt-1">
               {activeBatch?.id ? `Batch ${activeBatch.id}` : 'Select a batch before saving records.'}
             </p>
           </div>
           <button
             type="button"
             onClick={() => window.print()}
-            className="no-print px-3 py-2 rounded-xl bg-primary text-white text-xs font-black shadow-sm"
+            className="no-print px-3 py-2 rounded-xl bg-app-accent text-app-on-accent text-xs font-black shadow-sm hover:scale-105 active:scale-95 transition-transform cursor-pointer"
           >
             Print
           </button>
@@ -681,9 +681,9 @@ export default function TransactionLedger({ transactions, setTransactions, activ
       </div>
 
       {readOnly && (
-        <div className="no-print bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-xl p-3 mb-6">
-          <p className="text-xs font-black uppercase tracking-wider text-primary">Read-only access</p>
-          <p className="text-sm font-bold text-blue-700 dark:text-blue-200 mt-1">
+        <div className="no-print bg-app-success-bg border border-app-accent rounded-xl p-3 mb-6">
+          <p className="text-xs font-black uppercase tracking-wider text-app-accent">Read-only access</p>
+          <p className="text-sm font-bold text-app-text-secondary mt-1">
             You can review ledger records. Changes are restricted to operation managers and owners.
           </p>
         </div>
@@ -691,19 +691,19 @@ export default function TransactionLedger({ transactions, setTransactions, activ
 
       <div className={`${readOnly ? '' : 'lg:grid lg:grid-cols-[minmax(360px,480px)_minmax(0,1fr)] lg:items-start lg:gap-6'}`}>
         {!readOnly && (
-          <div className={`no-print bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border-2 transition-colors duration-300 mb-6 lg:sticky lg:top-24 lg:mb-0 ${editingId ? 'border-secondary' : 'border-neutral-border dark:border-gray-700'}`}>
-            <h3 className={`text-xs font-bold uppercase tracking-wider mb-4 border-b pb-2 ${editingId ? 'text-secondary border-secondary/30' : 'text-gray-400 dark:text-gray-500 border-gray-100 dark:border-gray-700'}`}>
+          <div className={`no-print bg-app-card p-5 rounded-2xl shadow-sm border-2 transition-colors duration-300 mb-6 lg:sticky lg:top-24 lg:mb-0 ${editingId ? 'border-app-accent' : 'border-app-border'}`}>
+            <h3 className={`text-xs font-bold uppercase tracking-wider mb-4 border-b pb-2 ${editingId ? 'text-app-accent border-app-accent/30' : 'text-app-text-secondary border-app-border/40'}`}>
               {editingId ? 'Editing Record' : 'New Finance Record'}
             </h3>
 
             {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold mb-4 border border-red-200">
+              <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger">
                 {error}
               </div>
             )}
 
             {isLoadingMasters && (
-              <p className="text-xs text-gray-500 mb-4">Loading dropdowns...</p>
+              <p className="text-xs text-app-text-secondary mb-4">Loading dropdowns...</p>
             )}
 
             <div className="space-y-4">
@@ -767,39 +767,39 @@ export default function TransactionLedger({ transactions, setTransactions, activ
 
         <div className="min-w-0 space-y-4">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="bg-white dark:bg-gray-800 border border-neutral-border dark:border-gray-700 rounded-xl p-4 shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">Visible Entries</p>
-              <p className="mt-2 text-2xl font-black text-gray-900 dark:text-white">
+            <div className="bg-app-card border border-app-border rounded-xl p-4 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary">Visible Entries</p>
+              <p className="mt-2 text-2xl font-black text-app-text font-jetbrains">
                 {ledgerSummary.entryCount.toLocaleString()}
               </p>
-              <p className="text-[11px] font-bold text-gray-400">
+              <p className="text-[11px] font-bold text-app-text-secondary font-jetbrains">
                 of {transactions.length.toLocaleString()} total
               </p>
             </div>
-            <div className="bg-white dark:bg-gray-800 border border-neutral-border dark:border-gray-700 rounded-xl p-4 shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">Revenue</p>
-              <p className="mt-2 text-lg font-black text-semantic-success">
+            <div className="bg-app-card border border-app-border rounded-xl p-4 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary">Revenue</p>
+              <p className="mt-2 text-lg font-black text-app-success font-jetbrains">
                 {formatLedgerMoney(ledgerSummary.revenue)}
               </p>
             </div>
-            <div className="bg-white dark:bg-gray-800 border border-neutral-border dark:border-gray-700 rounded-xl p-4 shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">Outflow</p>
-              <p className="mt-2 text-lg font-black text-secondary">
+            <div className="bg-app-card border border-app-border rounded-xl p-4 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary">Outflow</p>
+              <p className="mt-2 text-lg font-black text-app-danger font-jetbrains">
                 {formatLedgerMoney(ledgerSummary.outflow)}
               </p>
             </div>
-            <div className="bg-white dark:bg-gray-800 border border-neutral-border dark:border-gray-700 rounded-xl p-4 shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">Net</p>
-              <p className={`mt-2 text-lg font-black ${ledgerNetTotal >= 0 ? 'text-semantic-success' : 'text-semantic-danger'}`}>
+            <div className="bg-app-card border border-app-border rounded-xl p-4 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary">Net</p>
+              <p className={`mt-2 text-lg font-black font-jetbrains ${ledgerNetTotal >= 0 ? 'text-app-success' : 'text-app-danger'}`}>
                 {formatLedgerMoney(ledgerNetTotal)}
               </p>
             </div>
           </div>
 
-          <div className="no-print bg-white dark:bg-gray-800 border border-neutral-border dark:border-gray-700 rounded-xl p-4 shadow-sm">
+          <div className="no-print bg-app-card border border-app-border rounded-xl p-4 shadow-sm">
             <div className="grid gap-3 xl:grid-cols-[minmax(240px,1.2fr)_repeat(3,minmax(140px,0.7fr))]">
               <label className="block">
-                <span className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">
                   Entry Search
                 </span>
                 <input
@@ -807,18 +807,18 @@ export default function TransactionLedger({ transactions, setTransactions, activ
                   value={ledgerSearch}
                   onChange={(event) => setLedgerSearch(event.target.value)}
                   placeholder="Search description, ref, payee, amount..."
-                  className="w-full px-3 py-2 rounded-lg border border-neutral-border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm font-bold text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full px-3 py-2 rounded-lg border border-app-border bg-app-bg text-sm font-bold text-app-text outline-none focus:ring-2 focus:ring-app-accent/20"
                 />
               </label>
 
               <label className="block">
-                <span className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">
                   Funding
                 </span>
                 <select
                   value={ledgerFundingFilter}
                   onChange={(event) => setLedgerFundingFilter(event.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-neutral-border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm font-bold text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full px-3 py-2 rounded-lg border border-app-border bg-app-bg text-sm font-bold text-app-text outline-none focus:ring-2 focus:ring-app-accent/20"
                 >
                   <option value="all">All funding</option>
                   {ledgerFilterOptions.fundingNatures.map((option) => (
@@ -828,13 +828,13 @@ export default function TransactionLedger({ transactions, setTransactions, activ
               </label>
 
               <label className="block">
-                <span className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">
                   Type
                 </span>
                 <select
                   value={ledgerTypeFilter}
                   onChange={(event) => setLedgerTypeFilter(event.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-neutral-border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm font-bold text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full px-3 py-2 rounded-lg border border-app-border bg-app-bg text-sm font-bold text-app-text outline-none focus:ring-2 focus:ring-app-accent/20"
                 >
                   <option value="all">All types</option>
                   {ledgerFilterOptions.types.map((option) => (
@@ -844,13 +844,13 @@ export default function TransactionLedger({ transactions, setTransactions, activ
               </label>
 
               <label className="block">
-                <span className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">
                   Building
                 </span>
                 <select
                   value={ledgerBuildingFilter}
                   onChange={(event) => setLedgerBuildingFilter(event.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-neutral-border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm font-bold text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full px-3 py-2 rounded-lg border border-app-border bg-app-bg text-sm font-bold text-app-text outline-none focus:ring-2 focus:ring-app-accent/20"
                 >
                   <option value="all">All buildings</option>
                   {ledgerFilterOptions.buildings.map((option) => (
@@ -862,13 +862,13 @@ export default function TransactionLedger({ transactions, setTransactions, activ
 
             <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-[repeat(3,minmax(140px,0.7fr))_auto] xl:items-end">
               <label className="block">
-                <span className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">
                   Category
                 </span>
                 <select
                   value={ledgerCategoryFilter}
                   onChange={(event) => setLedgerCategoryFilter(event.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-neutral-border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm font-bold text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full px-3 py-2 rounded-lg border border-app-border bg-app-bg text-sm font-bold text-app-text outline-none focus:ring-2 focus:ring-app-accent/20"
                 >
                   <option value="all">All categories</option>
                   {ledgerFilterOptions.categories.map((option) => (
@@ -878,26 +878,26 @@ export default function TransactionLedger({ transactions, setTransactions, activ
               </label>
 
               <label className="block">
-                <span className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">
                   From
                 </span>
                 <input
                   type="date"
                   value={ledgerDateFrom}
                   onChange={(event) => setLedgerDateFrom(event.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-neutral-border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm font-bold text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full px-3 py-2 rounded-lg border border-app-border bg-app-bg text-sm font-bold text-app-text outline-none focus:ring-2 focus:ring-app-accent/20"
                 />
               </label>
 
               <label className="block">
-                <span className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">
                   To
                 </span>
                 <input
                   type="date"
                   value={ledgerDateTo}
                   onChange={(event) => setLedgerDateTo(event.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-neutral-border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm font-bold text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full px-3 py-2 rounded-lg border border-app-border bg-app-bg text-sm font-bold text-app-text outline-none focus:ring-2 focus:ring-app-accent/20"
                 />
               </label>
 
@@ -905,7 +905,7 @@ export default function TransactionLedger({ transactions, setTransactions, activ
                 type="button"
                 onClick={resetLedgerFilters}
                 disabled={!hasLedgerFilters}
-                className="h-10 px-4 rounded-lg bg-gray-900 text-white text-xs font-black uppercase tracking-wider disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 dark:disabled:bg-gray-700 dark:disabled:text-gray-500"
+                className="h-10 px-4 rounded-lg bg-app-accent text-app-on-accent text-xs font-black uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-40 hover:scale-105 active:scale-95 transition-all cursor-pointer"
               >
                 Reset
               </button>

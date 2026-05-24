@@ -594,39 +594,39 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
   return (
     <div className="app-page">
       <div className="mb-6 mt-2">
-        <h2 className="text-3xl font-extrabold text-primary tracking-tight">
+        <h2 className="text-3xl font-extrabold text-app-text tracking-tight font-hanken">
           Employees
         </h2>
-        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+        <p className="text-app-text-secondary text-sm mt-1">
           Employee master sheet and batch pay.
         </p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-neutral-border dark:border-gray-700 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Cycle Income</p>
-          <p className="text-lg font-black mt-1 text-gray-900 dark:text-white">
+        <div className="bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Cycle Income</p>
+          <p className="text-lg font-black mt-1 text-app-text font-jetbrains">
             {formatMoney(totals.cycleIncome)}
           </p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-neutral-border dark:border-gray-700 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Mortality Deducted</p>
-          <p className="text-lg font-black mt-1 text-semantic-danger">
+        <div className="bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Mortality Deducted</p>
+          <p className="text-lg font-black mt-1 text-app-danger font-jetbrains">
             {formatBirds(totals.mortality)}
           </p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-neutral-border dark:border-gray-700 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Advance Balance</p>
-          <p className={`text-lg font-black mt-1 ${totals.outstandingAdvance > 0 ? 'text-semantic-danger' : 'text-semantic-success'}`}>
+        <div className="bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Advance Balance</p>
+          <p className={`text-lg font-black mt-1 font-jetbrains ${totals.outstandingAdvance > 0 ? 'text-app-danger' : 'text-app-success'}`}>
             {formatMoney(totals.outstandingAdvance)}
           </p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-neutral-border dark:border-gray-700 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Net Payable</p>
-          <p className={`text-lg font-black mt-1 ${totals.netPayable > 0 ? 'text-semantic-warning' : 'text-semantic-success'}`}>
+        <div className="bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Net Payable</p>
+          <p className={`text-lg font-black mt-1 font-jetbrains ${totals.netPayable > 0 ? 'text-app-warning' : 'text-app-success'}`}>
             {formatMoney(totals.netPayable)}
           </p>
         </div>

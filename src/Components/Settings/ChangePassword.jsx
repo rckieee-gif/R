@@ -11,60 +11,60 @@ export default function ChangePassword({
   isPasswordSaving
 }) {
   return (
-    <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700 mb-6">
-      <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">Change Password</h3>
+    <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6 font-hanken">
+      <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-4">Change Password</h3>
 
       {passwordError && (
-        <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold mb-4 border border-red-200">
+        <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger">
           {passwordError}
         </div>
       )}
       {passwordMessage && (
-        <div className="bg-green-50 text-green-700 p-3 rounded-xl text-sm font-bold mb-4 border border-green-200">
+        <div className="bg-app-success-bg text-app-success p-3 rounded-xl text-sm font-bold mb-4 border border-app-success">
           {passwordMessage}
         </div>
       )}
 
-      <form onSubmit={handlePasswordSubmit} className="space-y-3">
+      <form onSubmit={handlePasswordSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Current Password</label>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1.5">Current Password</label>
           <input
             type="password"
             required
             value={currentPassword}
             onChange={(event) => setCurrentPassword(event.target.value)}
-            className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+            className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all font-jetbrains"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">New Password</label>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1.5">New Password</label>
           <input
             type="password"
             required
             minLength={8}
             value={newPassword}
             onChange={(event) => setNewPassword(event.target.value)}
-            className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+            className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all font-jetbrains"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Confirm New Password</label>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1.5">Confirm New Password</label>
           <input
             type="password"
             required
             minLength={8}
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
-            className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+            className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all font-jetbrains"
           />
         </div>
 
         <button
           type="submit"
           disabled={isPasswordSaving}
-          className="w-full bg-primary text-white p-3 rounded-xl font-bold shadow-sm active:scale-95 transition-all disabled:opacity-60"
+          className="w-full bg-app-accent text-app-on-accent p-3 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm hover:scale-102 active:scale-98 transition-all disabled:opacity-60 cursor-pointer"
         >
           {isPasswordSaving ? 'Saving...' : 'Update Password'}
         </button>

@@ -473,24 +473,24 @@ export default function Settings({ user, token, activeBatch }) {
   };
 
   return (
-    <div className="app-page">
+    <div className="app-page font-hanken">
       <div className="mb-6 mt-2">
-        <h2 className="text-3xl font-extrabold text-primary tracking-tight">Settings</h2>
-        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-          Account, exports, and app utilities
+        <h2 className="text-3xl font-extrabold text-app-text tracking-tight">Settings</h2>
+        <p className="text-app-text-secondary text-sm mt-1">
+          Account, data exports, and audit logging utilities
         </p>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700 mb-6">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">Account</h3>
+      <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6">
+        <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-4">Account Profile</h3>
         <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="bg-neutral-light dark:bg-gray-900 rounded-xl p-3 min-w-0">
-            <p className="text-[10px] font-bold uppercase text-gray-400">Signed In</p>
-            <p className="font-black text-gray-900 dark:text-white truncate mt-1">{user?.email}</p>
+          <div className="bg-app-bg rounded-xl p-3 min-w-0 border border-app-border/40">
+            <p className="text-[10px] font-black uppercase text-app-text-secondary">Signed In</p>
+            <p className="font-black text-app-text truncate mt-1 font-jetbrains">{user?.email}</p>
           </div>
-          <div className="bg-neutral-light dark:bg-gray-900 rounded-xl p-3">
-            <p className="text-[10px] font-bold uppercase text-gray-400">Role</p>
-            <p className="font-black text-gray-900 dark:text-white mt-1">{user?.role}</p>
+          <div className="bg-app-bg rounded-xl p-3 border border-app-border/40">
+            <p className="text-[10px] font-black uppercase text-app-text-secondary">System Role</p>
+            <p className="font-black text-app-text mt-1 font-jetbrains">{user?.role}</p>
           </div>
         </div>
       </div>
@@ -574,9 +574,9 @@ export default function Settings({ user, token, activeBatch }) {
         isArchiving={isArchiving}
       />
 
-      <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Build Notes</h3>
-        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+      <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border">
+        <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-3">Build Notes</h3>
+        <div className="space-y-2 text-sm text-app-text-secondary">
           <p>Exports are generated from the database, including ledger, daily log, inventory, employee, and batch records.</p>
           <p>Spreadsheet templates and direct Google Sheets sync can sit here later without changing the daily workflow screens.</p>
         </div>

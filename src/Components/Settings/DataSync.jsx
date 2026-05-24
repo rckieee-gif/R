@@ -55,23 +55,23 @@ export default function DataSync({
 
   return (
     <>
-      <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700 mb-6">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">Export Files</h3>
+      <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6 font-hanken">
+        <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-4">Export Database</h3>
 
         {exportError && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold mb-4 border border-red-200">
+          <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger">
             {exportError}
           </div>
         )}
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">File</label>
+            <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1.5">File Dataset</label>
             <select
               value={dataset}
               onChange={(event) => setDataset(event.target.value)}
               disabled={!exportAllowed}
-              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none disabled:opacity-60"
+              className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {exportDatasets.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -81,16 +81,16 @@ export default function DataSync({
 
           {exportUsesBatch && (
             <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Scope</label>
+              <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1.5">Scope</label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setExportScope('active')}
                   disabled={!exportAllowed}
-                  className={`p-3 rounded-xl border text-sm font-bold transition-all disabled:opacity-60 ${
+                  className={`p-2.5 rounded-xl border font-black text-xs uppercase tracking-wider transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                     exportScope === 'active'
-                      ? 'bg-secondary text-white border-secondary'
-                      : 'bg-neutral-light dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-neutral-border dark:border-gray-600'
+                      ? 'bg-app-accent text-app-on-accent border-app-accent shadow-sm scale-102'
+                      : 'bg-app-bg text-app-text-secondary border-app-border hover:bg-app-accent/5 hover:text-app-accent'
                   }`}
                 >
                   Active Batch
@@ -99,10 +99,10 @@ export default function DataSync({
                   type="button"
                   onClick={() => setExportScope('all')}
                   disabled={!exportAllowed}
-                  className={`p-3 rounded-xl border text-sm font-bold transition-all disabled:opacity-60 ${
+                  className={`p-2.5 rounded-xl border font-black text-xs uppercase tracking-wider transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                     exportScope === 'all'
-                      ? 'bg-secondary text-white border-secondary'
-                      : 'bg-neutral-light dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-neutral-border dark:border-gray-600'
+                      ? 'bg-app-accent text-app-on-accent border-app-accent shadow-sm scale-102'
+                      : 'bg-app-bg text-app-text-secondary border-app-border hover:bg-app-accent/5 hover:text-app-accent'
                   }`}
                 >
                   All Batches
@@ -111,10 +111,10 @@ export default function DataSync({
             </div>
           )}
 
-          <div className="bg-neutral-light dark:bg-gray-900 rounded-xl p-3">
-            <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold">{exportHint}</p>
+          <div className="bg-app-bg rounded-xl p-3 border border-app-border/40">
+            <p className="text-xs text-app-text-secondary font-bold">{exportHint}</p>
             {effectiveBatchId && (
-              <p className="text-[10px] text-primary font-black mt-1">Batch {effectiveBatchId}</p>
+              <p className="text-[10px] text-app-accent font-black mt-1.5 uppercase tracking-wider font-jetbrains">Batch {effectiveBatchId}</p>
             )}
           </div>
 
@@ -122,30 +122,30 @@ export default function DataSync({
             type="button"
             onClick={handleExport}
             disabled={!exportAllowed || isExporting}
-            className="w-full bg-secondary text-white p-3 rounded-xl font-bold shadow-sm active:scale-95 transition-all disabled:opacity-60"
+            className="w-full bg-app-accent text-app-on-accent p-3 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm hover:scale-102 active:scale-98 transition-all disabled:opacity-60 cursor-pointer"
           >
             {isExporting ? 'Preparing...' : 'Download CSV'}
           </button>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700 mb-6">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">Import Files</h3>
+      <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6 font-hanken">
+        <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-4">Import Records</h3>
 
         {importError && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold mb-4 border border-red-200">
+          <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger">
             {importError}
           </div>
         )}
         {importMessage && (
-          <div className="bg-green-50 text-green-700 p-3 rounded-xl text-sm font-bold mb-4 border border-green-200">
+          <div className="bg-app-success-bg text-app-success p-3 rounded-xl text-sm font-bold mb-4 border border-app-success">
             {importMessage}
           </div>
         )}
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Import Type</label>
+            <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1.5">Import Type</label>
             <select
               value={importType}
               onChange={(event) => {
@@ -156,7 +156,7 @@ export default function DataSync({
                 setImportMessage('');
               }}
               disabled={!exportAllowed}
-              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none disabled:opacity-60"
+              className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {importDatasets.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -165,7 +165,7 @@ export default function DataSync({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">File</label>
+            <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1.5">File Upload</label>
             <input
               type="file"
               accept={selectedImportDataset.accept}
@@ -176,29 +176,29 @@ export default function DataSync({
                 setImportError('');
                 setImportMessage('');
               }}
-              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none disabled:opacity-60 text-sm"
+              className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none disabled:opacity-40 disabled:cursor-not-allowed file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-app-accent file:text-app-on-accent hover:file:opacity-90 file:cursor-pointer"
             />
           </div>
 
           {importFile && (
-            <div className="bg-neutral-light dark:bg-gray-900 rounded-xl p-3">
-              <p className="text-xs font-black text-gray-700 dark:text-gray-200 truncate">{importFile.name}</p>
-              <p className="text-[10px] font-bold text-gray-400 mt-1">
+            <div className="bg-app-bg rounded-xl p-3 border border-app-border/40">
+              <p className="text-xs font-black text-app-text truncate font-jetbrains">{importFile.name}</p>
+              <p className="text-[10px] font-bold text-app-text-secondary mt-1 font-jetbrains">
                 {(importFile.size / 1024).toLocaleString(undefined, { maximumFractionDigits: 1 })} KB
               </p>
             </div>
           )}
 
           {importSummary && (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 font-jetbrains">
               {Object.entries(importSummary).map(([key, item]) => (
-                <div key={key} className="rounded-xl bg-neutral-light dark:bg-gray-900 p-3">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">{item.label || key}</p>
-                  <p className="text-sm font-black text-gray-900 dark:text-white mt-1">
+                <div key={key} className="rounded-xl bg-app-bg border border-app-border/40 p-3">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary">{item.label || key}</p>
+                  <p className="text-sm font-black text-app-text mt-1">
                     +{item.created || 0} / {item.updated || 0}
                   </p>
                   {item.skipped > 0 && (
-                    <p className="text-[10px] font-bold text-semantic-warning mt-1">
+                    <p className="text-[10px] font-black text-app-warning mt-1.5">
                       {item.skipped} skipped
                     </p>
                   )}
@@ -211,34 +211,34 @@ export default function DataSync({
             type="button"
             onClick={handleImport}
             disabled={!exportAllowed || !importFile || isImporting}
-            className="w-full bg-primary text-white p-3 rounded-xl font-bold shadow-sm active:scale-95 transition-all disabled:opacity-60"
+            className="w-full bg-app-accent text-app-on-accent p-3 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm hover:scale-102 active:scale-98 transition-all disabled:opacity-60 cursor-pointer"
           >
             {isImporting ? 'Importing...' : 'Import File'}
           </button>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700 mb-6">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">Archive System</h3>
+      <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6 font-hanken">
+        <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-4">Archive System</h3>
 
         {archiveError && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold mb-4 border border-red-200">
+          <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger">
             {archiveError}
           </div>
         )}
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Archive Scope</label>
+            <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1.5">Archive Scope</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setArchiveScope('active')}
                 disabled={!exportAllowed}
-                className={`p-3 rounded-xl border text-sm font-bold transition-all disabled:opacity-60 ${
+                className={`p-2.5 rounded-xl border font-black text-xs uppercase tracking-wider transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                   archiveScope === 'active'
-                    ? 'bg-primary text-white border-primary'
-                    : 'bg-neutral-light dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-neutral-border dark:border-gray-600'
+                    ? 'bg-app-accent text-app-on-accent border-app-accent shadow-sm scale-102'
+                    : 'bg-app-bg text-app-text-secondary border-app-border hover:bg-app-accent/5 hover:text-app-accent'
                 }`}
               >
                 Active Batch
@@ -247,10 +247,10 @@ export default function DataSync({
                 type="button"
                 onClick={() => setArchiveScope('all')}
                 disabled={!exportAllowed}
-                className={`p-3 rounded-xl border text-sm font-bold transition-all disabled:opacity-60 ${
+                className={`p-2.5 rounded-xl border font-black text-xs uppercase tracking-wider transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                   archiveScope === 'all'
-                    ? 'bg-primary text-white border-primary'
-                    : 'bg-neutral-light dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-neutral-border dark:border-gray-600'
+                    ? 'bg-app-accent text-app-on-accent border-app-accent shadow-sm scale-102'
+                    : 'bg-app-bg text-app-text-secondary border-app-border hover:bg-app-accent/5 hover:text-app-accent'
                 }`}
               >
                 All Batches
@@ -258,12 +258,12 @@ export default function DataSync({
             </div>
           </div>
 
-          <div className="bg-neutral-light dark:bg-gray-900 rounded-xl p-3">
-            <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold">
+          <div className="bg-app-bg rounded-xl p-3 border border-app-border/40">
+            <p className="text-xs text-app-text-secondary font-bold">
               Archive downloads include batch records, loadings, ledger entries, daily logs, inventory, and employee compensation data.
             </p>
             {archiveBatchId && (
-              <p className="text-[10px] text-primary font-black mt-1">Batch {archiveBatchId}</p>
+              <p className="text-[10px] text-app-accent font-black mt-1.5 uppercase tracking-wider font-jetbrains">Batch {archiveBatchId}</p>
             )}
           </div>
 
@@ -271,7 +271,7 @@ export default function DataSync({
             type="button"
             onClick={handleArchiveDownload}
             disabled={!exportAllowed || isArchiving}
-            className="w-full bg-primary text-white p-3 rounded-xl font-bold shadow-sm active:scale-95 transition-all disabled:opacity-60"
+            className="w-full bg-app-accent text-app-on-accent p-3 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm hover:scale-102 active:scale-98 transition-all disabled:opacity-60 cursor-pointer"
           >
             {isArchiving ? 'Preparing Archive...' : 'Download Archive JSON'}
           </button>

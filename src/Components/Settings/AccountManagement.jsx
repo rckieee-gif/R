@@ -13,40 +13,40 @@ export default function AccountManagement({
   accountMessage
 }) {
   return (
-    <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700 mb-6">
-      <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">User Accounts</h3>
+    <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6 font-hanken">
+      <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-4">User Accounts</h3>
 
       {accountError && (
-        <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold mb-4 border border-red-200">
+        <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger">
           {accountError}
         </div>
       )}
       {accountMessage && (
-        <div className="bg-green-50 text-green-700 p-3 rounded-xl text-sm font-bold mb-4 border border-green-200">
+        <div className="bg-app-success-bg text-app-success p-3 rounded-xl text-sm font-bold mb-4 border border-app-success">
           {accountMessage}
         </div>
       )}
 
-      <form onSubmit={handleAccountCreate} className="space-y-3 mb-5">
+      <form onSubmit={handleAccountCreate} className="space-y-4 mb-6">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Email</label>
+            <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1.5">Email</label>
             <input
               type="email"
               required
               value={accountForm.email}
               onChange={(event) => updateAccountForm('email', event.target.value)}
-              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+              className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all font-jetbrains"
               placeholder="name@octavio.com"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Username</label>
+            <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1.5">Username</label>
             <input
               type="text"
               value={accountForm.username}
               onChange={(event) => updateAccountForm('username', event.target.value)}
-              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+              className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all font-jetbrains"
               placeholder="optional"
             />
           </div>
@@ -54,22 +54,22 @@ export default function AccountManagement({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Temp Password</label>
+            <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1.5">Temp Password</label>
             <input
               type="text"
               required
               value={accountForm.password}
               onChange={(event) => updateAccountForm('password', event.target.value)}
-              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+              className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all font-jetbrains"
               placeholder="temporary"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Role</label>
+            <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1.5">Role</label>
             <select
               value={accountForm.role}
               onChange={(event) => updateAccountForm('role', event.target.value)}
-              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none font-bold"
+              className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
             >
               {roleOptions.map((role) => (
                 <option key={role} value={role}>{role}</option>
@@ -80,21 +80,21 @@ export default function AccountManagement({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Person/Entity</label>
+            <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1.5">Person/Entity</label>
             <input
               type="text"
               value={accountForm.stakeholderName}
               onChange={(event) => updateAccountForm('stakeholderName', event.target.value)}
-              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
-              placeholder="optional"
+              className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
+              placeholder="optional name"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Type</label>
+            <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1.5">Type</label>
             <select
               value={accountForm.stakeholderType}
               onChange={(event) => updateAccountForm('stakeholderType', event.target.value)}
-              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none font-bold"
+              className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
             >
               {stakeholderTypeOptions.map((type) => (
                 <option key={type} value={type}>{type}</option>
@@ -103,37 +103,37 @@ export default function AccountManagement({
           </div>
         </div>
 
-        <button type="submit" className="w-full bg-secondary text-white p-3 rounded-xl font-bold shadow-sm active:scale-95 transition-all">
+        <button type="submit" className="w-full bg-app-accent text-app-on-accent p-3 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm hover:scale-102 active:scale-98 transition-all cursor-pointer">
           Create Account
         </button>
       </form>
 
       {isLoadingAccounts && (
-        <p className="text-xs text-gray-500 mb-3 font-semibold">Loading accounts...</p>
+        <p className="text-xs text-app-text-secondary mb-3 font-black">Loading accounts...</p>
       )}
 
       <div className="space-y-3">
         {accounts.map((account) => (
-          <div key={account.id} className={`rounded-xl border p-3 ${account.isActive ? 'border-neutral-border dark:border-gray-700 bg-neutral-light dark:bg-gray-900' : 'border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-900/10'}`}>
+          <div key={account.id} className={`rounded-xl border p-4 ${account.isActive ? 'border-app-border bg-app-bg/50' : 'border-app-danger/30 bg-app-danger-bg'}`}>
             <div className="flex justify-between gap-3">
               <div className="min-w-0">
-                <p className="font-black text-gray-900 dark:text-white truncate">{account.username || account.email}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{account.email}</p>
+                <p className="font-black text-app-text truncate">{account.username || account.email}</p>
+                <p className="text-xs text-app-text-secondary truncate font-jetbrains">{account.email}</p>
                 {account.isPrimaryOwner && (
-                  <p className="text-[10px] text-primary font-black mt-1">Primary Owner</p>
+                  <p className="text-[10px] text-app-accent font-black mt-1.5 uppercase tracking-wider font-jetbrains">Primary Owner</p>
                 )}
               </div>
-              <span className={`text-[10px] font-black px-2 py-1 rounded-full h-fit ${account.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+              <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border h-fit font-jetbrains ${account.isActive ? 'bg-app-success-bg text-app-success border-app-success/20' : 'bg-app-danger-bg text-app-danger border-app-danger/20'}`}>
                 {account.isActive ? 'Active' : 'Disabled'}
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 mt-3">
+            <div className="grid grid-cols-2 gap-2 mt-4">
               <select
                 value={account.role}
                 onChange={(event) => updateAccount(account.id, { role: event.target.value })}
                 disabled={account.isPrimaryOwner}
-                className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white disabled:opacity-60 font-bold"
+                className="w-full px-3 py-1.5 border border-app-border rounded-lg bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {roleOptions.map((role) => (
                   <option key={role} value={role}>{role}</option>
@@ -142,7 +142,7 @@ export default function AccountManagement({
               <button
                 type="button"
                 onClick={() => updateAccount(account.id, { password: '123' })}
-                className="p-2 rounded-lg bg-white dark:bg-gray-700 border border-neutral-border dark:border-gray-600 text-xs font-black text-gray-600 dark:text-gray-200 hover:bg-gray-50 transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-app-bg border border-app-border text-xs font-black text-app-text hover:border-app-accent hover:text-app-accent transition-all cursor-pointer"
               >
                 Reset 123
               </button>
@@ -153,7 +153,7 @@ export default function AccountManagement({
                 type="button"
                 onClick={() => updateAccount(account.id, { isActive: true })}
                 disabled={account.isActive}
-                className="p-2 rounded-lg bg-green-100 text-green-700 text-xs font-black disabled:opacity-50"
+                className="p-2 rounded-lg bg-app-success-bg text-app-success border border-app-success/20 text-xs font-black hover:scale-102 active:scale-98 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Reactivate
               </button>
@@ -161,7 +161,7 @@ export default function AccountManagement({
                 type="button"
                 onClick={() => disableAccount(account.id)}
                 disabled={account.isPrimaryOwner || !account.isActive}
-                className="p-2 rounded-lg bg-red-100 text-red-700 text-xs font-black disabled:opacity-50"
+                className="p-2 rounded-lg bg-app-danger-bg text-app-danger border border-app-danger/20 text-xs font-black hover:scale-102 active:scale-98 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Disable
               </button>

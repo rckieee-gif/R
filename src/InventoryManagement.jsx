@@ -62,26 +62,26 @@ function getStockWarningMeta(type) {
   if (type === 'low-stock') {
     return {
       label: 'Low alert',
-      border: 'border-red-200 dark:border-red-800/50',
-      valueText: 'text-semantic-danger',
-      badgeText: 'text-semantic-danger'
+      border: 'border-app-danger bg-app-danger-bg',
+      valueText: 'text-app-danger',
+      badgeText: 'text-app-danger'
     };
   }
 
   if (type === 'needed-stock') {
     return {
       label: 'Needed stock gap',
-      border: 'border-amber-200 dark:border-amber-700/50',
-      valueText: 'text-semantic-warning',
-      badgeText: 'text-semantic-warning'
+      border: 'border-app-warning bg-app-warning-bg',
+      valueText: 'text-app-warning',
+      badgeText: 'text-app-warning'
     };
   }
 
   return {
     label: 'Stock met',
-    border: 'border-neutral-border dark:border-gray-700',
-    valueText: 'text-semantic-success',
-    badgeText: 'text-semantic-success'
+    border: 'border-app-border',
+    valueText: 'text-app-success',
+    badgeText: 'text-app-success'
   };
 }
 
@@ -90,9 +90,9 @@ function formatWarningNames(items) {
 }
 
 function getMovementTone(type) {
-  if (type === 'Stock In') return 'text-semantic-success';
-  if (type === 'Stock Out') return 'text-semantic-danger';
-  return 'text-secondary';
+  if (type === 'Stock In') return 'text-app-success';
+  if (type === 'Stock Out') return 'text-app-danger';
+  return 'text-app-text-secondary';
 }
 
 function normalizeStakeholderName(name) {
@@ -342,76 +342,76 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
   return (
     <div className="app-page">
       <div className="mb-6 mt-2">
-        <h2 className="text-3xl font-extrabold text-primary tracking-tight">Inventory</h2>
-        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+        <h2 className="text-3xl font-extrabold text-app-text tracking-tight font-hanken">Inventory</h2>
+        <p className="text-app-text-secondary text-sm mt-1">
           {activeBatch?.id ? `Batch ${activeBatch.id}` : 'Farm stock tracker'}
         </p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-neutral-border dark:border-gray-700 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Low Alerts</p>
-          <p className={`text-lg font-black mt-1 ${lowStockItems.length ? 'text-semantic-danger' : 'text-semantic-success'}`}>
+        <div className="bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Low Alerts</p>
+          <p className={`text-lg font-black mt-1 font-jetbrains ${lowStockItems.length ? 'text-app-danger' : 'text-app-success'}`}>
             {lowStockItems.length}
           </p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-neutral-border dark:border-gray-700 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Need Gaps</p>
-          <p className={`text-lg font-black mt-1 ${neededStockItems.length ? 'text-semantic-warning' : 'text-semantic-success'}`}>
+        <div className="bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Need Gaps</p>
+          <p className={`text-lg font-black mt-1 font-jetbrains ${neededStockItems.length ? 'text-app-warning' : 'text-app-success'}`}>
             {neededStockItems.length}
           </p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-neutral-border dark:border-gray-700 shadow-sm col-span-2 lg:col-span-1">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Feed Stock</p>
-          <p className="text-lg font-black mt-1 text-gray-900 dark:text-white">
+        <div className="bg-app-card p-4 rounded-xl border border-app-border shadow-sm col-span-2 lg:col-span-1">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Feed Stock</p>
+          <p className="text-lg font-black mt-1 text-app-text font-jetbrains">
             {formatQuantity(feedStock)} sacks
           </p>
         </div>
       </div>
 
       {lowStockItems.length > 0 && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl p-3 mb-6">
-          <p className="text-xs font-black uppercase tracking-wider text-semantic-danger">Low Stock Warning</p>
-          <p className="text-sm font-bold text-red-700 dark:text-red-300 mt-1">
+        <div className="bg-app-danger-bg border border-app-danger rounded-xl p-3 mb-6">
+          <p className="text-xs font-black uppercase tracking-wider text-app-danger">Low Stock Warning</p>
+          <p className="text-sm font-bold text-app-danger mt-1">
             {formatWarningNames(lowStockItems)}
           </p>
         </div>
       )}
 
       {neededStockItems.length > 0 && (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-xl p-3 mb-6">
-          <p className="text-xs font-black uppercase tracking-wider text-semantic-warning">Needed Stock Gap</p>
-          <p className="text-sm font-bold text-amber-700 dark:text-amber-200 mt-1">
+        <div className="bg-app-warning-bg border border-app-warning rounded-xl p-3 mb-6">
+          <p className="text-xs font-black uppercase tracking-wider text-app-warning">Needed Stock Gap</p>
+          <p className="text-sm font-bold text-app-warning mt-1">
             {formatWarningNames(neededStockItems)}
           </p>
         </div>
       )}
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold mb-4 border border-red-200">
+        <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger">
           {error}
         </div>
       )}
 
       {readOnly && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-xl p-3 mb-6">
-          <p className="text-xs font-black uppercase tracking-wider text-primary">Read-only access</p>
-          <p className="text-sm font-bold text-blue-700 dark:text-blue-200 mt-1">
+        <div className="bg-app-success-bg border border-app-accent rounded-xl p-3 mb-6">
+          <p className="text-xs font-black uppercase tracking-wider text-app-accent">Read-only access</p>
+          <p className="text-sm font-bold text-app-text-secondary mt-1">
             You can review stock levels and movement history. Inventory changes are restricted to operation managers and owners.
           </p>
         </div>
       )}
 
       {!readOnly && (
-      <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700 mb-6">
+      <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-app-text-secondary font-hanken">
             {editingItemId ? 'Edit Item' : 'New Item'}
           </h3>
           {editingItemId && (
-            <button type="button" onClick={resetItemForm} className="text-xs font-bold text-secondary">
+            <button type="button" onClick={resetItemForm} className="text-xs font-bold text-app-text-secondary hover:text-app-text transition-colors">
               Cancel
             </button>
           )}
@@ -419,24 +419,24 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
 
         <form onSubmit={handleItemSubmit} className="space-y-3">
           <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Item Name</label>
+            <label className="block text-xs font-bold text-app-text-secondary mb-1">Item Name</label>
             <input
               type="text"
               required
               value={itemForm.name}
               onChange={(event) => updateItemForm('name', event.target.value)}
-              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+              className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all"
               placeholder="e.g. Starter Feed"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Category</label>
+              <label className="block text-xs font-bold text-app-text-secondary mb-1">Category</label>
               <select
                 value={itemForm.category}
                 onChange={(event) => updateItemForm('category', event.target.value)}
-                className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all font-bold"
               >
                 {categories.map((category) => (
                   <option key={category} value={category}>{category}</option>
@@ -445,11 +445,11 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Unit</label>
+              <label className="block text-xs font-bold text-app-text-secondary mb-1">Unit</label>
               <select
                 value={itemForm.unit}
                 onChange={(event) => updateItemForm('unit', event.target.value)}
-                className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all font-bold"
               >
                 {units.map((unit) => (
                   <option key={unit} value={unit}>{unit}</option>
@@ -460,33 +460,33 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Needed Qty</label>
+              <label className="block text-xs font-bold text-app-text-secondary mb-1">Needed Qty</label>
               <input
                 type="number"
                 step="0.001"
                 min="0"
                 value={itemForm.targetQuantity}
                 onChange={(event) => updateItemForm('targetQuantity', event.target.value)}
-                className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-jetbrains transition-all"
                 placeholder="0"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Low Alert</label>
+              <label className="block text-xs font-bold text-app-text-secondary mb-1">Low Alert</label>
               <input
                 type="number"
                 step="0.001"
                 min="0"
                 value={itemForm.reorderLevel}
                 onChange={(event) => updateItemForm('reorderLevel', event.target.value)}
-                className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-jetbrains transition-all"
                 placeholder="0"
               />
             </div>
           </div>
 
-          <button type="submit" className="w-full bg-secondary text-white p-3 rounded-xl font-bold shadow-sm active:scale-95 transition-all">
+          <button type="submit" className="w-full bg-app-accent text-app-on-accent p-3 rounded-xl font-bold shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer">
             {editingItemId ? 'Update Item' : 'Save Item'}
           </button>
         </form>
@@ -494,30 +494,30 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
       )}
 
       {!readOnly && (
-      <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700 mb-6">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">
+      <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-app-text-secondary mb-4 font-hanken">
           Stock Movement
         </h3>
 
         <form onSubmit={handleMovementSubmit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Date</label>
+              <label className="block text-xs font-bold text-app-text-secondary mb-1">Date</label>
               <input
                 type="date"
                 required
                 value={movementForm.movementDate}
                 onChange={(event) => updateMovementForm('movementDate', event.target.value)}
-                className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-bold transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Type</label>
+              <label className="block text-xs font-bold text-app-text-secondary mb-1">Type</label>
               <select
                 value={movementForm.movementType}
                 onChange={(event) => updateMovementForm('movementType', event.target.value)}
-                className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-bold transition-all"
               >
                 {movementTypes.map((type) => (
                   <option key={type} value={type}>{type}</option>
@@ -527,12 +527,12 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Item</label>
+            <label className="block text-xs font-bold text-app-text-secondary mb-1">Item</label>
             <select
               required
               value={movementForm.itemId}
               onChange={(event) => updateMovementForm('itemId', event.target.value)}
-              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+              className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-bold transition-all"
             >
               {items.length === 0 && <option value="">No inventory items</option>}
               {items.map((item) => (
@@ -545,37 +545,37 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
 
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Qty</label>
+              <label className="block text-xs font-bold text-app-text-secondary mb-1">Qty</label>
               <input
                 type="number"
                 step="0.001"
                 required
                 value={movementForm.quantity}
                 onChange={(event) => updateMovementForm('quantity', event.target.value)}
-                className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-jetbrains transition-all"
                 placeholder={movementForm.movementType === 'Adjustment' ? '+/-' : '0'}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Unit Cost</label>
+              <label className="block text-xs font-bold text-app-text-secondary mb-1">Unit Cost</label>
               <input
                 type="number"
                 step="0.0001"
                 min="0"
                 value={movementForm.unitCost}
                 onChange={(event) => updateMovementForm('unitCost', event.target.value)}
-                className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-jetbrains transition-all"
                 placeholder="0"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Building</label>
+              <label className="block text-xs font-bold text-app-text-secondary mb-1">Building</label>
               <select
                 value={movementForm.building}
                 onChange={(event) => updateMovementForm('building', event.target.value)}
-                className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-bold transition-all"
               >
                 {buildings.map((building) => (
                   <option key={building} value={building}>{building}</option>
@@ -585,24 +585,24 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Remarks</label>
+            <label className="block text-xs font-bold text-app-text-secondary mb-1">Remarks</label>
             <input
               type="text"
               value={movementForm.remarks}
               onChange={(event) => updateMovementForm('remarks', event.target.value)}
-              className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+              className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all"
               placeholder="Optional"
             />
           </div>
 
           {movementForm.movementType === 'Stock In' && (
-            <div className="rounded-xl border border-neutral-border dark:border-gray-700 p-3 space-y-3">
-              <label className="flex items-center gap-2 text-xs font-bold text-gray-600 dark:text-gray-300">
+            <div className="rounded-xl border border-app-border p-3 space-y-3">
+              <label className="flex items-center gap-2 text-xs font-bold text-app-text-secondary">
                 <input
                   type="checkbox"
                   checked={movementForm.createLedger}
                   onChange={(event) => updateMovementForm('createLedger', event.target.checked)}
-                  className="h-4 w-4 accent-primary"
+                  className="h-4 w-4 accent-app-accent"
                 />
                 Add purchase to ledger
               </label>
@@ -611,11 +611,11 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-400 mb-1">Funding</label>
+                      <label className="block text-[10px] font-bold text-app-text-secondary mb-1">Funding</label>
                       <select
                         value={movementForm.fundingNature}
                         onChange={(event) => updateMovementForm('fundingNature', event.target.value)}
-                        className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+                        className="w-full p-2 border border-app-border rounded-lg bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all"
                       >
                         {ledgerFunding.map((funding) => (
                           <option key={funding} value={funding}>{funding}</option>
@@ -624,23 +624,23 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-400 mb-1">Category</label>
+                      <label className="block text-[10px] font-bold text-app-text-secondary mb-1">Category</label>
                       <input
                         type="text"
                         value={movementForm.ledgerCategory}
                         onChange={(event) => updateMovementForm('ledgerCategory', event.target.value)}
-                        className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+                        className="w-full p-2 border border-app-border rounded-lg bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-400 mb-1">Paid By</label>
+                      <label className="block text-[10px] font-bold text-app-text-secondary mb-1">Paid By</label>
                       <select
                         value={movementForm.paidBy}
                         onChange={(event) => updateMovementForm('paidBy', event.target.value)}
-                        className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+                        className="w-full p-2 border border-app-border rounded-lg bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all"
                       >
                         <option value="">-- Select --</option>
                         {stakeholders.map((stakeholder) => (
@@ -650,11 +650,11 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-400 mb-1">Paid To</label>
+                      <label className="block text-[10px] font-bold text-app-text-secondary mb-1">Paid To</label>
                       <select
                         value={movementForm.paidTo}
                         onChange={(event) => updateMovementForm('paidTo', event.target.value)}
-                        className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+                        className="w-full p-2 border border-app-border rounded-lg bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all"
                       >
                         <option value="">-- Select --</option>
                         {stakeholders.map((stakeholder) => (
@@ -668,11 +668,11 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
                     type="text"
                     value={movementForm.reference}
                     onChange={(event) => updateMovementForm('reference', event.target.value)}
-                    className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+                    className="w-full p-2 border border-app-border rounded-lg bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all"
                     placeholder="Invoice or OR reference"
                   />
 
-                  <div className="text-right text-xs font-black text-gray-500">
+                  <div className="text-right text-xs font-black text-app-text-secondary font-jetbrains">
                     Ledger amount: {formatMoney(movementAmount)}
                   </div>
                 </>
@@ -680,7 +680,7 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
             </div>
           )}
 
-          <button type="submit" className="w-full bg-primary text-white p-3 rounded-xl font-bold shadow-sm active:scale-95 transition-all">
+          <button type="submit" className="w-full bg-app-accent text-app-on-accent p-3 rounded-xl font-bold shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer">
             Save Movement
           </button>
         </form>
@@ -688,11 +688,11 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
       )}
 
       {isLoading && (
-        <p className="text-sm text-gray-500 mb-3">Loading inventory...</p>
+        <p className="text-sm text-app-text-secondary mb-3">Loading inventory...</p>
       )}
 
       <div className="mb-6">
-        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 ml-1">
+        <h3 className="text-xs font-bold text-app-text-secondary uppercase tracking-wider mb-3 ml-1">
           Current Stock
         </h3>
         <div className="space-y-3">
@@ -701,11 +701,11 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
             const warningMeta = getStockWarningMeta(warningType);
 
             return (
-              <div key={item.id} className={`bg-white dark:bg-gray-800 p-4 rounded-xl border shadow-sm ${warningMeta.border}`}>
+              <div key={item.id} className={`bg-app-card p-4 rounded-xl border shadow-sm ${warningMeta.border}`}>
                 <div className="flex justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-black text-gray-900 dark:text-white truncate">{item.name}</p>
-                    <p className="text-xs text-gray-400 font-bold uppercase mt-1">{item.category}</p>
+                    <p className="font-black text-app-text truncate">{item.name}</p>
+                    <p className="text-xs text-app-text-secondary font-bold uppercase mt-1">{item.category}</p>
                     {warningType !== 'ok' && (
                       <p className={`text-[10px] font-black uppercase tracking-wider mt-1 ${warningMeta.badgeText}`}>
                         {warningMeta.label}
@@ -713,29 +713,29 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
                     )}
                   </div>
                   <div className="text-right">
-                    <p className={`text-lg font-black ${warningMeta.valueText}`}>
+                    <p className={`text-lg font-black font-jetbrains ${warningMeta.valueText}`}>
                       {formatQuantity(item.currentStock)}
                     </p>
-                    <p className="text-xs text-gray-400">{item.unit}</p>
+                    <p className="text-xs text-app-text-secondary">{item.unit}</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 mt-3 text-[10px]">
-                  <p className={`${warningType === 'needed-stock' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-200' : 'bg-neutral-light dark:bg-gray-700 text-gray-500'} rounded-lg p-2`}>
-                    Need <span className="font-black">{formatQuantity(item.targetQuantity)}</span>
+                  <p className={`${warningType === 'needed-stock' ? 'bg-app-warning-bg text-app-warning' : 'bg-app-bg text-app-text-secondary'} rounded-lg p-2 font-bold`}>
+                    Need <span className="font-black font-jetbrains">{formatQuantity(item.targetQuantity)}</span>
                   </p>
-                  <p className={`${warningType === 'low-stock' ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-200' : 'bg-neutral-light dark:bg-gray-700 text-gray-500'} rounded-lg p-2`}>
-                    Alert <span className="font-black">{formatQuantity(item.reorderLevel)}</span>
+                  <p className={`${warningType === 'low-stock' ? 'bg-app-danger-bg text-app-danger' : 'bg-app-bg text-app-text-secondary'} rounded-lg p-2 font-bold`}>
+                    Alert <span className="font-black font-jetbrains">{formatQuantity(item.reorderLevel)}</span>
                   </p>
                   {readOnly || !canEditOrDelete ? (
-                    <p className="bg-neutral-light dark:bg-gray-700 rounded-lg p-2 text-gray-500 font-black">
+                    <p className="bg-app-bg rounded-lg p-2 text-app-text-secondary font-black text-center">
                       View only
                     </p>
                   ) : (
                     <button
                       type="button"
                       onClick={() => handleEditItem(item)}
-                      className="bg-secondary/10 text-secondary rounded-lg p-2 font-black"
+                      className="bg-app-accent/10 text-app-accent border border-app-accent/20 hover:bg-app-accent/20 rounded-lg p-2 font-black transition-colors cursor-pointer"
                     >
                       Edit
                     </button>
@@ -748,37 +748,37 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
       </div>
 
       <div>
-        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 ml-1">
+        <h3 className="text-xs font-bold text-app-text-secondary uppercase tracking-wider mb-3 ml-1">
           Recent Movements
         </h3>
         <div className="space-y-3">
           {movements.map((movement) => (
-            <div key={movement.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-neutral-border dark:border-gray-700 shadow-sm">
+            <div key={movement.id} className="bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
               <div className="flex justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-black text-gray-900 dark:text-white truncate">{movement.itemName}</p>
-                  <p className="text-xs text-gray-400 font-bold mt-1">
+                  <p className="font-black text-app-text truncate">{movement.itemName}</p>
+                  <p className="text-xs text-app-text-secondary font-bold mt-1">
                     {movement.movementDate} - Bldg {movement.building}
                   </p>
                   {movement.linkedTransactionId && (
-                    <p className="text-[10px] text-primary font-bold mt-1">Ledger {movement.linkedTransactionId}</p>
+                    <p className="text-[10px] text-app-accent font-bold mt-1">Ledger {movement.linkedTransactionId}</p>
                   )}
                 </div>
                 <div className="text-right">
                   <p className={`text-sm font-black ${getMovementTone(movement.movementType)}`}>{movement.movementType}</p>
-                  <p className="text-lg font-black text-gray-900 dark:text-white">
+                  <p className="text-lg font-black text-app-text font-jetbrains">
                     {formatQuantity(movement.quantity)} {movement.unit}
                   </p>
                 </div>
               </div>
               {movement.remarks && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 italic mt-2 truncate">"{movement.remarks}"</p>
+                <p className="text-xs text-app-text-secondary italic mt-2 truncate">"{movement.remarks}"</p>
               )}
             </div>
           ))}
 
           {movements.length === 0 && (
-            <p className="text-center text-gray-500 text-sm mt-4">No inventory movements yet.</p>
+            <p className="text-center text-app-text-secondary text-sm mt-4">No inventory movements yet.</p>
           )}
         </div>
       </div>

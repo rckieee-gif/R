@@ -52,22 +52,22 @@ export default function TransactionForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex space-x-3">
         <div className="flex-1">
-          <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Date</label>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Date</label>
           <input
             type="date"
             required
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-primary outline-none"
+            className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
           />
         </div>
 
         <div className="w-1/3">
-          <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Building</label>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Building</label>
           <select
             value={building}
             onChange={(e) => setBuilding(e.target.value)}
-            className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white"
+            className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
           >
             {buildings.map((item) => (
               <option key={item} value={item}>{item}</option>
@@ -78,11 +78,11 @@ export default function TransactionForm({
 
       <div className="flex space-x-3">
         <div className="flex-1">
-          <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Funding Nature</label>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Funding Nature</label>
           <select
             value={fundingNature}
             onChange={handleFundingChange}
-            className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white"
+            className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
           >
             {fundingNatures.length === 0 && (
               <option value="">No funding types loaded</option>
@@ -94,11 +94,11 @@ export default function TransactionForm({
         </div>
 
         <div className="flex-1">
-          <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Category</label>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Category</label>
           <select
             value={category}
             onChange={handleCategoryChange}
-            className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white"
+            className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
           >
             {(categoriesByFunding[fundingNature] || []).length === 0 && (
               <option value="">No categories loaded</option>
@@ -112,11 +112,11 @@ export default function TransactionForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Transaction Type</label>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Transaction Type</label>
           <select
             value={transactionType}
             onChange={(e) => setTransactionType(e.target.value)}
-            className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white"
+            className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
           >
             {TRANSACTION_TYPES.map((item) => (
               <option key={item} value={item}>{item}</option>
@@ -125,39 +125,39 @@ export default function TransactionForm({
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Reference</label>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Reference</label>
           <input
             type="text"
             value={reference}
             onChange={(e) => setReference(e.target.value)}
             placeholder="OR, invoice, note"
-            className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-primary outline-none"
+            className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold placeholder-app-text-secondary/40 outline-none focus:ring-2 focus:ring-app-accent/20 transition-all font-jetbrains"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Description</label>
+        <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Description</label>
         <input
           type="text"
           required
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="e.g. Starter feed"
-          className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-primary outline-none"
+          className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold placeholder-app-text-secondary/40 outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
         />
       </div>
 
       {isFeedLedgerRecord && (
-        <div className="rounded-xl border border-green-200 dark:border-green-800/50 bg-green-50 dark:bg-green-900/10 p-3">
-          <label className="block text-xs font-bold text-green-800 dark:text-green-300 mb-1">
+        <div className="rounded-xl border border-app-success bg-app-success-bg p-3">
+          <label className="block text-[10px] font-black uppercase tracking-wider text-app-success mb-1">
             Feed Inventory Item
           </label>
           <select
             required
             value={feedItemId}
             onChange={(e) => setFeedItemId(e.target.value)}
-            className="w-full p-2 border border-green-200 dark:border-green-800/50 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
+            className="w-full px-3 py-2 border border-app-success/30 rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-success/20"
           >
             {feedItems.length === 0 && (
               <option value="">No feed items loaded</option>
@@ -168,16 +168,16 @@ export default function TransactionForm({
               </option>
             ))}
           </select>
-          <p className="text-[10px] font-semibold text-green-700 dark:text-green-300 mt-2">
+          <p className="text-[10px] font-semibold text-app-success mt-2">
             Saving this feed delivery adds Stock In to inventory. Daily Logs consume from the same feed item.
             {selectedFeedItem ? ` Current stock: ${Number(selectedFeedItem.currentStock || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${selectedFeedItem.unit}.` : ''}
           </p>
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 font-jetbrains">
         <div>
-          <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Quantity</label>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Quantity</label>
           <input
             type="number"
             step="0.001"
@@ -185,12 +185,12 @@ export default function TransactionForm({
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
             placeholder="0"
-            className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-primary outline-none"
+            className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold placeholder-app-text-secondary/40 outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Unit Cost</label>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Unit Cost</label>
           <input
             type="number"
             step="0.0001"
@@ -198,12 +198,12 @@ export default function TransactionForm({
             value={unitCost}
             onChange={(e) => setUnitCost(e.target.value)}
             placeholder="0.00"
-            className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-primary outline-none"
+            className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold placeholder-app-text-secondary/40 outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Amount</label>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Amount</label>
           <input
             type="number"
             step="0.01"
@@ -213,22 +213,22 @@ export default function TransactionForm({
             value={displayedAmount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
-            className={`w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg text-gray-800 dark:text-white focus:ring-2 focus:ring-primary outline-none ${
+            className={`w-full px-3 py-2 border border-app-border rounded-xl text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all ${
               hasCalculatedAmount
-                ? 'bg-gray-100 dark:bg-gray-900 font-bold'
-                : 'bg-neutral-light dark:bg-gray-700'
+                ? 'bg-app-bg/50 cursor-not-allowed text-app-text font-black'
+                : 'bg-app-bg placeholder-app-text-secondary/40'
             }`}
           />
         </div>
       </div>
 
-      <div className="flex space-x-3 border-t border-gray-100 dark:border-gray-700 pt-3">
+      <div className="flex space-x-3 border-t border-app-border/40 pt-3">
         <div className="flex-1">
-          <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Paid By</label>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Paid By</label>
           <select
             value={paidBy}
             onChange={(e) => setPaidBy(e.target.value)}
-            className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white"
+            className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
           >
             <option value="">-- Select --</option>
             {payerOptions.length === 0 && (
@@ -241,11 +241,11 @@ export default function TransactionForm({
         </div>
 
         <div className="flex-1">
-          <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Paid To</label>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Paid To</label>
           <select
             value={paidTo}
             onChange={(e) => setPaidTo(e.target.value)}
-            className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white"
+            className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
           >
             <option value="">-- Select --</option>
             {payeeOptions.length === 0 && (
@@ -259,13 +259,13 @@ export default function TransactionForm({
       </div>
 
       <div>
-        <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Remarks</label>
+        <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Remarks</label>
         <input
           type="text"
           value={remarks}
           onChange={(e) => setRemarks(e.target.value)}
           placeholder="Optional"
-          className="w-full p-2 border border-neutral-border dark:border-gray-600 rounded-lg bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-primary outline-none"
+          className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold placeholder-app-text-secondary/40 outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
         />
       </div>
 
@@ -274,7 +274,7 @@ export default function TransactionForm({
           <button
             type="button"
             onClick={resetForm}
-            className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-3 rounded-xl font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all active:scale-95 shadow-sm"
+            className="flex-1 bg-app-bg text-app-text border border-app-border px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer"
           >
             Cancel
           </button>
@@ -282,7 +282,7 @@ export default function TransactionForm({
 
         <button
           type="submit"
-          className={`flex-[2] text-white p-3 rounded-xl font-bold transition-all active:scale-95 shadow-md ${editingId ? 'bg-secondary hover:bg-opacity-90' : 'bg-primary hover:bg-opacity-90'}`}
+          className="flex-[2] bg-app-accent text-app-on-accent px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
         >
           {editingId ? 'Update Record' : 'Save Record'}
         </button>

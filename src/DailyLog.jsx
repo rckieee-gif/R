@@ -405,50 +405,50 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
   };
 
   return (
-    <div className="app-page">
+    <div className="app-page font-hanken">
       <div className="mb-6 mt-2">
-        <h2 className="text-3xl font-extrabold text-primary dark:text-primary tracking-tight">
+        <h2 className="text-3xl font-extrabold text-app-text tracking-tight">
           Daily Logs
         </h2>
         {activeBatch && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Batch <span className="font-bold">{activeBatch.id}</span>
+          <p className="text-sm text-app-text-secondary mt-1">
+            Batch <span className="font-bold font-jetbrains">{activeBatch.id}</span>
           </p>
         )}
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-neutral-border dark:border-gray-700 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Building Feed</p>
-          <p className="text-lg font-black mt-1 text-gray-900 dark:text-white">
+        <div className="bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
+          <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary">Building Feed</p>
+          <p className="text-lg font-black mt-1 text-app-text font-jetbrains">
             {formatFeed(buildingLogTotals.feed)} sx
           </p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-neutral-border dark:border-gray-700 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Building Mortality</p>
-          <p className={`text-lg font-black mt-1 ${buildingLogTotals.mortality > 0 ? 'text-semantic-danger' : 'text-semantic-success'}`}>
+        <div className="bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
+          <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary">Building Mortality</p>
+          <p className={`text-lg font-black mt-1 font-jetbrains ${buildingLogTotals.mortality > 0 ? 'text-app-danger' : 'text-app-success'}`}>
             {formatBirds(buildingLogTotals.mortality)} hd
           </p>
         </div>
       </div>
 
       {readOnly && (
-        <div className="no-print bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-xl p-3 mb-6">
-          <p className="text-xs font-black uppercase tracking-wider text-primary">Read-only access</p>
-          <p className="text-sm font-bold text-blue-700 dark:text-blue-200 mt-1">
+        <div className="no-print bg-app-accent/5 border border-app-border rounded-xl p-4 mb-6">
+          <p className="text-xs font-black uppercase tracking-wider text-app-accent">Read-only access</p>
+          <p className="text-sm font-bold text-app-text-secondary mt-1">
             You can review daily logs and production totals. New entries are restricted to workers, operation managers, and owners.
           </p>
-          <div className="flex space-x-2 mt-3">
+          <div className="flex space-x-2 mt-4">
             {buildingNames.map((building) => (
               <button
                 key={building}
                 type="button"
                 onClick={() => setActiveBuilding(building)}
-                className={`flex-1 py-2 rounded-xl font-bold text-sm transition-all border ${
+                className={`flex-1 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all border cursor-pointer hover:scale-102 ${
                   activeBuilding === building
-                    ? 'bg-primary text-white border-primary'
-                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-neutral-border dark:border-gray-700'
+                    ? 'bg-app-accent text-app-on-accent border-app-accent'
+                    : 'bg-app-bg text-app-text-secondary border-app-border'
                 }`}
               >
                 Bldg {building}

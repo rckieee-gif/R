@@ -64,7 +64,10 @@ export default function FinancialStatement({ transactions = [], activeBatch }) {
   const buildingC_Net = buildingC_Gross - batch.previousDeficit - batch.capex;
 
   const formatMoney = (amount) => {
-    return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount || 0);
+    return `PHP ${Number(amount || 0).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
   };
 
   return (
@@ -73,32 +76,32 @@ export default function FinancialStatement({ transactions = [], activeBatch }) {
         <button
           type="button"
           onClick={() => window.print()}
-          className="px-3 py-2 rounded-xl bg-primary text-white text-xs font-black shadow-sm"
+          className="no-print px-3 py-2 rounded-xl bg-app-accent text-app-on-accent text-xs font-black shadow-sm hover:scale-105 active:scale-95 transition-transform cursor-pointer"
         >
-          Print
+          Print Statement
         </button>
       </div>
       
       {/* HEADER */}
-      <div className="statement-print-header bg-primary text-white p-4 rounded-t-2xl shadow-sm mt-2 text-center">
-        <h2 className="print-title text-xl font-extrabold tracking-widest uppercase">Batch Financial Summary</h2>
-        <p className="text-sm opacity-90 mt-1">Batch ID: {batch.id}</p>
+      <div className="statement-print-header bg-app-accent text-app-on-accent p-5 rounded-t-2xl shadow-sm mt-2 text-center font-hanken">
+        <h2 className="print-title text-xl font-black tracking-widest uppercase">Batch Financial Summary</h2>
+        <p className="text-xs opacity-90 mt-1 font-jetbrains">Batch ID: {batch.id}</p>
       </div>
 
-      <div className="print-card bg-white dark:bg-gray-800 p-5 rounded-b-2xl shadow-sm border-x border-b border-neutral-border dark:border-gray-700 space-y-6">
+      <div className="print-card bg-app-card p-6 rounded-b-2xl shadow-sm border-x border-b border-app-border space-y-6 font-hanken">
         
         {/* REVENUE SECTION */}
         <section>
-          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 pb-1 mb-2">Revenue</h3>
-          <div className="flex justify-between text-sm text-gray-700 dark:text-gray-300 mb-1">
+          <h3 className="text-[10px] font-black text-app-text-secondary uppercase tracking-wider border-b border-app-border/40 pb-1 mb-2.5">Revenue</h3>
+          <div className="flex justify-between text-sm text-app-text mb-1.5 font-jetbrains">
             <span>Net Meat Sale</span>
             <span>{formatMoney(batch.netMeatSale)}</span>
           </div>
-          <div className="flex justify-between text-sm text-gray-700 dark:text-gray-300 mb-2">
-            <span className="ml-4 text-gray-500">Empty Sack Sale</span>
+          <div className="flex justify-between text-sm text-app-text mb-2.5 font-jetbrains">
+            <span className="ml-4 text-app-text-secondary">Empty Sack Sale</span>
             <span>{formatMoney(batch.emptySackSale)}</span>
           </div>
-          <div className="flex justify-between font-bold text-gray-900 dark:text-white bg-neutral-light dark:bg-gray-700 p-2 rounded">
+          <div className="flex justify-between font-black text-app-text bg-app-bg p-2.5 rounded-xl border border-app-border/40 font-jetbrains">
             <span>Total Gross Revenue</span>
             <span>{formatMoney(totalGrossRevenue)}</span>
           </div>
@@ -106,20 +109,20 @@ export default function FinancialStatement({ transactions = [], activeBatch }) {
 
         {/* OPEX SECTION */}
         <section>
-          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 pb-1 mb-2">Operating Expenses</h3>
+          <h3 className="text-[10px] font-black text-app-text-secondary uppercase tracking-wider border-b border-app-border/40 pb-1 mb-2.5">Operating Expenses</h3>
           
-          <div className="space-y-1 mb-3">
+          <div className="space-y-1.5 mb-3 font-jetbrains">
             {Object.entries(batch.opexBreakdown)
               .filter(([, amount]) => amount > 0)
               .map(([category, amount]) => (
-              <div key={category} className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+              <div key={category} className="flex justify-between text-sm text-app-text-secondary">
                 <span className="ml-2">{category}</span>
                 <span>{formatMoney(amount)}</span>
               </div>
             ))}
           </div>
 
-          <div className="flex justify-between font-bold text-semantic-danger bg-red-50 dark:bg-red-900/20 p-2 rounded">
+          <div className="flex justify-between font-black text-app-danger bg-app-danger-bg p-2.5 rounded-xl border border-app-danger/20 font-jetbrains">
             <span>Total Operating Expenses</span>
             <span>- {formatMoney(totalOpex)}</span>
           </div>
@@ -127,72 +130,72 @@ export default function FinancialStatement({ transactions = [], activeBatch }) {
 
         {/* NET REVENUE & DISTRIBUTION */}
         <section>
-          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 pb-1 mb-2">Net Batch Revenue</h3>
-          <div className="flex justify-between text-lg font-black text-semantic-success mb-4">
+          <h3 className="text-[10px] font-black text-app-text-secondary uppercase tracking-wider border-b border-app-border/40 pb-1 mb-2.5">Net Batch Revenue</h3>
+          <div className="flex justify-between text-lg font-black text-app-success mb-4 font-jetbrains">
             <span>Net Revenue</span>
             <span>{formatMoney(netBatchRevenue)}</span>
           </div>
           
-          <div className="flex justify-between font-bold text-gray-900 dark:text-white bg-neutral-light dark:bg-gray-700 p-2 rounded">
+          <div className="flex justify-between font-black text-app-text bg-app-bg p-2.5 rounded-xl border border-app-border/40 font-jetbrains">
             <span>70% Distribution Share</span>
             <span>{formatMoney(distribution70)}</span>
           </div>
         </section>
 
-        {/* OWNER DISTRIBUTION SECTIONS (Unchanged layout) */}
-        <section className="border border-neutral-border dark:border-gray-600 rounded-lg p-3">
-          <h4 className="font-bold text-gray-800 dark:text-gray-200 mb-2">Building A (Rolly)</h4>
-          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+        {/* OWNER DISTRIBUTION SECTIONS */}
+        <section className="border border-app-border rounded-xl p-4 bg-app-bg/30">
+          <h4 className="font-black text-app-text mb-2">Building A (Rolly)</h4>
+          <div className="flex justify-between text-sm text-app-text-secondary mb-1.5 font-jetbrains">
             <span>Share (42.86%)</span>
             <span>{formatMoney(buildingA_Gross)}</span>
           </div>
-          <div className="flex justify-between font-bold text-primary border-t border-gray-200 dark:border-gray-600 mt-2 pt-2">
+          <div className="flex justify-between font-black text-app-accent border-t border-app-border/40 mt-2.5 pt-2 font-jetbrains">
             <span>Total</span>
             <span>{formatMoney(rollyTotalA)}</span>
           </div>
         </section>
 
-        <section className="border border-neutral-border dark:border-gray-600 rounded-lg p-3">
-          <h4 className="font-bold text-gray-800 dark:text-gray-200 mb-2">Building B (Jojit)</h4>
-          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+        <section className="border border-app-border rounded-xl p-4 bg-app-bg/30">
+          <h4 className="font-black text-app-text mb-2">Building B (Jojit)</h4>
+          <div className="flex justify-between text-sm text-app-text-secondary mb-1.5 font-jetbrains">
             <span>Share (22.41%)</span>
             <span>{formatMoney(buildingB_Gross)}</span>
           </div>
-          <div className="flex justify-between text-sm text-semantic-danger mb-1">
+          <div className="flex justify-between text-sm text-app-danger mb-1.5 font-jetbrains">
             <span className="ml-4">Less: Empty Sack Purchase</span>
             <span>- {formatMoney(batch.emptySackSale)}</span>
           </div>
-          <div className="flex justify-between font-bold text-primary border-t border-gray-200 dark:border-gray-600 mt-2 pt-2">
+          <div className="flex justify-between font-black text-app-accent border-t border-app-border/40 mt-2.5 pt-2 font-jetbrains">
             <span>Total</span>
             <span>{formatMoney(jojitTotalB)}</span>
           </div>
         </section>
 
-        <section className="border border-neutral-border dark:border-gray-600 rounded-lg p-3">
-          <h4 className="font-bold text-gray-800 dark:text-gray-200 mb-2">Building C (Corpo)</h4>
-          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+        <section className="border border-app-border rounded-xl p-4 bg-app-bg/30">
+          <h4 className="font-black text-app-text mb-2">Building C (Corpo)</h4>
+          <div className="flex justify-between text-sm text-app-text-secondary mb-1.5 font-jetbrains">
             <span>Corpo Share (34.73%)</span>
             <span>{formatMoney(buildingC_Gross)}</span>
           </div>
-          <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-1">
+          <div className="flex justify-between text-sm text-app-text-secondary mb-1.5 font-jetbrains">
             <span className="ml-4">Rolly Share (50%)</span>
             <span>{formatMoney(corpoRollyShare)}</span>
           </div>
-          <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-1">
+          <div className="flex justify-between text-sm text-app-text-secondary mb-1.5 font-jetbrains">
             <span className="ml-4">Jojit Share (50%)</span>
             <span>{formatMoney(corpoJojitShare)}</span>
           </div>
           {batch.previousDeficit > 0 && (
-            <div className="flex justify-between text-sm text-semantic-danger mb-1 mt-2">
+            <div className="flex justify-between text-sm text-app-danger mb-1.5 mt-2 font-jetbrains">
               <span className="ml-4">Less: Previous Deficit (Ledger)</span>
               <span>- {formatMoney(batch.previousDeficit)}</span>
             </div>
           )}
-          <div className="flex justify-between text-sm text-semantic-danger mb-1">
+          <div className="flex justify-between text-sm text-app-danger mb-1.5 font-jetbrains">
             <span className="ml-4">Less: CAPEX</span>
             <span>- {formatMoney(batch.capex)}</span>
           </div>
-          <div className="flex justify-between font-bold text-semantic-danger border-t border-gray-200 dark:border-gray-600 mt-2 pt-2">
+          <div className={`flex justify-between font-black border-t border-app-border/40 mt-2.5 pt-2 font-jetbrains ${buildingC_Net >= 0 ? 'text-app-success' : 'text-app-danger'}`}>
             <span>Total</span>
             <span>{formatMoney(buildingC_Net)}</span>
           </div>

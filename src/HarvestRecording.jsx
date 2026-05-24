@@ -22,10 +22,10 @@ function roundMoney(value) {
 }
 
 function formatMoney(value) {
-  return new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: 'PHP'
-  }).format(numberValue(value));
+  return `PHP ${Number(value || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
 }
 
 function formatNumber(value, digits = 0) {
@@ -140,7 +140,7 @@ function NumberInput({ value, onChange, disabled = false, step = '0.01', min = '
       value={inputValue(value)}
       disabled={disabled}
       onChange={(event) => onChange(event.target.value)}
-      className={`w-full min-w-20 rounded-lg border border-neutral-border dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5 text-right text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary disabled:opacity-70 ${className}`}
+      className={`w-full min-w-20 rounded-xl border border-app-border bg-app-bg px-2 py-1.5 text-right text-app-text outline-none focus:ring-2 focus:ring-app-accent/20 disabled:opacity-40 disabled:cursor-not-allowed font-jetbrains text-sm font-bold ${className}`}
     />
   );
 }
@@ -152,22 +152,22 @@ function TextInput({ value, onChange, disabled = false, className = '' }) {
       value={inputValue(value)}
       disabled={disabled}
       onChange={(event) => onChange(event.target.value)}
-      className={`w-full min-w-28 rounded-lg border border-neutral-border dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary disabled:opacity-70 ${className}`}
+      className={`w-full min-w-28 rounded-xl border border-app-border bg-app-bg px-2 py-1.5 text-app-text outline-none focus:ring-2 focus:ring-app-accent/20 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-bold ${className}`}
     />
   );
 }
 
 function KpiCard({ label, value, tone = 'default' }) {
   const toneClass = tone === 'good'
-    ? 'text-semantic-success'
+    ? 'text-app-success'
     : tone === 'bad'
-      ? 'text-semantic-danger'
-      : 'text-gray-900 dark:text-white';
+      ? 'text-app-danger'
+      : 'text-app-text';
 
   return (
-    <div className="rounded-xl border border-neutral-border dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
-      <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">{label}</p>
-      <p className={`mt-1 text-lg font-black ${toneClass}`}>{value}</p>
+    <div className="rounded-xl border border-app-border bg-app-card p-4 shadow-sm font-hanken">
+      <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary">{label}</p>
+      <p className={`mt-1 text-lg font-black font-jetbrains ${toneClass}`}>{value}</p>
     </div>
   );
 }
@@ -314,10 +314,10 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
 
   if (!activeBatch?.id) {
     return (
-      <div className="app-page">
-        <div className="rounded-xl border border-neutral-border dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
-          <h2 className="text-2xl font-black text-primary">Harvest Recording</h2>
-          <p className="mt-2 text-sm font-semibold text-gray-500 dark:text-gray-400">Select a batch before recording harvest details.</p>
+      <div className="app-page font-hanken">
+        <div className="rounded-xl border border-app-border bg-app-card p-5">
+          <h2 className="text-2xl font-black text-app-text">Harvest Recording</h2>
+          <p className="mt-2 text-sm font-bold text-app-text-secondary">Select a batch before recording harvest details.</p>
         </div>
       </div>
     );
@@ -325,28 +325,28 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
 
   if (isLoading || !report) {
     return (
-      <div className="app-page">
-        <div className="rounded-xl border border-neutral-border dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
-          <p className="text-sm font-bold text-gray-500 dark:text-gray-400">Loading harvest recording...</p>
+      <div className="app-page font-hanken">
+        <div className="rounded-xl border border-app-border bg-app-card p-5">
+          <p className="text-sm font-bold text-app-text-secondary">Loading harvest recording...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="app-page space-y-6">
+    <div className="app-page space-y-6 font-hanken">
       <div className="mb-2 mt-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-primary">Harvest Recording</h2>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Batch <span className="font-bold">{activeBatch.id}</span>
+          <h2 className="text-3xl font-extrabold tracking-tight text-app-text">Harvest Recording</h2>
+          <p className="mt-1 text-sm text-app-text-secondary">
+            Batch <span className="font-bold font-jetbrains">{activeBatch.id}</span>
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <span className={`rounded-full px-3 py-2 text-xs font-black uppercase tracking-wider ${
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={`rounded-full border px-3 py-1.5 text-xs font-black uppercase tracking-wider font-jetbrains ${
             report.status === 'Posted'
-              ? 'bg-green-50 text-semantic-success dark:bg-green-900/20'
-              : 'bg-amber-50 text-semantic-warning dark:bg-amber-900/20'
+              ? 'bg-app-success-bg text-app-success border-app-success/20'
+              : 'bg-app-warning-bg text-app-warning border-app-warning/20'
           }`}>
             {report.status}
           </span>
@@ -354,7 +354,7 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
             type="button"
             onClick={saveReport}
             disabled={isLocked || isSaving}
-            className="rounded-xl bg-primary px-4 py-2 text-sm font-black text-white shadow-sm transition active:scale-95 disabled:opacity-60"
+            className="rounded-xl bg-app-bg text-app-text border border-app-border px-4 py-2 text-xs font-black uppercase tracking-wider shadow-sm transition hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isSaving ? 'Saving...' : 'Save'}
           </button>
@@ -362,7 +362,7 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
             type="button"
             onClick={postSummaryToLedger}
             disabled={isLocked || isPosting}
-            className="rounded-xl bg-secondary px-4 py-2 text-sm font-black text-white shadow-sm transition active:scale-95 disabled:opacity-60"
+            className="rounded-xl bg-app-accent text-app-on-accent px-4 py-2 text-xs font-black uppercase tracking-wider shadow-sm transition hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isPosting ? 'Posting...' : 'Post Summary'}
           </button>
@@ -370,12 +370,12 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-600">
+        <div className="rounded-xl border border-app-danger bg-app-danger-bg p-3 text-sm font-bold text-app-danger">
           {error}
         </div>
       )}
       {message && (
-        <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm font-bold text-green-700">
+        <div className="rounded-xl border border-app-success bg-app-success-bg p-3 text-sm font-bold text-app-success">
           {message}
         </div>
       )}
@@ -392,34 +392,34 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
         />
       </div>
 
-      <section className="rounded-xl border border-neutral-border dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
-        <h3 className="mb-4 text-xs font-black uppercase tracking-wider text-gray-400">Report Setup</h3>
-        <div className="grid gap-3 md:grid-cols-4">
+      <section className="rounded-xl border border-app-border bg-app-card p-5 shadow-sm">
+        <h3 className="mb-4 text-[10px] font-black uppercase tracking-wider text-app-text-secondary">Report Setup</h3>
+        <div className="grid gap-4 md:grid-cols-4">
           <label className="block">
-            <span className="mb-1 block text-xs font-bold text-gray-500 dark:text-gray-400">Source File</span>
+            <span className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-app-text-secondary">Source File</span>
             <TextInput value={report.sourceFilename} disabled={isLocked} onChange={(value) => updateReportField('sourceFilename', value)} />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs font-bold text-gray-500 dark:text-gray-400">DOC Add-on / Bird</span>
+            <span className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-app-text-secondary">DOC Add-on / Bird</span>
             <NumberInput value={report.docAddOnRatePerBird} disabled={isLocked} onChange={(value) => updateReportField('docAddOnRatePerBird', value)} />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs font-bold text-gray-500 dark:text-gray-400">Trucking / Bird</span>
+            <span className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-app-text-secondary">Trucking / Bird</span>
             <NumberInput value={report.truckingFeePerBird} disabled={isLocked} onChange={(value) => updateReportField('truckingFeePerBird', value)} />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs font-bold text-gray-500 dark:text-gray-400">Notes</span>
+            <span className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-app-text-secondary">Notes</span>
             <TextInput value={report.notes} disabled={isLocked} onChange={(value) => updateReportField('notes', value)} />
           </label>
         </div>
       </section>
 
-      <section className="rounded-xl border border-neutral-border dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
-        <h3 className="mb-4 text-xs font-black uppercase tracking-wider text-gray-400">Harvest Net Summary</h3>
+      <section className="rounded-xl border border-app-border bg-app-card p-5 shadow-sm">
+        <h3 className="mb-4 text-[10px] font-black uppercase tracking-wider text-app-text-secondary">Harvest Net Summary</h3>
         <div className="overflow-x-auto">
           <table className="min-w-[980px] w-full text-xs">
             <thead>
-              <tr className="text-left text-gray-400">
+              <tr className="text-left text-app-text-secondary text-[10px] font-black uppercase tracking-wider">
                 <th className="p-2">Harvest</th>
                 <th className="p-2">Date</th>
                 <th className="p-2 text-right">Birds</th>
@@ -432,27 +432,27 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
                 <th className="p-2 text-right">Net Sales</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-border dark:divide-gray-700">
+            <tbody className="divide-y divide-app-border/40 text-app-text">
               {summary.perHarvest.map((row, index) => (
                 <tr key={row.harvestOrder}>
-                  <td className="p-2 font-bold text-gray-700 dark:text-gray-200">{row.harvestOrder} Harvest</td>
+                  <td className="p-2 font-black text-app-text">{row.harvestOrder} Harvest</td>
                   <td className="p-2">
                     <input
                       type="date"
                       value={report.harvestEvents[index]?.harvestDate || ''}
                       disabled={isLocked}
                       onChange={(event) => updateRow('harvestEvents', index, 'harvestDate', event.target.value)}
-                      className="w-full rounded-lg border border-neutral-border dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5 text-gray-900 dark:text-white disabled:opacity-70"
+                      className="w-full rounded-xl border border-app-border bg-app-bg px-2 py-1.5 text-app-text outline-none focus:ring-2 focus:ring-app-accent/20 disabled:opacity-40 font-jetbrains text-sm font-bold"
                     />
                   </td>
-                  <td className="p-2 text-right font-bold">{formatNumber(row.birds)}</td>
-                  <td className="p-2 text-right">{formatMoney(row.grossSales)}</td>
+                  <td className="p-2 text-right font-black font-jetbrains">{formatNumber(row.birds)}</td>
+                  <td className="p-2 text-right font-jetbrains">{formatMoney(row.grossSales)}</td>
                   <td className="p-2"><NumberInput value={report.harvestEvents[index]?.permitShipping} disabled={isLocked} onChange={(value) => updateRow('harvestEvents', index, 'permitShipping', value)} /></td>
                   <td className="p-2"><NumberInput value={report.harvestEvents[index]?.tollingFee} disabled={isLocked} onChange={(value) => updateRow('harvestEvents', index, 'tollingFee', value)} /></td>
-                  <td className="p-2 text-right">{formatMoney(row.docAddOn)}</td>
-                  <td className="p-2 text-right">{formatMoney(row.truckingFee)}</td>
-                  <td className="p-2 text-right font-bold text-semantic-danger">{formatMoney(row.totalExpenses)}</td>
-                  <td className={`p-2 text-right font-black ${row.netSales >= 0 ? 'text-semantic-success' : 'text-semantic-danger'}`}>{formatMoney(row.netSales)}</td>
+                  <td className="p-2 text-right font-jetbrains">{formatMoney(row.docAddOn)}</td>
+                  <td className="p-2 text-right font-jetbrains">{formatMoney(row.truckingFee)}</td>
+                  <td className="p-2 text-right font-black text-app-danger font-jetbrains">{formatMoney(row.totalExpenses)}</td>
+                  <td className={`p-2 text-right font-black font-jetbrains ${row.netSales >= 0 ? 'text-app-success' : 'text-app-danger'}`}>{formatMoney(row.netSales)}</td>
                 </tr>
               ))}
             </tbody>
@@ -460,14 +460,14 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
         </div>
       </section>
 
-      <section className="rounded-xl border border-neutral-border dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
+      <section className="rounded-xl border border-app-border bg-app-card p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 className="text-xs font-black uppercase tracking-wider text-gray-400">Chicken Sales</h3>
+          <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary">Chicken Sales</h3>
           <button
             type="button"
             disabled={isLocked}
             onClick={() => addRow('chickenSales', { item: '', basePricePerKg: '', harvest1Birds: '', harvest1Kilos: '', harvest2Birds: '', harvest2Kilos: '', harvest3Birds: '', harvest3Kilos: '', finalRate: '', notes: '' })}
-            className="rounded-lg border border-neutral-border px-3 py-1.5 text-xs font-black text-gray-600 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
+            className="rounded-xl border border-app-border bg-app-bg px-3 py-1.5 text-xs font-black text-app-text-secondary hover:border-app-accent hover:text-app-accent hover:bg-app-accent/5 transition-all cursor-pointer disabled:opacity-40"
           >
             Add Row
           </button>
@@ -475,7 +475,7 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
         <div className="overflow-x-auto">
           <table className="min-w-[1320px] w-full text-xs">
             <thead>
-              <tr className="text-left text-gray-400">
+              <tr className="text-left text-app-text-secondary text-[10px] font-black uppercase tracking-wider">
                 <th className="p-2">Item</th>
                 <th className="p-2 text-right">Base Rate</th>
                 <th className="p-2 text-right">1st Birds</th>
@@ -493,7 +493,7 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
                 <th className="p-2"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-border dark:divide-gray-700">
+            <tbody className="divide-y divide-app-border/40 text-app-text">
               {report.chickenSales.map((row, index) => {
                 const finalRate = numberValue(row.finalRate, numberValue(row.basePricePerKg));
                 const harvest1Sales = numberValue(row.harvest1Kilos) * finalRate;
@@ -508,18 +508,18 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
                     <td className="p-2"><NumberInput value={row.basePricePerKg} disabled={isLocked} onChange={(value) => updateRow('chickenSales', index, 'basePricePerKg', value)} /></td>
                     <td className="p-2"><NumberInput step="1" value={row.harvest1Birds} disabled={isLocked} onChange={(value) => updateRow('chickenSales', index, 'harvest1Birds', value)} /></td>
                     <td className="p-2"><NumberInput value={row.harvest1Kilos} disabled={isLocked} onChange={(value) => updateRow('chickenSales', index, 'harvest1Kilos', value)} /></td>
-                    <td className="p-2 text-right">{formatMoney(harvest1Sales)}</td>
+                    <td className="p-2 text-right font-jetbrains">{formatMoney(harvest1Sales)}</td>
                     <td className="p-2"><NumberInput step="1" value={row.harvest2Birds} disabled={isLocked} onChange={(value) => updateRow('chickenSales', index, 'harvest2Birds', value)} /></td>
                     <td className="p-2"><NumberInput value={row.harvest2Kilos} disabled={isLocked} onChange={(value) => updateRow('chickenSales', index, 'harvest2Kilos', value)} /></td>
-                    <td className="p-2 text-right">{formatMoney(harvest2Sales)}</td>
+                    <td className="p-2 text-right font-jetbrains">{formatMoney(harvest2Sales)}</td>
                     <td className="p-2"><NumberInput step="1" value={row.harvest3Birds} disabled={isLocked} onChange={(value) => updateRow('chickenSales', index, 'harvest3Birds', value)} /></td>
                     <td className="p-2"><NumberInput value={row.harvest3Kilos} disabled={isLocked} onChange={(value) => updateRow('chickenSales', index, 'harvest3Kilos', value)} /></td>
-                    <td className="p-2 text-right">{formatMoney(harvest3Sales)}</td>
-                    <td className="p-2 text-right font-bold">{formatNumber(totalBirds)}</td>
-                    <td className="p-2 text-right font-bold">{formatNumber(totalKilos, 1)}</td>
+                    <td className="p-2 text-right font-jetbrains">{formatMoney(harvest3Sales)}</td>
+                    <td className="p-2 text-right font-black font-jetbrains">{formatNumber(totalBirds)}</td>
+                    <td className="p-2 text-right font-black font-jetbrains">{formatNumber(totalKilos, 1)}</td>
                     <td className="p-2"><NumberInput value={row.finalRate} disabled={isLocked} onChange={(value) => updateRow('chickenSales', index, 'finalRate', value)} /></td>
                     <td className="p-2 text-right">
-                      <button type="button" disabled={isLocked} onClick={() => removeRow('chickenSales', index)} className="text-xs font-bold text-semantic-danger disabled:opacity-40">Remove</button>
+                      <button type="button" disabled={isLocked} onClick={() => removeRow('chickenSales', index)} className="text-xs font-black uppercase tracking-wider text-app-text-secondary hover:text-app-danger transition-colors cursor-pointer disabled:opacity-40">Remove</button>
                     </td>
                   </tr>
                 );
@@ -529,14 +529,14 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
         </div>
       </section>
 
-      <section className="rounded-xl border border-neutral-border dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
+      <section className="rounded-xl border border-app-border bg-app-card p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 className="text-xs font-black uppercase tracking-wider text-gray-400">By-products</h3>
+          <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary">By-products</h3>
           <button
             type="button"
             disabled={isLocked}
             onClick={() => addRow('byproductSales', { item: '', originalRate: '', harvest1Qty: '', harvest1Sales: '', harvest2Qty: '', harvest2Sales: '', harvest3Qty: '', harvest3Sales: '', finalRate: '', notes: '' })}
-            className="rounded-lg border border-neutral-border px-3 py-1.5 text-xs font-black text-gray-600 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
+            className="rounded-xl border border-app-border bg-app-bg px-3 py-1.5 text-xs font-black text-app-text-secondary hover:border-app-accent hover:text-app-accent hover:bg-app-accent/5 transition-all cursor-pointer disabled:opacity-40"
           >
             Add Row
           </button>
@@ -544,7 +544,7 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
         <div className="overflow-x-auto">
           <table className="min-w-[1120px] w-full text-xs">
             <thead>
-              <tr className="text-left text-gray-400">
+              <tr className="text-left text-app-text-secondary text-[10px] font-black uppercase tracking-wider">
                 <th className="p-2">Item</th>
                 <th className="p-2 text-right">Original Rate</th>
                 <th className="p-2 text-right">1st Qty</th>
@@ -559,7 +559,7 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
                 <th className="p-2"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-border dark:divide-gray-700">
+            <tbody className="divide-y divide-app-border/40 text-app-text">
               {report.byproductSales.map((row, index) => {
                 const totalQty = numberValue(row.harvest1Qty) + numberValue(row.harvest2Qty) + numberValue(row.harvest3Qty);
                 const finalAmount = totalQty * numberValue(row.finalRate, numberValue(row.originalRate));
@@ -574,11 +574,11 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
                     <td className="p-2"><NumberInput value={row.harvest2Sales} disabled={isLocked} onChange={(value) => updateRow('byproductSales', index, 'harvest2Sales', value)} /></td>
                     <td className="p-2"><NumberInput value={row.harvest3Qty} disabled={isLocked} onChange={(value) => updateRow('byproductSales', index, 'harvest3Qty', value)} /></td>
                     <td className="p-2"><NumberInput value={row.harvest3Sales} disabled={isLocked} onChange={(value) => updateRow('byproductSales', index, 'harvest3Sales', value)} /></td>
-                    <td className="p-2 text-right font-bold">{formatNumber(totalQty, 1)}</td>
+                    <td className="p-2 text-right font-black font-jetbrains">{formatNumber(totalQty, 1)}</td>
                     <td className="p-2"><NumberInput value={row.finalRate} disabled={isLocked} onChange={(value) => updateRow('byproductSales', index, 'finalRate', value)} /></td>
-                    <td className="p-2 text-right font-bold">{formatMoney(finalAmount)}</td>
+                    <td className="p-2 text-right font-black font-jetbrains">{formatMoney(finalAmount)}</td>
                     <td className="p-2 text-right">
-                      <button type="button" disabled={isLocked} onClick={() => removeRow('byproductSales', index)} className="text-xs font-bold text-semantic-danger disabled:opacity-40">Remove</button>
+                      <button type="button" disabled={isLocked} onClick={() => removeRow('byproductSales', index)} className="text-xs font-black uppercase tracking-wider text-app-text-secondary hover:text-app-danger transition-colors cursor-pointer disabled:opacity-40">Remove</button>
                     </td>
                   </tr>
                 );
@@ -588,14 +588,14 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
         </div>
       </section>
 
-      <section className="rounded-xl border border-neutral-border dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
+      <section className="rounded-xl border border-app-border bg-app-card p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 className="text-xs font-black uppercase tracking-wider text-gray-400">Financing / Actual Expenses</h3>
+          <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary">Financing / Actual Expenses</h3>
           <button
             type="button"
             disabled={isLocked}
             onClick={() => addRow('financingItems', { item: '', category: 'Miscellaneous', quantity: '', unitCost: '', amount: '', notes: '' })}
-            className="rounded-lg border border-neutral-border px-3 py-1.5 text-xs font-black text-gray-600 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
+            className="rounded-xl border border-app-border bg-app-bg px-3 py-1.5 text-xs font-black text-app-text-secondary hover:border-app-accent hover:text-app-accent hover:bg-app-accent/5 transition-all cursor-pointer disabled:opacity-40"
           >
             Add Row
           </button>
@@ -603,7 +603,7 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
         <div className="overflow-x-auto">
           <table className="min-w-[860px] w-full text-xs">
             <thead>
-              <tr className="text-left text-gray-400">
+              <tr className="text-left text-app-text-secondary text-[10px] font-black uppercase tracking-wider">
                 <th className="p-2">Item</th>
                 <th className="p-2">Ledger Category</th>
                 <th className="p-2 text-right">Quantity</th>
@@ -613,7 +613,7 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
                 <th className="p-2"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-border dark:divide-gray-700">
+            <tbody className="divide-y divide-app-border/40 text-app-text">
               {report.financingItems.map((row, index) => (
                 <tr key={`${row.item}-${index}`}>
                   <td className="p-2"><TextInput value={row.item} disabled={isLocked} onChange={(value) => updateRow('financingItems', index, 'item', value)} /></td>
@@ -622,7 +622,7 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
                       value={row.category || 'Miscellaneous'}
                       disabled={isLocked}
                       onChange={(event) => updateRow('financingItems', index, 'category', event.target.value)}
-                      className="w-full min-w-36 rounded-lg border border-neutral-border dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5 text-gray-900 dark:text-white disabled:opacity-70"
+                      className="w-full min-w-36 rounded-xl border border-app-border bg-app-bg px-2 py-1.5 text-app-text outline-none focus:ring-2 focus:ring-app-accent/20 disabled:opacity-40 font-bold text-sm"
                     >
                       {opexCategories.map((category) => (
                         <option key={category} value={category}>{category}</option>
@@ -634,15 +634,15 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
                   <td className="p-2"><NumberInput value={row.amount} disabled={isLocked} onChange={(value) => updateRow('financingItems', index, 'amount', value)} /></td>
                   <td className="p-2"><TextInput value={row.notes} disabled={isLocked} onChange={(value) => updateRow('financingItems', index, 'notes', value)} /></td>
                   <td className="p-2 text-right">
-                    <button type="button" disabled={isLocked} onClick={() => removeRow('financingItems', index)} className="text-xs font-bold text-semantic-danger disabled:opacity-40">Remove</button>
+                    <button type="button" disabled={isLocked} onClick={() => removeRow('financingItems', index)} className="text-xs font-black uppercase tracking-wider text-app-text-secondary hover:text-app-danger transition-colors cursor-pointer disabled:opacity-40">Remove</button>
                   </td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
-              <tr className="border-t border-neutral-border text-right font-black dark:border-gray-700">
+              <tr className="border-t border-app-border/40 text-right font-black text-app-text">
                 <td className="p-2" colSpan={4}>Total Financing</td>
-                <td className="p-2">{formatMoney(summary.totals.financingTotal)}</td>
+                <td className="p-2 font-jetbrains">{formatMoney(summary.totals.financingTotal)}</td>
                 <td className="p-2" colSpan={2}></td>
               </tr>
             </tfoot>

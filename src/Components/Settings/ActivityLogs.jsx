@@ -18,51 +18,51 @@ export default function ActivityLogs({
   activityLogs
 }) {
   return (
-    <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-neutral-border dark:border-gray-700 mb-6">
+    <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6 font-hanken">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">Activity Logs</h3>
-          <p className="text-[10px] font-bold text-gray-400 mt-1">
+          <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary">Activity Logs</h3>
+          <p className="text-[10px] font-bold text-app-text-secondary mt-1 font-jetbrains">
             Showing {filteredActivityLogs.length} of {activityLogs.length}
           </p>
         </div>
         <button
           type="button"
           onClick={fetchActivityLogs}
-          className="text-xs font-black text-primary hover:underline"
+          className="text-xs font-black text-app-accent hover:underline cursor-pointer"
         >
           Refresh
         </button>
       </div>
 
       {activityError && (
-        <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold mb-4 border border-red-200">
+        <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger">
           {activityError}
         </div>
       )}
 
       {isLoadingActivity && (
-        <p className="text-xs text-gray-500 mb-3 font-semibold">Loading activity logs...</p>
+        <p className="text-xs text-app-text-secondary mb-3 font-black">Loading activity logs...</p>
       )}
 
       <div className="grid gap-3 md:grid-cols-[minmax(220px,1fr)_160px_180px_140px] mb-4">
         <div>
-          <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Search</label>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1.5">Search</label>
           <input
             type="search"
             value={activitySearch}
             onChange={(event) => setActivitySearch(event.target.value)}
             placeholder="User, action, batch, ref"
-            className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none"
+            className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all font-jetbrains"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Action</label>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1.5">Action</label>
           <select
             value={activityActionFilter}
             onChange={(event) => setActivityActionFilter(event.target.value)}
-            className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none font-bold"
+            className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
           >
             <option value={allFilterValue}>All actions</option>
             {activityActionOptions.map((action) => (
@@ -72,11 +72,11 @@ export default function ActivityLogs({
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Record Type</label>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1.5">Record Type</label>
           <select
             value={activityEntityFilter}
             onChange={(event) => setActivityEntityFilter(event.target.value)}
-            className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none font-bold"
+            className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
           >
             <option value={allFilterValue}>All types</option>
             {activityEntityOptions.map((entityType) => (
@@ -86,11 +86,11 @@ export default function ActivityLogs({
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Sort</label>
+          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1.5">Sort</label>
           <select
             value={activitySort}
             onChange={(event) => setActivitySort(event.target.value)}
-            className="w-full p-3 border border-neutral-border dark:border-gray-600 rounded-xl bg-neutral-light dark:bg-gray-700 text-gray-800 dark:text-white outline-none font-bold"
+            className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all font-jetbrains"
           >
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
@@ -107,7 +107,7 @@ export default function ActivityLogs({
             setActivityEntityFilter(allFilterValue);
             setActivitySort('newest');
           }}
-          className="mb-4 text-xs font-black text-gray-500 dark:text-gray-300 bg-neutral-light dark:bg-gray-700 border border-neutral-border dark:border-gray-600 rounded-lg px-3 py-2 hover:bg-neutral-200 dark:hover:bg-gray-600 transition-colors"
+          className="mb-4 text-xs font-black text-app-text bg-app-bg border border-app-border rounded-xl px-3 py-2 hover:border-app-accent hover:text-app-accent transition-all cursor-pointer"
         >
           Clear filters
         </button>
@@ -115,31 +115,31 @@ export default function ActivityLogs({
 
       <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
         {filteredActivityLogs.map((log) => (
-          <div key={log.id} className="rounded-xl border border-neutral-border dark:border-gray-700 bg-neutral-light dark:bg-gray-900 p-3">
+          <div key={log.id} className="rounded-xl border border-app-border bg-app-bg/50 p-3">
             <div className="flex justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-sm font-black text-gray-900 dark:text-white truncate">
+                <p className="text-sm font-black text-app-text">
                   {log.action} {log.entityType}
                 </p>
-                <p className="text-[10px] font-bold text-primary mt-1">
-                  {(log.actorUsername || log.actorEmail || 'System')} {log.batchId ? `- Batch ${log.batchId}` : ''}
+                <p className="text-[10px] font-black text-app-accent mt-1.5 uppercase tracking-wider font-jetbrains">
+                  {(log.actorUsername || log.actorEmail || 'System')} {log.batchId ? `&bull; Batch ${log.batchId}` : ''}
                 </p>
               </div>
-              <p className="text-[10px] text-gray-400 text-right shrink-0">
+              <p className="text-[10px] text-app-text-secondary text-right shrink-0 font-jetbrains">
                 {new Date(log.createdAt).toLocaleString()}
               </p>
             </div>
-            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-2">
+            <p className="text-[10px] text-app-text-secondary mt-2 font-jetbrains">
               Ref: {log.entityId || 'n/a'}
             </p>
           </div>
         ))}
 
         {activityLogs.length === 0 && !isLoadingActivity && (
-          <p className="text-center text-gray-500 text-sm">No activity logs yet.</p>
+          <p className="text-center text-app-text-secondary text-sm font-bold">No activity logs yet.</p>
         )}
         {activityLogs.length > 0 && filteredActivityLogs.length === 0 && !isLoadingActivity && (
-          <p className="text-center text-gray-500 text-sm">No activity logs match those filters.</p>
+          <p className="text-center text-app-text-secondary text-sm font-bold">No activity logs match those filters.</p>
         )}
       </div>
     </div>
