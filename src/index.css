@@ -454,22 +454,19 @@ body {
   animation: antigravity-bob-fast 7s ease-in-out infinite;
 }
 
-/* Hover gravity defiance - extremely subtle lift-off and soft shadow */
-.antigravity-active .hover-float,
-.antigravity-active .bg-white:not(.no-float),
-.antigravity-active .bg-slate-900:not(.no-float),
-.antigravity-active .bg-gray-800:not(.no-float),
-.antigravity-active .bg-app-card:not(.no-float) {
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
-}
-.antigravity-active .hover-float:hover,
-.antigravity-active .bg-white:not(.no-float):hover,
-.antigravity-active .bg-slate-900:not(.no-float):hover,
-.antigravity-active .bg-gray-800:not(.no-float):hover,
-.antigravity-active .bg-app-card:not(.no-float):hover {
-  transform: translateY(-4px) !important;
-  box-shadow: 0 12px 24px -10px rgba(59, 130, 246, 0.2) !important;
-  z-index: 5;
+/* Hover gravity defiance - subtle lift for surfaces, while controls stay anchored. */
+@media (hover: hover) and (pointer: fine) {
+  .antigravity-active .hover-float,
+  .antigravity-active :where(.bg-white, .bg-slate-900, .bg-gray-800, .bg-app-card):not(.no-float):not(button):not(a):not(input):not(select):not(textarea):not(label) {
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+  }
+
+  .antigravity-active .hover-float:hover,
+  .antigravity-active :where(.bg-white, .bg-slate-900, .bg-gray-800, .bg-app-card):not(.no-float):not(button):not(a):not(input):not(select):not(textarea):not(label):hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 12px 24px -10px rgba(59, 130, 246, 0.2) !important;
+    z-index: 5;
+  }
 }
 
 /* Glassmorphism futuristic panel */
@@ -591,4 +588,3 @@ body {
   mix-blend-mode: screen; 
   transform: translateZ(40px);
 }
-

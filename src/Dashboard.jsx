@@ -31,11 +31,6 @@ function formatNumber(value, digits = 0) {
   });
 }
 
-function getToneClass(value) {
-  const isOver = Number(value || 0) > 0;
-  return isOver ? 'text-semantic-danger' : 'text-semantic-success';
-}
-
 const roleRank = {
   Viewer: 1,
   DataEntry: 2,

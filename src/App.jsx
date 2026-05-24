@@ -17,6 +17,9 @@ import { API_BASE } from './api';
 import AntigravityAssistant from './Components/AntigravityAssistant';
 import { publicViewerUser } from './publicViewerData';
 
+const ZERO_GRAVITY_STORAGE_KEY = 'octavioZeroGravityEnabled';
+const LEGACY_ZERO_GRAVITY_STORAGE_KEY = 'antigravityMode';
+
 const roleRank = {
   Viewer: 1,
   DataEntry: 2,
@@ -59,10 +62,10 @@ function pickPreferredBatch(batches, user) {
   );
 }
 
-function formatBatchOption(batch) {
-  const status = batch.status ? String(batch.status) : 'No status';
-  const startDate = batch.startDate ? String(batch.startDate).slice(0, 10) : 'No start date';
-  return `${batch.id} - ${status} - ${startDate}`;
+function readZeroGravityPreference() {
+  const saved = localStorage.getItem(ZERO_GRAVITY_STORAGE_KEY);
+
+  return saved !== 'false';
 }
 
 function CogIcon() {
@@ -129,18 +132,16 @@ function App() {
     }
   }, [isDarkMode]);
 
-  const [isZeroGravity, setIsZeroGravity] = useState(() => {
-    const saved = localStorage.getItem('antigravityMode');
-    return saved === null ? true : saved === 'true';
-  });
+  const [isZeroGravity, setIsZeroGravity] = useState(readZeroGravityPreference);
 
   useEffect(() => {
-    if (isZeroGravity) {
-      document.body.classList.add('antigravity-active');
-    } else {
+    document.body.classList.toggle('antigravity-active', isZeroGravity);
+    localStorage.setItem(ZERO_GRAVITY_STORAGE_KEY, String(isZeroGravity));
+    localStorage.setItem(LEGACY_ZERO_GRAVITY_STORAGE_KEY, String(isZeroGravity));
+
+    return () => {
       document.body.classList.remove('antigravity-active');
-    }
-    localStorage.setItem('antigravityMode', String(isZeroGravity));
+    };
   }, [isZeroGravity]);
 
   const [isNavMinimized, setIsNavMinimized] = useState(() => {
@@ -826,7 +827,6 @@ function App() {
               transactions={transactions}
               user={user}
               isZeroGravity={isZeroGravity}
-              setIsZeroGravity={setIsZeroGravity}
             />
           </div>
         </div>

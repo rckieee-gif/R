@@ -1,30 +1,25 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { BAG_WEIGHT_KG, getAgeDay } from '../broilerTargets';
+
+function createParticles() {
+  return Array.from({ length: 8 }).map((_, i) => ({
+    id: i,
+    left: `${Math.random() * 100}%`,
+    size: `${Math.random() * 3 + 2}px`,
+    delay: `${Math.random() * 10}s`,
+    duration: `${Math.random() * 10 + 15}s`,
+  }));
+}
 
 export default function AntigravityAssistant({ 
   activeBatch, 
   logs = [], 
   transactions = [], 
   user,
-  isZeroGravity,
-  setIsZeroGravity
+  isZeroGravity
 }) {
   const [isOpen, setIsOpen] = useState(false);
-
-  const [particles, setParticles] = useState(() => {
-    const saved = localStorage.getItem('antigravityMode');
-    const isZeroG = saved === null ? true : saved === 'true';
-    if (isZeroG) {
-      return Array.from({ length: 8 }).map((_, i) => ({
-        id: i,
-        left: `${Math.random() * 100}%`,
-        size: `${Math.random() * 3 + 2}px`,
-        delay: `${Math.random() * 10}s`,
-        duration: `${Math.random() * 10 + 15}s`,
-      }));
-    }
-    return [];
-  });
+  const particles = useMemo(() => (isZeroGravity ? createParticles() : []), [isZeroGravity]);
 
   const userName = user?.name || 'Farmer';
   const [messages, setMessages] = useState(() => [
@@ -52,37 +47,10 @@ export default function AntigravityAssistant({
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef(null);
 
-  // Sync particles and banner based on Zero Gravity mode state
-  useEffect(() => {
-    if (isZeroGravity) {
-      setParticles((prev) => {
-        if (prev.length > 0) return prev;
-        return Array.from({ length: 8 }).map((_, i) => ({
-          id: i,
-          left: `${Math.random() * 100}%`,
-          size: `${Math.random() * 3 + 2}px`,
-          delay: `${Math.random() * 10}s`,
-          duration: `${Math.random() * 10 + 15}s`,
-        }));
-      });
-    } else {
-      setParticles([]);
-      setShowFullBanner(false);
-    }
-  }, [isZeroGravity]);
-
   // Scroll to bottom of chat
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
-
-  const handleToggleZeroG = () => {
-    const next = !isZeroGravity;
-    setIsZeroGravity(next);
-    if (next) {
-      setShowFullBanner(true);
-    }
-  };
 
   const simulateResponse = (userInput, responseText) => {
     setMessages(prev => [
@@ -248,7 +216,7 @@ All telemetry indicators are green. The farm manager application is running on *
       ];
       reply = jokes[Math.floor(Math.random() * jokes.length)];
     } else if (lowerQuery.includes('gravity') || lowerQuery.includes('antigravity')) {
-      reply = `🚀 **Antigravity Mode** allows the UI elements of this Farm Manager to break free from standard gravitational constraints. Try toggling it using the switch in the header of this panel! You'll see cards drift and float gently.`;
+      reply = `**Antigravity Mode** allows the UI elements of this Farm Manager to break free from standard gravitational constraints. Use the Zero-Gravity switch in Settings under Interface Options to control the effect.`;
     } else {
       reply = `I've received your transmission, ${userName}! 🛰️ Regarding "${query}": I recommend checking your daily logs and financial ledgers to cross-reference trends. You can also try one of our telemetry quick scans above!`;
     }
@@ -352,23 +320,16 @@ All telemetry indicators are green. The farm manager application is running on *
               </div>
             </div>
 
-            {/* Zero Gravity Mode Switch */}
             <div className="flex items-center space-x-2 bg-black/35 py-1 px-2.5 rounded-full border border-white/5">
-              <span className="text-[9px] font-black uppercase text-gray-300">Zero-G</span>
-              <button
-                onClick={handleToggleZeroG}
-                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  isZeroGravity ? 'bg-cyan-500' : 'bg-gray-700'
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  isZeroGravity ? 'bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]' : 'bg-gray-500'
                 }`}
-                role="switch"
-                aria-checked={isZeroGravity}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                    isZeroGravity ? 'translate-x-4' : 'translate-x-0'
-                  }`}
-                />
-              </button>
+                aria-hidden="true"
+              />
+              <span className="text-[9px] font-black uppercase text-gray-300">
+                {isZeroGravity ? 'Zero-G On' : 'Zero-G Off'}
+              </span>
             </div>
           </div>
 

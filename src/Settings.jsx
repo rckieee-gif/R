@@ -472,12 +472,16 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
     }
   };
 
+  const toggleZeroGravity = () => {
+    setIsZeroGravity((current) => !current);
+  };
+
   return (
     <div className="app-page font-hanken">
       <div className="mb-6 mt-2">
         <h2 className="text-3xl font-extrabold text-app-text tracking-tight">Settings</h2>
         <p className="text-app-text-secondary text-sm mt-1">
-          Account, data exports, and audit logging utilities
+          Account, interface options, data exports, and audit logging utilities
         </p>
       </div>
 
@@ -497,23 +501,24 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
 
       <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6">
         <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-4">Interface Options</h3>
-        <div className="flex items-center justify-between bg-app-bg rounded-xl p-4 border border-app-border/40">
-          <div>
+        <div className="flex items-center justify-between gap-4 bg-app-bg rounded-xl p-4 border border-app-border/40">
+          <div className="min-w-0">
             <h4 className="text-sm font-bold text-app-text uppercase tracking-wide">Zero-Gravity Interface Physics</h4>
             <p className="text-xs text-app-text-secondary mt-1">
               Enable floating elements, low-gravity hover translations, and particle effects throughout the deck.
             </p>
           </div>
           <button
-            onClick={() => setIsZeroGravity(!isZeroGravity)}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+            onClick={toggleZeroGravity}
+            className={`no-float relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-app-accent/30 ${
               isZeroGravity ? 'bg-app-accent' : 'bg-app-text-secondary/30'
             }`}
             role="switch"
             aria-checked={isZeroGravity}
+            aria-label="Toggle zero-gravity interface physics"
           >
             <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-app-card shadow ring-0 transition duration-200 ease-in-out ${
+              className={`no-float pointer-events-none inline-block h-5 w-5 transform rounded-full bg-app-card shadow ring-0 transition duration-200 ease-in-out ${
                 isZeroGravity ? 'translate-x-5' : 'translate-x-0'
               }`}
             />
