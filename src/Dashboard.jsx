@@ -55,7 +55,7 @@ function MetricCard({ label, value, subtext, icon = null, tone = 'text-dashboard
   return (
     <div className="bg-dashboard-card border border-dashboard-border rounded-xl p-5 hover:border-dashboard-accent transition-colors relative overflow-hidden group">
       {icon && (
-        <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none text-dashboard-text-secondary">
+        <div className="absolute top-0 right-0 p-2 opacity-25 group-hover:opacity-40 transition-opacity duration-300 pointer-events-none text-dashboard-text-secondary">
           <span className="material-symbols-outlined text-7xl select-none">{icon}</span>
         </div>
       )}
