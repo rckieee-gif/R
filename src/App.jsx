@@ -471,21 +471,21 @@ function App() {
           }`}
         >
           {/* Header */}
-          <div className={`p-4 flex items-center justify-between border-b border-app-border shrink-0 ${isNavMinimized ? 'justify-center' : ''}`}>
-            {!isNavMinimized ? (
-              <div className="min-w-0">
-                <h2 className="text-sm font-bold text-app-text tracking-tighter truncate uppercase font-hanken">Octavio Farms</h2>
-                <p className="text-[9px] font-mono text-app-text-secondary truncate mt-0.5 uppercase tracking-widest font-jetbrains">
-                  {user?.role || 'Viewer'}
-                </p>
-              </div>
-            ) : (
-              <span className="material-symbols-outlined text-app-accent text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>terminal</span>
-            )}
+          <div className="p-4 flex items-center justify-between border-b border-app-border shrink-0 h-[65px] transition-all duration-300">
+            <div className={`min-w-0 transition-all duration-300 ${
+              isNavMinimized ? 'w-0 opacity-0 pointer-events-none overflow-hidden' : 'w-auto opacity-100 flex-1'
+            }`}>
+              <h2 className="text-sm font-bold text-app-text tracking-tighter truncate uppercase font-hanken whitespace-nowrap">Octavio Farms</h2>
+              <p className="text-[9px] font-mono text-app-text-secondary truncate mt-0.5 uppercase tracking-widest font-jetbrains whitespace-nowrap">
+                {user?.role || 'Viewer'}
+              </p>
+            </div>
             
             <button 
               onClick={toggleNavMinimized}
-              className={`p-1.5 rounded hover:bg-app-bg text-app-text-secondary hover:text-app-text transition-colors ${isNavMinimized ? 'absolute right-2 top-2' : ''}`}
+              className={`rounded hover:bg-app-bg text-app-text-secondary hover:text-app-text transition-all duration-300 flex items-center justify-center ${
+                isNavMinimized ? 'w-full py-1.5' : 'p-1.5 ml-2'
+              }`}
               title={isNavMinimized ? "Expand Sidebar" : "Minimize Sidebar"}
             >
               <span className="material-symbols-outlined text-base">
@@ -502,17 +502,17 @@ function App() {
                 <button
                   key={item.id}
                   onClick={() => setActiveScreen(item.id)}
-                  className={`w-full group flex items-center gap-3 py-2 transition-all rounded ${
-                    isNavMinimized ? 'justify-center px-0' : 'px-3'
+                  className={`w-full group flex items-center transition-all duration-300 rounded border-l-[3px] border-r-[3px] py-2 ${
+                    isNavMinimized ? 'px-5 gap-0' : 'px-3.5 gap-3'
                   } ${
                     isActive
-                      ? 'bg-gradient-to-r from-app-accent/10 to-transparent border-l-[3px] border-app-accent text-app-text font-bold'
-                      : 'text-app-text-secondary hover:bg-app-bg/50 hover:text-app-text'
+                      ? 'bg-gradient-to-r from-app-accent/10 to-transparent border-l-app-accent border-r-transparent text-app-text font-bold'
+                      : 'border-l-transparent border-r-transparent text-app-text-secondary hover:bg-app-bg/50 hover:text-app-text'
                   }`}
                   title={item.label}
                 >
                   <span 
-                    className={`material-symbols-outlined text-[18px] transition-colors ${
+                    className={`material-symbols-outlined text-[18px] transition-colors shrink-0 ${
                       isActive ? 'text-app-accent' : 'text-app-text-secondary group-hover:text-app-text'
                     }`}
                     style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}
@@ -520,11 +520,11 @@ function App() {
                     {item.icon}
                   </span>
                   
-                  {!isNavMinimized && (
-                    <span className="text-[10px] font-bold tracking-wider uppercase truncate">
-                      {item.label}
-                    </span>
-                  )}
+                  <span className={`transition-all duration-300 text-[10px] font-bold tracking-wider uppercase truncate ${
+                    isNavMinimized ? 'w-0 opacity-0 pointer-events-none' : 'w-28 opacity-100'
+                  }`}>
+                    {item.label}
+                  </span>
                 </button>
               );
             })}
@@ -534,8 +534,10 @@ function App() {
           <div className="p-3 border-t border-app-border shrink-0 flex flex-col gap-3">
             {/* Active Batch Indicator / Selector */}
             {!isPublicViewer && (
-              <div>
-                {!isNavMinimized ? (
+              <div className="relative min-h-[38px] transition-all duration-300">
+                <div className={`transition-all duration-300 ${
+                  isNavMinimized ? 'opacity-0 scale-95 pointer-events-none absolute inset-0' : 'opacity-100 scale-100'
+                }`}>
                   <div className="flex flex-col gap-1">
                     <label htmlFor="desktop-batch-selector" className="text-[9px] font-bold uppercase tracking-wider text-app-text-secondary">
                       Active Batch
@@ -556,49 +558,79 @@ function App() {
                       ))}
                     </select>
                   </div>
-                ) : (
+                </div>
+                
+                <div className={`transition-all duration-300 ${
+                  isNavMinimized ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none absolute inset-0'
+                }`}>
                   <div className="flex justify-center" title={`Active Batch: ${activeBatch?.id || 'None'}`}>
                     <span className="px-1.5 py-0.5 bg-app-accent/15 border border-app-accent/20 rounded text-[9px] font-bold text-app-accent font-jetbrains">
                       B:{activeBatch?.id || 'N/A'}
                     </span>
                   </div>
-                )}
+                </div>
               </div>
             )}
 
             {/* Utility Buttons */}
-            <div className={`flex gap-1.5 ${isNavMinimized ? 'flex-col items-center' : 'items-center justify-between'}`}>
-              <div className={`flex gap-1.5 ${isNavMinimized ? 'flex-col' : 'items-center'}`}>
-                {allowedScreens.includes('settings') && (
-                  <button
-                    onClick={() => setActiveScreen('settings')}
-                    className={`h-8 w-8 inline-flex items-center justify-center rounded border transition hover:scale-105 ${
-                      activeScreen === 'settings'
-                        ? 'bg-app-accent text-app-on-accent border-app-accent'
-                        : 'bg-app-card text-app-text-secondary border-app-border hover:text-app-text hover:border-app-text'
-                    }`}
-                    title="Settings"
-                  >
-                    <CogIcon />
-                  </button>
-                )}
+            <div className="flex flex-col gap-1.5">
+              {allowedScreens.includes('settings') && (
                 <button
-                  onClick={() => setIsDarkMode(!isDarkMode)}
-                  className="h-8 w-8 inline-flex items-center justify-center rounded bg-app-card text-app-text-secondary border border-app-border transition hover:scale-105 hover:text-app-text hover:border-app-text"
-                  title={isDarkMode ? "Use Light Mode" : "Use Dark Mode"}
+                  onClick={() => setActiveScreen('settings')}
+                  className={`w-full group flex items-center transition-all duration-300 rounded border-l-[3px] border-r-[3px] py-2 ${
+                    isNavMinimized ? 'px-5 gap-0' : 'px-3.5 gap-3'
+                  } ${
+                    activeScreen === 'settings'
+                      ? 'bg-gradient-to-r from-app-accent/10 to-transparent border-l-app-accent border-r-transparent text-app-text font-bold'
+                      : 'border-l-transparent border-r-transparent text-app-text-secondary hover:bg-app-bg/50 hover:text-app-text'
+                  }`}
+                  title="Settings"
                 >
-                  <ThemeIcon isDarkMode={isDarkMode} />
+                  <span className={`flex items-center justify-center h-[18px] w-[18px] shrink-0 transition-colors ${
+                    activeScreen === 'settings' ? 'text-app-accent' : 'text-app-text-secondary group-hover:text-app-text'
+                  }`}>
+                    <CogIcon />
+                  </span>
+                  <span className={`transition-all duration-300 text-[10px] font-bold tracking-wider uppercase truncate ${
+                    isNavMinimized ? 'w-0 opacity-0 pointer-events-none' : 'w-28 opacity-100'
+                  }`}>
+                    Settings
+                  </span>
                 </button>
-              </div>
+              )}
+
+              <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className={`w-full group flex items-center transition-all duration-300 rounded border-l-[3px] border-r-[3px] py-2 border-l-transparent border-r-transparent text-app-text-secondary hover:bg-app-bg/50 hover:text-app-text ${
+                  isNavMinimized ? 'px-5 gap-0' : 'px-3.5 gap-3'
+                }`}
+                title={isDarkMode ? "Use Light Mode" : "Use Dark Mode"}
+              >
+                <span className="flex items-center justify-center h-[18px] w-[18px] shrink-0 text-app-text-secondary group-hover:text-app-text">
+                  <ThemeIcon isDarkMode={isDarkMode} />
+                </span>
+                <span className={`transition-all duration-300 text-[10px] font-bold tracking-wider uppercase truncate ${
+                  isNavMinimized ? 'w-0 opacity-0 pointer-events-none' : 'w-28 opacity-100'
+                }`}>
+                  {isDarkMode ? "Light Mode" : "Dark Mode"}
+                </span>
+              </button>
 
               <button 
                 onClick={handleLogout} 
-                className={`flex items-center justify-center rounded border border-app-border p-1.5 bg-gradient-to-b from-app-card to-app-bg text-app-text-secondary hover:text-app-danger hover:border-app-danger/30 transition-all duration-75 ${
-                  isNavMinimized ? 'w-8 h-8' : 'w-9 h-8'
+                className={`w-full group flex items-center transition-all duration-300 rounded border-l-[3px] border-r-[3px] py-2 text-app-text-secondary hover:bg-red-500/10 hover:text-red-500 border-l-transparent border-r-transparent ${
+                  isNavMinimized ? 'px-5 gap-0' : 'px-3.5 gap-3'
                 }`}
                 title={isPublicViewer ? "Exit Preview" : "Logout"}
               >
-                <span className="material-symbols-outlined text-[16px]">logout</span>
+                <span className="material-symbols-outlined text-[18px] shrink-0 text-app-text-secondary group-hover:text-red-500 transition-colors">
+                  logout
+                </span>
+                <span className={`transition-all duration-300 text-[10px] font-bold tracking-wider uppercase truncate ${
+                  isNavMinimized ? 'w-0 opacity-0 pointer-events-none' : 'w-28 opacity-100'
+                }`}>
+                  {isPublicViewer ? "Exit Preview" : "Logout"}
+                </span>
               </button>
             </div>
           </div>
