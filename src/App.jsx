@@ -118,6 +118,29 @@ function App() {
   const [viewerSnapshot, setViewerSnapshot] = useState(null);
   const [viewerError, setViewerError] = useState('');
   const [isViewerLoading, setIsViewerLoading] = useState(false);
+  const [preloadedSnapshot, setPreloadedSnapshot] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const preloadSnapshot = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/public/current-batch`);
+        if (response.ok) {
+          const data = await response.json();
+          if (isMounted) {
+            setPreloadedSnapshot(data);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to preload public current batch snapshot:", err);
+      }
+    };
+    preloadSnapshot();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('themeMode');
     return saved ? saved === 'dark' : true;
@@ -396,11 +419,14 @@ function App() {
     setViewerError('');
 
     try {
-      const response = await fetch(`${API_BASE}/api/public/current-batch`);
-      const data = await response.json().catch(() => ({}));
+      let data = preloadedSnapshot;
+      if (!data) {
+        const response = await fetch(`${API_BASE}/api/public/current-batch`);
+        data = await response.json().catch(() => ({}));
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Current batch is unavailable.');
+        if (!response.ok) {
+          throw new Error(data.error || 'Current batch is unavailable.');
+        }
       }
 
       const liveBatch = data.batch || data.batches?.[0] || null;
@@ -461,6 +487,7 @@ function App() {
         onMemberLogin={() => setAuthView('login')}
         isViewerLoading={isViewerLoading}
         viewerError={viewerError}
+        preloadedSnapshot={preloadedSnapshot}
       />
     );
   }

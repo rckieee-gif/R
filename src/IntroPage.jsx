@@ -1,3 +1,18 @@
+import { useMemo } from 'react';
+
+function getTodayDateString() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatNumber(num) {
+  if (num === null || num === undefined || Number.isNaN(Number(num))) return '--';
+  return Number(num).toLocaleString();
+}
+
 function IntroMetric({ label, value }) {
   return (
     <div>
@@ -27,7 +42,108 @@ function PreviewStat({ label, value, tone = 'text-app-text', suffix = null, isAl
   );
 }
 
-export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerLoading = false, viewerError = '' }) {
+export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerLoading = false, viewerError = '', preloadedSnapshot = null }) {
+  const todayStr = getTodayDateString();
+
+  const liveBirdsValue = preloadedSnapshot
+    ? Math.max(
+        Number(preloadedSnapshot.batch?.totalChicksLoaded || 0) -
+        (preloadedSnapshot.logs || []).reduce((sum, log) => sum + Number(log.mortality || 0), 0) -
+        Number(preloadedSnapshot.harvestProductionSummary?.totals?.birds || 0),
+        0
+      )
+    : 38474;
+
+  const logsTodayValue = preloadedSnapshot
+    ? (preloadedSnapshot.logs || []).filter(log => log.date === todayStr).length
+    : 3;
+
+  const feedStockValue = preloadedSnapshot
+    ? (preloadedSnapshot.feedItems || preloadedSnapshot.inventoryItems || [])
+        .filter(item => item.category === 'Feed')
+        .reduce((sum, item) => sum + Number(item.currentStock || 0), 0)
+    : 980;
+
+  const lowAlertsValue = preloadedSnapshot
+    ? (preloadedSnapshot.inventoryItems || []).filter(item => Number(item.reorderLevel || 0) > 0 && Number(item.currentStock || 0) < Number(item.reorderLevel || 0)).length +
+      (preloadedSnapshot.loadings || []).filter(l => Number(l.chicksLoaded || 0) > 0).filter(l => 
+        !(preloadedSnapshot.logs || []).some(log => log.date === todayStr && String(log.building).toUpperCase() === String(l.building).toUpperCase())
+      ).length
+    : 1;
+
+  const displayItems = useMemo(() => {
+    if (!preloadedSnapshot) {
+      return [
+        { key: 'bld-a', label: 'Building A logged', status: 'ok' },
+        { key: 'feed-rev', label: 'Feed stock reviewed', status: 'ok' },
+        { key: 'inv-alert', label: 'Inventory alert open', status: 'alert' }
+      ];
+    }
+
+    const items = [];
+
+    // 1. Building logs today status
+    const activeBuildings = (preloadedSnapshot.loadings || [])
+      .filter(l => Number(l.chicksLoaded || 0) > 0);
+
+    if (activeBuildings.length === 0) {
+      items.push({ key: 'no-loadings', label: 'No buildings loaded in batch', status: 'alert' });
+    } else {
+      activeBuildings.forEach(loading => {
+        const hasLog = (preloadedSnapshot.logs || []).some(
+          log => log.date === todayStr && String(log.building).toUpperCase() === String(loading.building).toUpperCase()
+        );
+        items.push({
+          key: `bld-${loading.building}`,
+          label: `Building ${loading.building} ${hasLog ? 'logged today' : 'missing log'}`,
+          status: hasLog ? 'ok' : 'warning'
+        });
+      });
+    }
+
+    // 2. Feed stock level status
+    const lowFeedItems = (preloadedSnapshot.inventoryItems || [])
+      .filter(item => Number(item.reorderLevel || 0) > 0 && Number(item.currentStock || 0) < Number(item.reorderLevel || 0));
+
+    if (lowFeedItems.length > 0) {
+      items.push({
+        key: 'feed-low-alert',
+        label: `${lowFeedItems.length} feed item(s) below reorder level`,
+        status: 'alert'
+      });
+    } else {
+      items.push({
+        key: 'feed-stock-ok',
+        label: 'Feed stock levels reviewed & stable',
+        status: 'ok'
+      });
+    }
+
+    // 3. Batch age status
+    if (preloadedSnapshot.batch) {
+      const start = preloadedSnapshot.batch.startDate;
+      if (start) {
+        const parseDateOnly = (val) => {
+          if (!val) return null;
+          const [year, month, day] = String(val).split('T')[0].split('-').map(Number);
+          return new Date(year, month - 1, day);
+        };
+        const startD = parseDateOnly(start);
+        const todayD = parseDateOnly(todayStr);
+        if (startD && todayD) {
+          const ageDays = Math.round((todayD - startD) / (24 * 60 * 60 * 1000));
+          items.push({
+            key: 'batch-age',
+            label: `Batch ${preloadedSnapshot.batch.id}: Day ${ageDays}`,
+            status: 'ok'
+          });
+        }
+      }
+    }
+
+    return items;
+  }, [preloadedSnapshot, todayStr]);
+
   return (
     <div className="bg-app-bg text-app-text min-h-screen flex flex-col font-inter selection:bg-app-accent selection:text-app-on-accent">
       <header className="bg-app-card border-b border-app-border sticky top-0 z-50">
@@ -114,25 +230,37 @@ export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerL
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-6">
-              <PreviewStat label="LIVE BIRDS" value="38,474" tone="text-app-success" />
-              <PreviewStat label="LOGS TODAY" value="3" tone="text-app-accent" />
-              <PreviewStat label="FEED STOCK" value="980" suffix="sx" />
-              <PreviewStat label="LOW ALERTS" value="1" isAlert={true} />
+              <PreviewStat label="LIVE BIRDS" value={formatNumber(liveBirdsValue)} tone="text-app-success" />
+              <PreviewStat label="LOGS TODAY" value={formatNumber(logsTodayValue)} tone="text-app-accent" />
+              <PreviewStat label="FEED STOCK" value={formatNumber(feedStockValue)} suffix="sx" />
+              <PreviewStat label="LOW ALERTS" value={formatNumber(lowAlertsValue)} isAlert={lowAlertsValue > 0} />
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between p-3 bg-app-bg rounded-lg border border-app-border hover:border-app-accent/30 transition-colors duration-200">
-                <span className="text-sm text-app-text">Building A logged</span>
-                <div className="w-2.5 h-2.5 rounded-full bg-app-accent"></div>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-app-bg rounded-lg border border-app-border hover:border-app-accent/30 transition-colors duration-200">
-                <span className="text-sm text-app-text">Feed stock reviewed</span>
-                <div className="w-2.5 h-2.5 rounded-full bg-app-accent"></div>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-app-danger-bg rounded-lg border border-app-danger/30 hover:border-app-danger/50 transition-colors duration-200 relative overflow-hidden">
-                <span className="text-sm text-app-text relative z-10 font-medium">Inventory alert open</span>
-                <div className="w-2.5 h-2.5 rounded-full bg-app-danger relative z-10 animate-pulse"></div>
-              </div>
+              {displayItems.map((item) => {
+                const isAlert = item.status === 'alert';
+                const isWarning = item.status === 'warning';
+                
+                let containerClass = "flex items-center justify-between p-3 bg-app-bg/50 backdrop-blur-sm rounded-lg border border-app-border/40 hover:border-app-accent/30 transition-colors duration-200";
+                let dotClass = "w-2.5 h-2.5 rounded-full bg-app-accent";
+                
+                if (isAlert) {
+                  containerClass = "flex items-center justify-between p-3 bg-app-danger-bg/25 backdrop-blur-sm rounded-lg border border-app-danger/25 hover:border-app-danger/50 transition-colors duration-200 relative overflow-hidden";
+                  dotClass = "w-2.5 h-2.5 rounded-full bg-app-danger relative z-10 animate-pulse";
+                } else if (isWarning) {
+                  containerClass = "flex items-center justify-between p-3 bg-app-warning-bg/25 backdrop-blur-sm rounded-lg border border-app-warning/25 hover:border-app-warning/50 transition-colors duration-200 relative overflow-hidden";
+                  dotClass = "w-2.5 h-2.5 rounded-full bg-app-warning relative z-10 animate-pulse";
+                }
+
+                return (
+                  <div key={item.key} className={containerClass}>
+                    <span className={`text-sm text-app-text ${isAlert || isWarning ? 'relative z-10 font-medium' : ''}`}>
+                      {item.label}
+                    </span>
+                    <div className={dotClass}></div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
