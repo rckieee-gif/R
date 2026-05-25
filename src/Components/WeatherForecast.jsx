@@ -257,16 +257,16 @@ export default function WeatherForecast() {
           <button
             type="button"
             onClick={() => setShowLegend((v) => !v)}
-            className={`h-5 min-w-7 rounded-full px-1.5 flex items-center justify-center text-[10px] font-bold font-inter cursor-pointer transition-all border ${
+            className={`h-6 w-6 rounded-full flex items-center justify-center cursor-pointer transition-all border ${
               showLegend
                 ? 'bg-dashboard-accent text-dashboard-on-accent border-dashboard-accent'
-                : 'bg-transparent text-dashboard-text-secondary border-dashboard-text-secondary/30 hover:border-dashboard-text-secondary/60'
+                : 'bg-transparent text-dashboard-text-secondary border-dashboard-text-secondary/20 hover:border-dashboard-text-secondary/50 hover:bg-white/[0.04]'
             }`}
             title="Weather legend and instructions"
             aria-label="Weather legend and instructions"
             aria-expanded={showLegend}
           >
-            (i)
+            <span className="material-symbols-outlined text-[16px] leading-none">info</span>
           </button>
         </div>
         <button
