@@ -171,7 +171,7 @@ export default function Login({ onLogin, onBack }) {
                     required
                     value={login}
                     onChange={(e) => setLogin(e.target.value)}
-                    className="input-glass block w-full pl-12 pr-4 py-3 bg-app-bg/80 border border-app-border rounded-full text-app-text placeholder-app-text-secondary focus:ring-2 focus:ring-app-accent/30 focus:border-app-accent focus:outline-none transition-all text-sm"
+                    className="input-glass block w-full pl-12 pr-4 py-3 rounded-full text-app-text text-sm"
                     placeholder="Username or Email"
                   />
                 </div>
@@ -190,7 +190,7 @@ export default function Login({ onLogin, onBack }) {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="input-glass block w-full pl-12 pr-4 py-3 bg-app-bg/80 border border-app-border rounded-full text-app-text placeholder-app-text-secondary focus:ring-2 focus:ring-app-accent/30 focus:border-app-accent focus:outline-none transition-all text-sm"
+                    className="input-glass block w-full pl-12 pr-4 py-3 rounded-full text-app-text text-sm"
                     placeholder="Password"
                   />
                 </div>

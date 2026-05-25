@@ -10,7 +10,7 @@ function IntroMetric({ label, value }) {
 function PreviewStat({ label, value, tone = 'text-app-text', suffix = null, isAlert = false }) {
   if (isAlert) {
     return (
-      <div className="bg-app-danger-bg p-4 rounded-lg border border-app-danger/30 relative overflow-hidden">
+      <div className="bg-app-danger-bg/25 backdrop-blur-sm p-4 rounded-lg border border-app-danger/25 relative overflow-hidden hover:bg-app-danger-bg/35 transition-colors duration-200">
         <p className="text-xs font-medium tracking-widest text-app-danger uppercase mb-2 font-jetbrains relative z-10">{label}</p>
         <p className="text-2xl font-semibold font-jetbrains text-app-danger relative z-10">{value}</p>
       </div>
@@ -18,7 +18,7 @@ function PreviewStat({ label, value, tone = 'text-app-text', suffix = null, isAl
   }
 
   return (
-    <div className="bg-app-bg p-4 rounded-lg border border-app-border">
+    <div className="bg-app-bg/40 backdrop-blur-sm p-4 rounded-lg border border-app-border/40 hover:bg-app-bg/60 transition-colors duration-200">
       <p className="text-xs font-medium tracking-widest text-app-text-secondary uppercase mb-2 font-jetbrains">{label}</p>
       <p className={`text-2xl font-semibold font-jetbrains ${tone}`}>
         {value} {suffix && <span className="text-sm font-normal text-app-text-secondary font-inter">{suffix}</span>}
@@ -98,7 +98,7 @@ export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerL
         </section>
 
         <section className="flex-1 flex flex-col justify-center items-center md:items-end w-full mt-10 md:mt-0 perspective-container">
-          <div className="tonal-layer-1 model-3d rounded-xl p-6 w-full max-w-lg relative overflow-hidden group">
+          <div className="glass-card model-3d rounded-xl p-6 w-full max-w-lg relative overflow-hidden group">
             <div className="absolute inset-0 bg-app-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
 
             <div className="flex justify-between items-start mb-6">

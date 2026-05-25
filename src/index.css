@@ -550,15 +550,25 @@ body {
 }
 
 .glass-card {
-  background: color-mix(in srgb, var(--app-card) 88%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid color-mix(in srgb, var(--app-border) 82%, transparent);
+  background: color-mix(in srgb, var(--app-card) 75%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid color-mix(in srgb, var(--app-border) 60%, transparent);
   transform-style: preserve-3d;
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), 
+              box-shadow 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), 
+              border-color 0.3s ease;
   box-shadow: 
-    0 20px 40px color-mix(in srgb, var(--app-text) 18%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--app-card) 80%, transparent);
+    0 20px 50px -10px color-mix(in srgb, var(--app-text) 15%, transparent),
+    inset 0 1.5px 0 color-mix(in srgb, var(--app-card) 40%, transparent);
+}
+
+.glass-card:hover {
+  border-color: color-mix(in srgb, var(--app-accent) 60%, transparent);
+  box-shadow: 
+    0 30px 60px -15px color-mix(in srgb, var(--app-text) 25%, transparent),
+    0 0 25px -5px color-mix(in srgb, var(--app-accent) 25%, transparent),
+    inset 0 1.5px 0 color-mix(in srgb, var(--app-card) 60%, transparent);
 }
 
 .card-content-3d {
@@ -570,12 +580,30 @@ body {
 }
 
 .input-glass {
+  background: color-mix(in srgb, var(--app-bg) 60%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid color-mix(in srgb, var(--app-border) 50%, transparent);
   transform: translateZ(10px);
-  transition: transform 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), 
+              background-color 0.3s ease, 
+              border-color 0.3s ease, 
+              box-shadow 0.3s ease;
+}
+
+.input-glass:hover {
+  border-color: color-mix(in srgb, var(--app-border) 80%, transparent);
+  background: color-mix(in srgb, var(--app-bg) 70%, transparent);
 }
 
 .input-glass:focus {
   transform: translateZ(15px);
+  border-color: var(--app-accent);
+  background: color-mix(in srgb, var(--app-card) 95%, transparent);
+  box-shadow: 
+    0 0 15px -3px color-mix(in srgb, var(--app-accent) 25%, transparent),
+    inset 0 1px 1px rgba(0, 0, 0, 0.05);
+  outline: none;
 }
 
 .btn-login-3d {
