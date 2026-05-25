@@ -4,9 +4,9 @@
 
 /* Here is your beautiful custom brand palette! */
 @theme {
-  --color-primary: #2563EB;
+  --color-primary: #1D4ED8;
   --color-primary-light: #93C5FD;
-  --color-secondary: #B88A1D;
+  --color-secondary: #475569;
   
   --color-neutral-light: #F4F7FB;
   --color-neutral-border: #D8DEE8;
@@ -16,33 +16,33 @@
   --color-semantic-warning: #D97706;
   --color-semantic-info: #0284C7;
 
-  /* Stitch UI Colors */
-  --color-stitch-bg: #0F172A;
-  --color-stitch-primary: #4be277;
-  --color-stitch-on-primary: #003915;
-  --color-stitch-primary-container: #22c55e;
-  --color-stitch-primary-fixed: #6bff8f;
-  --color-stitch-primary-fixed-dim: #4ae176;
-  --color-stitch-secondary: #bec6e0;
-  --color-stitch-secondary-container: #3f465c;
-  --color-stitch-secondary-fixed: #dae2fd;
-  --color-stitch-secondary-fixed-dim: #bec6e0;
-  --color-stitch-on-secondary: #283044;
-  --color-stitch-on-secondary-container: #adb4ce;
-  --color-stitch-surface: #101415;
-  --color-stitch-surface-dim: #101415;
-  --color-stitch-surface-bright: #363a3b;
-  --color-stitch-surface-container: #1d2022;
-  --color-stitch-surface-container-low: #191c1e;
-  --color-stitch-surface-container-high: #272a2c;
-  --color-stitch-surface-container-highest: #323537;
-  --color-stitch-surface-container-lowest: #0b0f10;
-  --color-stitch-on-surface: #e0e3e5;
-  --color-stitch-on-surface-variant: #bccbb9;
-  --color-stitch-outline: #869585;
-  --color-stitch-outline-variant: #3d4a3d;
-  --color-stitch-error: #ffb4ab;
-  --color-stitch-error-container: #93000a;
+  /* Legacy aliases kept for older class names, now tied to the app theme */
+  --color-stitch-bg: var(--app-bg);
+  --color-stitch-primary: var(--app-accent);
+  --color-stitch-on-primary: var(--app-on-accent);
+  --color-stitch-primary-container: var(--app-accent);
+  --color-stitch-primary-fixed: var(--app-accent);
+  --color-stitch-primary-fixed-dim: var(--app-accent);
+  --color-stitch-secondary: var(--app-text-secondary);
+  --color-stitch-secondary-container: var(--app-border);
+  --color-stitch-secondary-fixed: var(--app-text-secondary);
+  --color-stitch-secondary-fixed-dim: var(--app-text-secondary);
+  --color-stitch-on-secondary: var(--app-text);
+  --color-stitch-on-secondary-container: var(--app-text-secondary);
+  --color-stitch-surface: var(--app-card);
+  --color-stitch-surface-dim: var(--app-bg);
+  --color-stitch-surface-bright: var(--app-card);
+  --color-stitch-surface-container: var(--app-card);
+  --color-stitch-surface-container-low: var(--app-bg);
+  --color-stitch-surface-container-high: var(--app-bg);
+  --color-stitch-surface-container-highest: var(--app-card);
+  --color-stitch-surface-container-lowest: var(--app-bg);
+  --color-stitch-on-surface: var(--app-text);
+  --color-stitch-on-surface-variant: var(--app-text-secondary);
+  --color-stitch-outline: var(--app-border);
+  --color-stitch-outline-variant: var(--app-border);
+  --color-stitch-error: var(--app-danger);
+  --color-stitch-error-container: var(--app-danger-bg);
 
   /* Stitch Typography */
   --font-hanken: "Manrope", sans-serif;
@@ -70,6 +70,10 @@
   --color-app-danger-bg: var(--app-danger-bg);
   --color-app-warning: var(--app-warning);
   --color-app-warning-bg: var(--app-warning-bg);
+  --color-app-chart-target: var(--app-chart-target);
+  --color-app-chart-actual: var(--app-chart-actual);
+  --color-app-chart-compare: var(--app-chart-compare);
+  --color-app-chart-expense: var(--app-chart-expense);
 
   /* Backward Compatibility Aliases for Dashboard */
   --color-dashboard-bg: var(--app-bg);
@@ -117,26 +121,25 @@
   }
 }
 
-.tonal-layer-1 {
-  background-color: #1E293B;
-  border: 1px solid #334155;
-}
-
 :root {
   color-scheme: light;
-  --app-bg: #f4f4f5;
+  --app-bg: #f6f7f9;
   --app-card: #ffffff;
-  --app-border: #e4e4e7;
-  --app-text: #09090b;
-  --app-text-secondary: #71717a;
-  --app-accent: #5e6bff;
+  --app-border: #d7dce3;
+  --app-text: #111827;
+  --app-text-secondary: #4b5563;
+  --app-accent: #1d4ed8;
   --app-on-accent: #ffffff;
-  --app-success: #16a34a;
-  --app-success-bg: rgba(22, 163, 74, 0.08);
-  --app-danger: #dc2626;
-  --app-danger-bg: rgba(220, 38, 38, 0.08);
-  --app-warning: #d97706;
-  --app-warning-bg: rgba(217, 119, 6, 0.08);
+  --app-success: #15803d;
+  --app-success-bg: rgba(21, 128, 61, 0.1);
+  --app-danger: #b91c1c;
+  --app-danger-bg: rgba(185, 28, 28, 0.1);
+  --app-warning: #b45309;
+  --app-warning-bg: rgba(180, 83, 9, 0.12);
+  --app-chart-target: #475569;
+  --app-chart-actual: #1d4ed8;
+  --app-chart-compare: #0f766e;
+  --app-chart-expense: #b91c1c;
 
   --dashboard-bg: var(--app-bg);
   --dashboard-card: var(--app-card);
@@ -166,21 +169,30 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--app-accent);
+  outline-offset: 2px;
+}
+
 .dark {
   color-scheme: dark;
-  --app-bg: #070708;
-  --app-card: #101112;
-  --app-border: #1b1c1e;
-  --app-text: #f0f1f2;
-  --app-text-secondary: #9a9da3;
-  --app-accent: #5e6bff;
-  --app-on-accent: #ffffff;
-  --app-success: #4ade80;
-  --app-success-bg: rgba(74, 222, 128, 0.12);
-  --app-danger: #f87171;
-  --app-danger-bg: rgba(248, 113, 113, 0.12);
-  --app-warning: #fbbf24;
-  --app-warning-bg: rgba(251, 191, 36, 0.12);
+  --app-bg: #0b1020;
+  --app-card: #111827;
+  --app-border: #2b3445;
+  --app-text: #f8fafc;
+  --app-text-secondary: #cbd5e1;
+  --app-accent: #93c5fd;
+  --app-on-accent: #0b1020;
+  --app-success: #86efac;
+  --app-success-bg: rgba(134, 239, 172, 0.14);
+  --app-danger: #fca5a5;
+  --app-danger-bg: rgba(252, 165, 165, 0.14);
+  --app-warning: #fde68a;
+  --app-warning-bg: rgba(253, 230, 138, 0.14);
+  --app-chart-target: #cbd5e1;
+  --app-chart-actual: #93c5fd;
+  --app-chart-compare: #5eead4;
+  --app-chart-expense: #fca5a5;
 
   --dashboard-bg: var(--app-bg);
   --dashboard-card: var(--app-card);
@@ -195,6 +207,11 @@ body {
   --dashboard-danger-bg: var(--app-danger-bg);
   --dashboard-warning: var(--app-warning);
   --dashboard-warning-bg: var(--app-warning-bg);
+}
+
+.tonal-layer-1 {
+  background-color: var(--app-card);
+  border: 1px solid var(--app-border);
 }
 
 .app-page {
@@ -457,12 +474,12 @@ body {
 /* Hover gravity defiance - subtle lift for surfaces, while controls stay anchored. */
 @media (hover: hover) and (pointer: fine) {
   .antigravity-active .hover-float,
-  .antigravity-active :where(.bg-white, .bg-slate-900, .bg-gray-800, .bg-app-card):not(.no-float):not(button):not(a):not(input):not(select):not(textarea):not(label) {
+  .antigravity-active :where(.bg-white, .bg-app-card):not(.no-float):not(button):not(a):not(input):not(select):not(textarea):not(label) {
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
   }
 
   .antigravity-active .hover-float:hover,
-  .antigravity-active :where(.bg-white, .bg-slate-900, .bg-gray-800, .bg-app-card):not(.no-float):not(button):not(a):not(input):not(select):not(textarea):not(label):hover {
+  .antigravity-active :where(.bg-white, .bg-app-card):not(.no-float):not(button):not(a):not(input):not(select):not(textarea):not(label):hover {
     transform: translateY(-4px) !important;
     box-shadow: 0 12px 24px -10px rgba(59, 130, 246, 0.2) !important;
     z-index: 5;
@@ -512,7 +529,7 @@ body {
 .ag-particle {
   position: absolute;
   bottom: -20px;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, rgba(59, 130, 246, 0) 70%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--app-accent) 18%, transparent) 0%, transparent 70%);
   border-radius: 50%;
   animation: particle-drift 22s linear infinite;
 }
@@ -527,22 +544,21 @@ body {
    ========================================== */
 
 .login-app-bg {
-  background: linear-gradient(to bottom, #0d3261, #041021);
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--app-accent) 18%, transparent), transparent 42%),
+    linear-gradient(to bottom, var(--app-bg), color-mix(in srgb, var(--app-bg) 84%, var(--app-card)));
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: color-mix(in srgb, var(--app-card) 88%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-right-color: rgba(255, 255, 255, 0.1);
-  border-bottom-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid color-mix(in srgb, var(--app-border) 82%, transparent);
   transform-style: preserve-3d;
   transition: transform 0.1s ease, box-shadow 0.1s ease;
   box-shadow: 
-    0 20px 40px rgba(0,0,0,0.4),
-    inset 0 1px 0 rgba(255,255,255,0.2),
-    inset 0 -1px 0 rgba(0,0,0,0.2);
+    0 20px 40px color-mix(in srgb, var(--app-text) 18%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--app-card) 80%, transparent);
 }
 
 .card-content-3d {
@@ -550,7 +566,7 @@ body {
 }
 
 .input-glass::placeholder {
-  color: rgba(255, 255, 255, 0.6);
+  color: color-mix(in srgb, var(--app-text-secondary) 82%, transparent);
 }
 
 .input-glass {
@@ -563,21 +579,25 @@ body {
 }
 
 .btn-login-3d {
-  background: linear-gradient(to bottom, #f9c324, #d6a110);
-  box-shadow: 0 6px 0 #b3850b, 0 10px 15px rgba(0,0,0,0.3);
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--app-accent) 88%, white), var(--app-accent));
+  box-shadow:
+    0 6px 0 color-mix(in srgb, var(--app-accent) 72%, black),
+    0 10px 15px color-mix(in srgb, var(--app-text) 20%, transparent);
   transition: all 0.15s ease-in-out;
   transform: translateZ(20px);
 }
 
 .btn-login-3d:hover {
-  background: linear-gradient(to bottom, #fad04b, #e0af20);
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--app-accent) 78%, white), var(--app-accent));
   transform: translateZ(20px) translateY(2px);
-  box-shadow: 0 4px 0 #b3850b, 0 8px 10px rgba(0,0,0,0.3);
+  box-shadow:
+    0 4px 0 color-mix(in srgb, var(--app-accent) 72%, black),
+    0 8px 10px color-mix(in srgb, var(--app-text) 20%, transparent);
 }
 
 .btn-login-3d:active {
   transform: translateZ(20px) translateY(6px);
-  box-shadow: 0 0px 0 #b3850b, 0 2px 5px rgba(0,0,0,0.3);
+  box-shadow: 0 0px 0 color-mix(in srgb, var(--app-accent) 72%, black), 0 2px 5px color-mix(in srgb, var(--app-text) 20%, transparent);
 }
 
 .back-btn-3d {

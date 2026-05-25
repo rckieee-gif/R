@@ -325,8 +325,8 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
                   formatter={(value, name) => [`${formatNumber(value, 2)} bags`, name]}
                 />
                 <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} className="text-app-text-secondary" />
-                <Line type="monotone" dataKey="targetBags" name="Target" stroke="#a855f7" strokeWidth={3} dot={false} />
-                <Line type="monotone" dataKey="actualBags" name="Actual" stroke="var(--app-accent)" strokeWidth={3} dot={{ r: 3, fill: 'var(--app-accent)', strokeWidth: 0 }} />
+                <Line type="monotone" dataKey="targetBags" name="Target" stroke="var(--app-chart-target)" strokeWidth={3} dot={false} />
+                <Line type="monotone" dataKey="actualBags" name="Actual" stroke="var(--app-chart-actual)" strokeWidth={3} dot={{ r: 3, fill: 'var(--app-chart-actual)', strokeWidth: 0 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -364,8 +364,8 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
                   formatter={(value, name) => [formatNumber(value, 2), name]}
                 />
                 <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} className="text-app-text-secondary" />
-                <Line type="monotone" dataKey="targetFcr" name="Target FCR" stroke="#a855f7" strokeWidth={3} dot={false} />
-                <Line type="monotone" dataKey="actualFcr" name="Actual FCR" stroke="#ec4899" strokeWidth={3} dot={{ r: 4, fill: '#ec4899', strokeWidth: 0 }} connectNulls={false} />
+                <Line type="monotone" dataKey="targetFcr" name="Target FCR" stroke="var(--app-chart-target)" strokeWidth={3} dot={false} />
+                <Line type="monotone" dataKey="actualFcr" name="Actual FCR" stroke="var(--app-chart-compare)" strokeWidth={3} dot={{ r: 4, fill: 'var(--app-chart-compare)', strokeWidth: 0 }} connectNulls={false} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -420,8 +420,8 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
                   formatter={(value, name) => [`${formatNumber(value, 2)} bags`, name]}
                 />
                 <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} className="text-app-text-secondary" />
-                <Line type="monotone" dataKey="targetBags" name="Target" stroke="#a855f7" strokeWidth={3} dot={false} />
-                <Line type="monotone" dataKey="actualBags" name="Actual" stroke="var(--app-accent)" strokeWidth={3} dot={{ r: 3, fill: 'var(--app-accent)', strokeWidth: 0 }} />
+                <Line type="monotone" dataKey="targetBags" name="Target" stroke="var(--app-chart-target)" strokeWidth={3} dot={false} />
+                <Line type="monotone" dataKey="actualBags" name="Actual" stroke="var(--app-chart-actual)" strokeWidth={3} dot={{ r: 3, fill: 'var(--app-chart-actual)', strokeWidth: 0 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -457,7 +457,7 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
                 />
                 <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} className="text-app-text-secondary" />
                 <Bar dataKey="income" name="Income" fill="var(--app-success)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expense" name="Expense" fill="#ec4899" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expense" name="Expense" fill="var(--app-chart-expense)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (

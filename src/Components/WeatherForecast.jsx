@@ -7,24 +7,24 @@ const CACHE_KEY = 'weather_forecast_cache';
 const CACHE_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
 const WMO_CODES = {
-  0: { label: 'Clear sky', icon: 'clear_day', tone: 'text-yellow-400' },
-  1: { label: 'Mainly clear', icon: 'partly_cloudy_day', tone: 'text-yellow-300' },
-  2: { label: 'Partly cloudy', icon: 'partly_cloudy_day', tone: 'text-slate-300' },
-  3: { label: 'Overcast', icon: 'cloud', tone: 'text-slate-400' },
-  45: { label: 'Fog', icon: 'foggy', tone: 'text-slate-400' },
-  48: { label: 'Rime fog', icon: 'foggy', tone: 'text-slate-400' },
-  51: { label: 'Light drizzle', icon: 'rainy_light', tone: 'text-blue-300' },
-  53: { label: 'Drizzle', icon: 'rainy_light', tone: 'text-blue-400' },
-  55: { label: 'Dense drizzle', icon: 'rainy', tone: 'text-blue-400' },
-  61: { label: 'Slight rain', icon: 'rainy_light', tone: 'text-blue-300' },
-  63: { label: 'Moderate rain', icon: 'rainy', tone: 'text-blue-400' },
-  65: { label: 'Heavy rain', icon: 'rainy_heavy', tone: 'text-blue-500' },
-  80: { label: 'Light showers', icon: 'rainy_light', tone: 'text-blue-300' },
-  81: { label: 'Showers', icon: 'rainy', tone: 'text-blue-400' },
-  82: { label: 'Heavy showers', icon: 'rainy_heavy', tone: 'text-blue-500' },
-  95: { label: 'Thunderstorm', icon: 'thunderstorm', tone: 'text-purple-400' },
-  96: { label: 'T-storm + hail', icon: 'thunderstorm', tone: 'text-purple-500' },
-  99: { label: 'Severe storm', icon: 'thunderstorm', tone: 'text-purple-500' },
+  0: { label: 'Clear sky', icon: 'clear_day', tone: 'text-dashboard-warning' },
+  1: { label: 'Mainly clear', icon: 'partly_cloudy_day', tone: 'text-dashboard-warning' },
+  2: { label: 'Partly cloudy', icon: 'partly_cloudy_day', tone: 'text-dashboard-text-secondary' },
+  3: { label: 'Overcast', icon: 'cloud', tone: 'text-dashboard-text-secondary' },
+  45: { label: 'Fog', icon: 'foggy', tone: 'text-dashboard-text-secondary' },
+  48: { label: 'Rime fog', icon: 'foggy', tone: 'text-dashboard-text-secondary' },
+  51: { label: 'Light drizzle', icon: 'rainy_light', tone: 'text-dashboard-accent' },
+  53: { label: 'Drizzle', icon: 'rainy_light', tone: 'text-dashboard-accent' },
+  55: { label: 'Dense drizzle', icon: 'rainy', tone: 'text-dashboard-accent' },
+  61: { label: 'Slight rain', icon: 'rainy_light', tone: 'text-dashboard-accent' },
+  63: { label: 'Moderate rain', icon: 'rainy', tone: 'text-dashboard-accent' },
+  65: { label: 'Heavy rain', icon: 'rainy_heavy', tone: 'text-dashboard-accent' },
+  80: { label: 'Light showers', icon: 'rainy_light', tone: 'text-dashboard-accent' },
+  81: { label: 'Showers', icon: 'rainy', tone: 'text-dashboard-accent' },
+  82: { label: 'Heavy showers', icon: 'rainy_heavy', tone: 'text-dashboard-accent' },
+  95: { label: 'Thunderstorm', icon: 'thunderstorm', tone: 'text-dashboard-danger' },
+  96: { label: 'T-storm + hail', icon: 'thunderstorm', tone: 'text-dashboard-danger' },
+  99: { label: 'Severe storm', icon: 'thunderstorm', tone: 'text-dashboard-danger' },
 };
 
 /* De-duplicated legend entries grouped by category */
@@ -32,37 +32,37 @@ const LEGEND_GROUPS = [
   {
     title: 'Clear / Cloudy',
     items: [
-      { icon: 'clear_day', tone: 'text-yellow-400', label: 'Clear sky' },
-      { icon: 'partly_cloudy_day', tone: 'text-yellow-300', label: 'Mainly clear / Partly cloudy' },
-      { icon: 'cloud', tone: 'text-slate-400', label: 'Overcast' },
-      { icon: 'foggy', tone: 'text-slate-400', label: 'Fog' },
+      { icon: 'clear_day', tone: 'text-dashboard-warning', label: 'Clear sky' },
+      { icon: 'partly_cloudy_day', tone: 'text-dashboard-warning', label: 'Mainly clear / Partly cloudy' },
+      { icon: 'cloud', tone: 'text-dashboard-text-secondary', label: 'Overcast' },
+      { icon: 'foggy', tone: 'text-dashboard-text-secondary', label: 'Fog' },
     ],
   },
   {
     title: 'Rain / Drizzle',
     items: [
-      { icon: 'rainy_light', tone: 'text-blue-300', label: 'Light drizzle / rain' },
-      { icon: 'rainy', tone: 'text-blue-400', label: 'Moderate rain / showers' },
-      { icon: 'rainy_heavy', tone: 'text-blue-500', label: 'Heavy rain / showers' },
+      { icon: 'rainy_light', tone: 'text-dashboard-accent', label: 'Light drizzle / rain' },
+      { icon: 'rainy', tone: 'text-dashboard-accent', label: 'Moderate rain / showers' },
+      { icon: 'rainy_heavy', tone: 'text-dashboard-accent', label: 'Heavy rain / showers' },
     ],
   },
   {
     title: 'Storms',
     items: [
-      { icon: 'thunderstorm', tone: 'text-purple-400', label: 'Thunderstorm' },
-      { icon: 'thunderstorm', tone: 'text-purple-500', label: 'Severe storm / hail' },
+      { icon: 'thunderstorm', tone: 'text-dashboard-danger', label: 'Thunderstorm' },
+      { icon: 'thunderstorm', tone: 'text-dashboard-danger', label: 'Severe storm / hail' },
     ],
   },
 ];
 
 const FORECAST_INSTRUCTIONS = [
   'Use the large card for today: high / low temperature, rainfall, humidity, and max wind.',
-  'Use the blue bar in each upcoming day row as a quick rain-volume indicator.',
+  'Use the accent bar in each upcoming day row as a quick rain-volume indicator.',
   'Tap Refresh to clear the cache and pull the latest Open-Meteo forecast.'
 ];
 
 function getWeatherInfo(code) {
-  return WMO_CODES[code] || { label: 'Unknown', icon: 'help', tone: 'text-slate-400' };
+  return WMO_CODES[code] || { label: 'Unknown', icon: 'help', tone: 'text-dashboard-text-secondary' };
 }
 
 function formatDayShort(dateStr) {
@@ -136,14 +136,14 @@ function ForecastRow({ day }) {
       <div className="flex-1 mx-1">
         <div className="h-1 rounded-full bg-white/[0.06] overflow-hidden">
           <div
-            className="h-full rounded-full bg-blue-400/60 transition-all duration-500"
+            className="h-full rounded-full bg-dashboard-accent/70 transition-all duration-500"
             style={{ width: `${Math.min((day.precipitation / 30) * 100, 100)}%` }}
           />
         </div>
       </div>
 
       {/* Precipitation value */}
-      <span className="text-[10px] font-bold font-jetbrains text-blue-400/80 w-11 text-right shrink-0">
+      <span className="text-[10px] font-bold font-jetbrains text-dashboard-accent w-11 text-right shrink-0">
         {day.precipitation.toFixed(1)}<span className="text-[8px] font-normal ml-0.5">mm</span>
       </span>
 
@@ -372,9 +372,9 @@ export default function WeatherForecast() {
 
           {/* Stats chips */}
           <div className="relative z-10 flex flex-wrap gap-2">
-            <StatChip icon="water_drop" value={today.precipitation.toFixed(1)} unit="mm" iconColor="text-blue-400" />
-            <StatChip icon="humidity_percentage" value={today.humidity} unit="%" iconColor="text-teal-400" />
-            <StatChip icon="air" value={today.windSpeed.toFixed(0)} unit="km/h" iconColor="text-slate-400" />
+            <StatChip icon="water_drop" value={today.precipitation.toFixed(1)} unit="mm" iconColor="text-dashboard-accent" />
+            <StatChip icon="humidity_percentage" value={today.humidity} unit="%" iconColor="text-dashboard-success" />
+            <StatChip icon="air" value={today.windSpeed.toFixed(0)} unit="km/h" iconColor="text-dashboard-text-secondary" />
           </div>
         </div>
 

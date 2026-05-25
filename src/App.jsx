@@ -633,12 +633,12 @@ function App() {
 
               <button 
                 onClick={handleLogout} 
-                className={`w-full group flex items-center transition-all duration-300 rounded border-l-[3px] border-r-[3px] py-2 text-app-text-secondary hover:bg-red-500/10 hover:text-red-500 border-l-transparent border-r-transparent ${
+                className={`w-full group flex items-center transition-all duration-300 rounded border-l-[3px] border-r-[3px] py-2 text-app-text-secondary hover:bg-app-danger-bg hover:text-app-danger border-l-transparent border-r-transparent ${
                   isNavMinimized ? 'px-5 gap-0' : 'px-3.5 gap-3'
                 }`}
                 title={isPublicViewer ? "Exit Preview" : "Logout"}
               >
-                <span className="material-symbols-outlined text-[18px] shrink-0 text-app-text-secondary group-hover:text-red-500 transition-colors">
+                <span className="material-symbols-outlined text-[18px] shrink-0 text-app-text-secondary group-hover:text-app-danger transition-colors">
                   logout
                 </span>
                 <span className={`transition-all duration-300 text-[10px] font-bold tracking-wider uppercase truncate ${
@@ -729,7 +729,7 @@ function App() {
 
           {/* Batch list error overlay */}
           {!isPublicViewer && batchListError && (
-            <div className="no-print mx-4 mt-4 mb-2 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+            <div className="no-print mx-4 mt-4 mb-2 rounded border border-app-warning/30 bg-app-warning-bg px-4 py-3 text-sm font-semibold text-app-warning">
               {batchListError}
             </div>
           )}

@@ -85,7 +85,7 @@ function ActionButton({ label, detail, onClick, primary = false }) {
       className={`p-4 rounded-xl border text-left shadow-sm active:scale-[0.98] transition-all flex flex-col justify-between min-h-[95px] cursor-pointer ${
         primary
           ? 'bg-dashboard-accent text-dashboard-on-accent border-dashboard-accent hover:opacity-90'
-          : 'bg-dashboard-card hover:bg-slate-100 dark:hover:bg-stitch-surface-container-high text-dashboard-text border-dashboard-border'
+          : 'bg-dashboard-card hover:bg-dashboard-bg text-dashboard-text border-dashboard-border'
       }`}
     >
       <div>
@@ -376,7 +376,7 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
                   : 'bg-dashboard-success shadow-[0_0_8px_var(--dashboard-success)]';
                 
                 return (
-                  <li key={log.id} className="p-4 hover:bg-slate-100 dark:hover:bg-stitch-surface-container-high transition-colors flex items-center justify-between gap-4">
+                  <li key={log.id} className="p-4 hover:bg-dashboard-bg transition-colors flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4 min-w-0">
                       <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotClass}`}></div>
                       <div className="min-w-0">

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { BAG_WEIGHT_KG, getAgeDay } from '../broilerTargets';
 import { API_BASE } from '../api';
 
-const quickActionClass = "text-[10px] font-black py-1.5 px-2.5 rounded-full bg-white/90 dark:bg-[#202a22] text-[#263128] dark:text-[#eef5df] border border-[#d8dfca] dark:border-[#40513f] hover:bg-[#f6edc7] dark:hover:bg-[#2c392c] active:scale-95 transition-all cursor-pointer flex items-center space-x-1 shadow-sm";
+const quickActionClass = "text-[10px] font-black py-1.5 px-2.5 rounded-full bg-app-card text-app-text border border-app-border hover:bg-app-bg hover:text-app-accent active:scale-95 transition-all cursor-pointer flex items-center space-x-1 shadow-sm";
 
 function createParticles() {
   return Array.from({ length: 8 }).map((_, i) => ({
@@ -528,7 +528,7 @@ export default function AntigravityAssistant({
       <div className="no-print fixed bottom-6 right-6 z-50">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`h-14 w-14 rounded-full bg-gradient-to-br from-[#2f7d32] via-[#6f8f3a] to-[#d9a441] hover:from-[#3d8b3f] hover:to-[#efb84d] text-white shadow-[0_10px_28px_rgba(47,125,50,0.38)] flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 border-2 border-[#fff4c7]/70 cursor-pointer ${
+          className={`h-14 w-14 rounded-full bg-app-accent text-app-on-accent shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 border-2 border-app-card cursor-pointer ${
             isOpen ? 'rotate-90' : 'animate-bounce'
           }`}
           title="Toggle FlockOps Assistant"
@@ -547,25 +547,25 @@ export default function AntigravityAssistant({
         </button>
         {!isOpen && (
           <span className="absolute -top-1 -right-1 flex h-4 w-4">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f6c453] opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-[#f6c453] text-[8px] font-black text-[#263128] justify-center items-center">FO</span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-app-warning opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-app-warning text-[8px] font-black text-app-bg justify-center items-center">FO</span>
           </span>
         )}
       </div>
 
       {isOpen && (
-        <div className="no-print fixed bottom-24 right-6 z-50 w-[92vw] sm:w-[420px] h-[520px] rounded-2xl shadow-[0_20px_50px_rgba(22,36,22,0.35)] flex flex-col overflow-hidden transition-all duration-300 animate-[fadeIn_0.2s_ease-out] border border-[#d8dfca] dark:border-[#3d4a3d] bg-[#fbfaf1]/95 dark:bg-[#121712]/95 backdrop-blur-xl">
-          <div className="absolute inset-0 pointer-events-none opacity-50 bg-[linear-gradient(rgba(47,125,50,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(47,125,50,0.08)_1px,transparent_1px)] bg-[size:28px_28px]" aria-hidden="true" />
-          <div className="relative bg-gradient-to-r from-[#2f5f37] via-[#547b3c] to-[#d9a441] text-white p-4 flex items-center justify-between border-b border-[#fff4c7]/30">
+        <div className="no-print fixed bottom-24 right-6 z-50 w-[92vw] sm:w-[420px] h-[520px] rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 animate-[fadeIn_0.2s_ease-out] border border-app-border bg-app-card/95 backdrop-blur-xl">
+          <div className="absolute inset-0 pointer-events-none opacity-30 bg-app-accent/5" aria-hidden="true" />
+          <div className="relative bg-app-accent text-app-on-accent p-4 flex items-center justify-between border-b border-app-border">
             <div className="flex items-center space-x-3">
-              <div className="h-9 w-9 rounded-full bg-[#fff4c7]/20 border border-[#fff4c7]/60 flex items-center justify-center">
+              <div className="h-9 w-9 rounded-full bg-app-on-accent/15 border border-app-on-accent/30 flex items-center justify-center">
                 <span className="material-symbols-outlined text-[22px]" aria-hidden="true">agriculture</span>
               </div>
               <div>
                 <h3 className="text-sm font-black tracking-wider uppercase">FlockOps Assistant</h3>
                 <div className="flex items-center space-x-1.5 mt-0.5">
-                  <span className="h-2 w-2 rounded-full bg-[#9cff88]"></span>
-                  <span className="text-[10px] text-[#fff8dc] font-semibold uppercase">Ops Online</span>
+                  <span className="h-2 w-2 rounded-full bg-app-success"></span>
+                  <span className="text-[10px] text-app-on-accent/80 font-semibold uppercase">Ops Online</span>
                 </div>
               </div>
             </div>
@@ -573,21 +573,21 @@ export default function AntigravityAssistant({
             <button
               type="button"
               onClick={handleGravityStatus}
-              className="flex items-center space-x-2 bg-[#263128]/40 py-1 px-2.5 rounded-full border border-white/15 active:scale-95 transition cursor-pointer"
+              className="flex items-center space-x-2 bg-app-on-accent/10 py-1 px-2.5 rounded-full border border-app-on-accent/20 active:scale-95 transition cursor-pointer"
             >
               <span
                 className={`h-2 w-2 rounded-full ${
-                  isZeroGravity ? 'bg-[#9ee7ff] shadow-[0_0_10px_rgba(158,231,255,0.8)]' : 'bg-[#f6c453]'
+                  isZeroGravity ? 'bg-app-success shadow-[0_0_10px_var(--app-success)]' : 'bg-app-warning'
                 }`}
                 aria-hidden="true"
               />
-              <span className="text-[9px] font-black uppercase text-[#fff8dc]">
+              <span className="text-[9px] font-black uppercase text-app-on-accent/85">
                 {isZeroGravity ? 'Zero-G Farm Mode' : 'Farm Mode'}
               </span>
             </button>
           </div>
 
-          <div className="relative flex-1 overflow-y-auto p-4 space-y-4 ag-scrollbar bg-[#fffdf4]/70 dark:bg-[#101510]/70">
+          <div className="relative flex-1 overflow-y-auto p-4 space-y-4 ag-scrollbar bg-app-bg/70">
             {messages.map((m) => {
               const messageText = m.id === 'welcome' ? welcomeText : m.text;
 
@@ -601,8 +601,8 @@ export default function AntigravityAssistant({
                   <div
                     className={`p-3 rounded-2xl text-xs leading-relaxed ${
                       m.sender === 'user'
-                        ? 'bg-[#2f7d32] text-white rounded-br-none shadow-sm'
-                        : 'bg-white/95 dark:bg-[#182018]/95 text-[#263128] dark:text-[#eef5df] rounded-bl-none shadow-md border border-[#d8dfca] dark:border-[#344233]'
+                        ? 'bg-app-accent text-app-on-accent rounded-br-none shadow-sm'
+                        : 'bg-app-card text-app-text rounded-bl-none shadow-md border border-app-border'
                     }`}
                   >
                     {messageText.split('\n').map((line, idx) => {
@@ -610,28 +610,28 @@ export default function AntigravityAssistant({
                       return (
                         <p key={idx} className={idx > 0 ? "mt-1.5" : ""}>
                           {parts.map((part, pIdx) =>
-                            pIdx % 2 === 1 ? <strong key={pIdx} className="font-extrabold text-[#2f7d32] dark:text-[#9cff88]">{part}</strong> : part
+                            pIdx % 2 === 1 ? <strong key={pIdx} className={`font-extrabold ${m.sender === 'user' ? 'text-app-on-accent' : 'text-app-accent'}`}>{part}</strong> : part
                           )}
                         </p>
                       );
                     })}
                   </div>
-                  <span className="text-[9px] text-[#687063] dark:text-[#aab7a2] font-bold mt-1 px-1">{m.timestamp}</span>
+                  <span className="text-[9px] text-app-text-secondary font-bold mt-1 px-1">{m.timestamp}</span>
                 </div>
               );
             })}
 
             {isTyping && (
-              <div className="flex items-center space-x-1 bg-white/90 dark:bg-[#182018]/90 p-2.5 rounded-2xl rounded-bl-none max-w-[60px] shadow-sm border border-[#d8dfca] dark:border-[#344233]">
-                <span className="h-1.5 w-1.5 bg-[#6f8f3a] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                <span className="h-1.5 w-1.5 bg-[#6f8f3a] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                <span className="h-1.5 w-1.5 bg-[#6f8f3a] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+              <div className="flex items-center space-x-1 bg-app-card p-2.5 rounded-2xl rounded-bl-none max-w-[60px] shadow-sm border border-app-border">
+                <span className="h-1.5 w-1.5 bg-app-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                <span className="h-1.5 w-1.5 bg-app-accent rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                <span className="h-1.5 w-1.5 bg-app-accent rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
               </div>
             )}
             <div ref={chatEndRef} />
           </div>
 
-          <div className="relative p-2 border-t border-[#d8dfca] dark:border-[#344233] bg-[#f3eddc]/85 dark:bg-[#151c15]/90 flex space-x-1.5 overflow-x-auto whitespace-nowrap ag-scrollbar">
+          <div className="relative p-2 border-t border-app-border bg-app-bg/85 flex space-x-1.5 overflow-x-auto whitespace-nowrap ag-scrollbar">
             {quickActions.map((action) => (
               <button
                 key={action.key}
@@ -645,18 +645,18 @@ export default function AntigravityAssistant({
             ))}
           </div>
 
-          <form onSubmit={handleSendMessage} className="relative p-3 border-t border-[#d8dfca] dark:border-[#344233] bg-white/95 dark:bg-[#182018]/95 flex items-center space-x-2">
+          <form onSubmit={handleSendMessage} className="relative p-3 border-t border-app-border bg-app-card/95 flex items-center space-x-2">
             <input
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Ask FlockOps..."
-              className="flex-1 bg-[#f7f4e8] dark:bg-[#101510] text-xs py-2 px-3 rounded-xl border border-[#d8dfca] dark:border-[#40513f] focus:outline-none focus:border-[#2f7d32] text-[#263128] dark:text-[#eef5df]"
+              className="flex-1 bg-app-bg text-xs py-2 px-3 rounded-xl border border-app-border focus:outline-none focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 text-app-text placeholder-app-text-secondary"
             />
             <button
               type="submit"
               disabled={!inputValue.trim() || isTyping}
-              className="h-8 w-8 rounded-xl bg-[#2f7d32] text-white flex items-center justify-center shadow-md active:scale-95 disabled:opacity-40 disabled:scale-100 transition-all cursor-pointer"
+              className="h-8 w-8 rounded-xl bg-app-accent text-app-on-accent flex items-center justify-center shadow-md active:scale-95 disabled:opacity-40 disabled:scale-100 transition-all cursor-pointer"
               aria-label="Send message"
             >
               <span className="material-symbols-outlined text-lg" aria-hidden="true">arrow_forward</span>

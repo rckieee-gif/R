@@ -95,7 +95,7 @@ export default function Login({ onLogin, onBack }) {
       onMouseLeave={handleMouseLeave}
       onTouchMove={handleMouseMove}
       onTouchEnd={handleMouseLeave}
-      className="login-app-bg text-white font-sans min-h-screen flex flex-col items-center justify-center p-4 antialiased selection:bg-brand selection:text-surface"
+      className="login-app-bg text-app-text font-sans min-h-screen flex flex-col items-center justify-center p-4 antialiased selection:bg-app-accent selection:text-app-on-accent"
     >
       <main className="w-full max-w-[400px] flex flex-col relative overflow-hidden perspective-container py-8">
         
@@ -106,7 +106,7 @@ export default function Login({ onLogin, onBack }) {
               type="button"
               onClick={onBack}
               aria-label="Go back" 
-              className="flex items-center transition-colors btn-login-3d back-btn-3d py-2 rounded-full inline-flex justify-center transition-all duration-150 active:scale-95 text-gray-900 font-bold px-4 text-sm"
+              className="flex items-center btn-login-3d back-btn-3d py-2 rounded-full justify-center transition-all duration-150 active:scale-95 text-app-on-accent font-bold px-4 text-sm"
             >
               <svg className="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round"></path>
@@ -139,17 +139,17 @@ export default function Login({ onLogin, onBack }) {
                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuABNsQ960Pmrnk68ERL8H1V7nTNgR3VcAhTQXfjz54-FzDhXtDujsFIH0JzNSozB1jq8KcKbnBMU0gkAWJTk9GX9myEeB1tWAyvtANgNNFQ66WQ31VJbRwGVC8BY0mhR-bRO0HPeLoB8xtdcQ1nOIzlL20AQ01eQQe5-PICHUimZgBgPMPZESXFLDMNCpO0Bv7p9mVW78U-HcnNZyRrppjA3inwLIZGJI2_o6DNMav2H25TGm0xApDdSwy_jmRqO97c9Q8yvn7ketUJ"
                   />
                 </div>
-                <h1 className="text-3xl font-extrabold tracking-tight leading-none mb-1 text-white drop-shadow-md font-hanken">
+                <h1 className="text-3xl font-extrabold tracking-tight leading-none mb-1 text-app-text font-hanken">
                   Octavio Poultry
                 </h1>
-                <h2 className="text-[10px] font-bold tracking-widest text-white/70 uppercase mt-1 font-jetbrains">
+                <h2 className="text-[10px] font-bold tracking-widest text-app-text-secondary uppercase mt-1 font-jetbrains">
                   Farm Management
                 </h2>
               </div>
 
               {/* Error Alert */}
               {error && (
-                <div className="w-full bg-red-900/60 border border-red-500/40 text-red-200 px-4 py-3 rounded-full text-xs font-semibold text-center mb-5 backdrop-blur-md">
+                <div className="w-full bg-app-danger-bg border border-app-danger/40 text-app-danger px-4 py-3 rounded-full text-xs font-semibold text-center mb-5 backdrop-blur-md">
                   {error}
                 </div>
               )}
@@ -159,7 +159,7 @@ export default function Login({ onLogin, onBack }) {
                 
                 {/* Username Input */}
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/50">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-app-text-secondary">
                     <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                       <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"></path>
                     </svg>
@@ -171,14 +171,14 @@ export default function Login({ onLogin, onBack }) {
                     required
                     value={login}
                     onChange={(e) => setLogin(e.target.value)}
-                    className="input-glass block w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-full text-white placeholder-white/40 focus:ring-2 focus:ring-[#f9c324] focus:border-[#f9c324] focus:outline-none transition-all text-sm"
+                    className="input-glass block w-full pl-12 pr-4 py-3 bg-app-bg/80 border border-app-border rounded-full text-app-text placeholder-app-text-secondary focus:ring-2 focus:ring-app-accent/30 focus:border-app-accent focus:outline-none transition-all text-sm"
                     placeholder="Username or Email"
                   />
                 </div>
 
                 {/* Password Input */}
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/50">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-app-text-secondary">
                     <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                       <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"></path>
                     </svg>
@@ -190,7 +190,7 @@ export default function Login({ onLogin, onBack }) {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="input-glass block w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-full text-white placeholder-white/40 focus:ring-2 focus:ring-[#f9c324] focus:border-[#f9c324] focus:outline-none transition-all text-sm"
+                    className="input-glass block w-full pl-12 pr-4 py-3 bg-app-bg/80 border border-app-border rounded-full text-app-text placeholder-app-text-secondary focus:ring-2 focus:ring-app-accent/30 focus:border-app-accent focus:outline-none transition-all text-sm"
                     placeholder="Password"
                   />
                 </div>
@@ -198,7 +198,7 @@ export default function Login({ onLogin, onBack }) {
                 {/* Submit Button */}
                 <button 
                   type="submit"
-                  className="mt-2 w-full text-gray-900 font-extrabold py-3.5 px-4 rounded-full text-base tracking-wide btn-login-3d cursor-pointer hover:scale-[1.01] active:scale-[0.98] transition-all"
+                  className="mt-2 w-full text-app-on-accent font-extrabold py-3.5 px-4 rounded-full text-base tracking-wide btn-login-3d cursor-pointer hover:scale-[1.01] active:scale-[0.98] transition-all"
                 >
                   Sign In
                 </button>
