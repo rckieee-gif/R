@@ -19,6 +19,9 @@ import {
   getLastBroilerTargetDay
 } from './broilerTargets';
 
+const CHART_HEIGHT = 256;
+const CHART_INITIAL_DIMENSION = { width: 640, height: CHART_HEIGHT };
+
 function formatMoney(amount) {
   return `PHP ${Number(amount || 0).toLocaleString(undefined, {
     minimumFractionDigits: 2,
@@ -139,6 +142,21 @@ function buildEmployeeFeedCurves(logs, activeBatch) {
       curve: buildFeedCurveForHeads(employee.logs, activeBatch.startDate, employee.handledBirds)
     }))
     .sort((left, right) => left.employeeName.localeCompare(right.employeeName));
+}
+
+function StableChartContainer({ children }) {
+  return (
+    <ResponsiveContainer
+      width="100%"
+      height="100%"
+      minWidth={1}
+      minHeight={CHART_HEIGHT}
+      initialDimension={CHART_INITIAL_DIMENSION}
+      debounce={50}
+    >
+      {children}
+    </ResponsiveContainer>
+  );
 }
 
 export default function Analytics({ transactions = [], logs = [], activeBatch, showFinancials = true }) {
@@ -297,17 +315,17 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
         )}
       </div>
 
-      <div className="screen-only grid gap-6 xl:grid-cols-2">
-      <div className="print-card bg-app-card p-4 rounded-2xl shadow-sm border border-app-border mb-6">
+      <div className="screen-only grid min-w-0 gap-6 xl:grid-cols-2">
+      <div className="print-card min-w-0 bg-app-card p-4 rounded-2xl shadow-sm border border-app-border mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-bold text-app-text font-hanken">Feed Target Curve</h3>
           <span className="text-[10px] font-bold text-app-text-secondary">
             50 kg bags
           </span>
         </div>
-        <div className="h-64 w-full">
+        <div className="h-64 min-h-64 w-full min-w-0">
           {feedCurve.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
+            <StableChartContainer>
               <LineChart data={feedCurve} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-app-border/20" vertical={false} />
                 <XAxis dataKey="dayLabel" tick={{ fontSize: 11, fill: 'currentColor' }} className="text-app-text-secondary" />
@@ -328,7 +346,7 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
                 <Line type="monotone" dataKey="targetBags" name="Target" stroke="var(--app-chart-target)" strokeWidth={3} dot={false} />
                 <Line type="monotone" dataKey="actualBags" name="Actual" stroke="var(--app-chart-actual)" strokeWidth={3} dot={{ r: 3, fill: 'var(--app-chart-actual)', strokeWidth: 0 }} />
               </LineChart>
-            </ResponsiveContainer>
+            </StableChartContainer>
           ) : (
             <div className="h-full flex items-center justify-center text-app-text-secondary text-sm font-medium">
               No active batch target data.
@@ -337,16 +355,16 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
         </div>
       </div>
 
-      <div className="print-card bg-app-card p-4 rounded-2xl shadow-sm border border-app-border mb-6">
+      <div className="print-card min-w-0 bg-app-card p-4 rounded-2xl shadow-sm border border-app-border mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-bold text-app-text font-hanken">Weight and FCR</h3>
           <span className="text-[10px] font-bold text-app-text-secondary">
             {latestWeightPoint ? `Last weigh D${latestWeightPoint.day}` : 'No actual weight'}
           </span>
         </div>
-        <div className="h-64 w-full">
+        <div className="h-64 min-h-64 w-full min-w-0">
           {feedCurve.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
+            <StableChartContainer>
               <LineChart data={feedCurve} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-app-border/20" vertical={false} />
                 <XAxis dataKey="dayLabel" tick={{ fontSize: 11, fill: 'currentColor' }} className="text-app-text-secondary" />
@@ -367,7 +385,7 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
                 <Line type="monotone" dataKey="targetFcr" name="Target FCR" stroke="var(--app-chart-target)" strokeWidth={3} dot={false} />
                 <Line type="monotone" dataKey="actualFcr" name="Actual FCR" stroke="var(--app-chart-compare)" strokeWidth={3} dot={{ r: 4, fill: 'var(--app-chart-compare)', strokeWidth: 0 }} connectNulls={false} />
               </LineChart>
-            </ResponsiveContainer>
+            </StableChartContainer>
           ) : (
             <div className="h-full flex items-center justify-center text-app-text-secondary text-sm font-medium">
               No FCR data to display.
@@ -376,7 +394,7 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
         </div>
       </div>
 
-      <div className="print-card bg-app-card p-4 rounded-2xl shadow-sm border border-app-border mb-6">
+      <div className="print-card min-w-0 bg-app-card p-4 rounded-2xl shadow-sm border border-app-border mb-6">
         <div className="flex items-center justify-between gap-3 mb-4">
           <div>
             <h3 className="text-sm font-bold text-app-text font-hanken">Employee Feed Target</h3>
@@ -400,9 +418,9 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
             ))}
           </select>
         </div>
-        <div className="h-64 w-full">
+        <div className="h-64 min-h-64 w-full min-w-0">
           {selectedEmployeeFeed?.curve.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
+            <StableChartContainer>
               <LineChart data={selectedEmployeeFeed.curve} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-app-border/20" vertical={false} />
                 <XAxis dataKey="dayLabel" tick={{ fontSize: 11, fill: 'currentColor' }} className="text-app-text-secondary" />
@@ -423,7 +441,7 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
                 <Line type="monotone" dataKey="targetBags" name="Target" stroke="var(--app-chart-target)" strokeWidth={3} dot={false} />
                 <Line type="monotone" dataKey="actualBags" name="Actual" stroke="var(--app-chart-actual)" strokeWidth={3} dot={{ r: 3, fill: 'var(--app-chart-actual)', strokeWidth: 0 }} />
               </LineChart>
-            </ResponsiveContainer>
+            </StableChartContainer>
           ) : (
             <div className="h-full flex items-center justify-center text-app-text-secondary text-sm font-medium">
               No employee feed logs yet.
@@ -433,11 +451,11 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
       </div>
 
       {showFinancials && (
-      <div className="print-card bg-app-card p-4 rounded-2xl shadow-sm border border-app-border mb-6">
+      <div className="print-card min-w-0 bg-app-card p-4 rounded-2xl shadow-sm border border-app-border mb-6">
         <h3 className="text-sm font-bold text-app-text font-hanken mb-4">Expense & Revenue Breakdown</h3>
-        <div className="h-64 w-full">
+        <div className="h-64 min-h-64 w-full min-w-0">
           {financialData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
+            <StableChartContainer>
               <BarChart data={financialData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-app-border/20" vertical={false} />
                 <XAxis dataKey="category" tick={{ fontSize: 10, fill: 'currentColor' }} className="text-app-text-secondary" />
@@ -459,7 +477,7 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
                 <Bar dataKey="income" name="Income" fill="var(--app-success)" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="expense" name="Expense" fill="var(--app-chart-expense)" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </StableChartContainer>
           ) : (
             <div className="h-full flex items-center justify-center text-app-text-secondary text-sm font-medium">No ledger data to display.</div>
           )}

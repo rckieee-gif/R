@@ -215,14 +215,14 @@ body {
 }
 
 .app-page {
-  width: min(100% - 1rem, 72rem);
+  width: min(calc(100% - 1rem), 72rem);
   margin-inline: auto;
   padding: 1rem 0 3rem;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .report-page {
-  width: min(100% - 1rem, 80rem);
+  width: min(calc(100% - 1rem), 80rem);
   margin-inline: auto;
   padding: 1rem 0 3rem;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -235,12 +235,12 @@ body {
 @media (min-width: 768px) {
   .app-page,
   .report-page {
-    width: min(100% - 3rem, 72rem);
+    width: min(calc(100% - 3rem), 72rem);
     padding-top: 1.5rem;
   }
 
   .report-page {
-    width: min(100% - 3rem, 80rem);
+    width: min(calc(100% - 3rem), 80rem);
   }
 }
 

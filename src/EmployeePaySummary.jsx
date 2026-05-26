@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { API_BASE } from './api';
 
+const EMPTY_SUMMARY = { totals: {}, rows: [] };
+
 function formatMoney(amount) {
   return `PHP ${Number(amount || 0).toLocaleString(undefined, {
     minimumFractionDigits: 2,
@@ -15,10 +17,20 @@ function formatBirds(amount) {
 }
 
 export default function EmployeePaySummary({ token, activeBatch, transactions = [] }) {
-  const [summary, setSummary] = useState({ totals: {}, rows: [] });
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const activeBatchId = activeBatch?.id ?? null;
+  const [summaryRequest, setSummaryRequest] = useState({
+    batchId: null,
+    data: EMPTY_SUMMARY,
+    error: '',
+    isLoading: false
+  });
   const [expandedIds, setExpandedIds] = useState({});
+
+  const hasActiveSummary = Boolean(token && activeBatchId);
+  const isCurrentSummary = hasActiveSummary && summaryRequest.batchId === activeBatchId;
+  const summary = isCurrentSummary ? summaryRequest.data : EMPTY_SUMMARY;
+  const error = isCurrentSummary ? summaryRequest.error : '';
+  const isLoading = hasActiveSummary && summaryRequest.batchId === activeBatchId && summaryRequest.isLoading;
 
   const toggleExpand = (employeeId) => {
     setExpandedIds((prev) => ({
@@ -42,39 +54,63 @@ export default function EmployeePaySummary({ token, activeBatch, transactions = 
   };
 
   useEffect(() => {
-    if (!token || !activeBatch?.id) {
-      setTimeout(() => {
-        setSummary({ totals: {}, rows: [] });
-      }, 0);
+    if (!token || !activeBatchId) {
       return;
     }
 
+    let isCancelled = false;
+    const requestBatchId = activeBatchId;
+
     const fetchSummary = async () => {
-      setIsLoading(true);
-      setError('');
+      setSummaryRequest((current) => ({
+        batchId: requestBatchId,
+        data: current.batchId === requestBatchId ? current.data : EMPTY_SUMMARY,
+        error: '',
+        isLoading: true
+      }));
 
       try {
-        const response = await fetch(`${API_BASE}/api/batches/${activeBatch.id}/employee-pay-summary`, {
+        const response = await fetch(`${API_BASE}/api/batches/${requestBatchId}/employee-pay-summary`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await response.json();
 
+        if (isCancelled) return;
+
         if (!response.ok) {
-          setError(data.error || 'Failed to load employee pay summary.');
+          setSummaryRequest({
+            batchId: requestBatchId,
+            data: EMPTY_SUMMARY,
+            error: data.error || 'Failed to load employee pay summary.',
+            isLoading: false
+          });
           return;
         }
 
-        setSummary(data);
+        setSummaryRequest({
+          batchId: requestBatchId,
+          data,
+          error: '',
+          isLoading: false
+        });
       } catch (err) {
+        if (isCancelled) return;
         console.error(err);
-        setError('Cannot connect to employee pay summary.');
-      } finally {
-        setIsLoading(false);
+        setSummaryRequest({
+          batchId: requestBatchId,
+          data: EMPTY_SUMMARY,
+          error: 'Cannot connect to employee pay summary.',
+          isLoading: false
+        });
       }
     };
 
     fetchSummary();
-  }, [token, activeBatch?.id]);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [token, activeBatchId]);
 
   const totals = summary.totals || {};
 

@@ -124,6 +124,9 @@ export default function TransactionLedger({ transactions, setTransactions, activ
   const [ledgerCategoryFilter, setLedgerCategoryFilter] = useState('all');
   const [ledgerDateFrom, setLedgerDateFrom] = useState('');
   const [ledgerDateTo, setLedgerDateTo] = useState('');
+  const signedOutLedgerMessage = !token
+    ? 'Please sign in again so the ledger can load dropdown data.'
+    : '';
 
   const fundingNatures = useMemo(
     () => Object.keys(categoriesByFunding),
@@ -154,6 +157,9 @@ export default function TransactionLedger({ transactions, setTransactions, activ
   const isFeedLedgerRecord = category === 'Feed'
     && ['OPEX', 'CAPEX', 'CAPEX-Recoverable'].includes(fundingNature)
     && transactionType === 'Expense';
+  const selectedFeedItemId = isFeedLedgerRecord
+    ? (feedItemId || (feedItems[0]?.id ? String(feedItems[0].id) : ''))
+    : feedItemId;
 
   const ledgerFilterOptions = useMemo(() => ({
     buildings: getUniqueOptions(transactions.map((tx) => tx.building || 'All')),
@@ -241,9 +247,6 @@ export default function TransactionLedger({ transactions, setTransactions, activ
 
   useEffect(() => {
     if (!token) {
-      setTimeout(() => {
-        setError('Please sign in again so the ledger can load dropdown data.');
-      }, 0);
       return;
     }
 
@@ -296,29 +299,8 @@ export default function TransactionLedger({ transactions, setTransactions, activ
       }
     };
 
-    setTimeout(() => {
-      fetchMasterData();
-    }, 0);
+    fetchMasterData();
   }, [token]);
-
-  useEffect(() => {
-    const categories = categoriesByFunding[fundingNature] || [];
-    if (!categories.includes(category)) {
-      const nextCategory = categories[0] || '';
-      setTimeout(() => {
-        setCategory(nextCategory);
-        setTransactionType(suggestTransactionType(fundingNature, nextCategory));
-      }, 0);
-    }
-  }, [fundingNature, categoriesByFunding, category]);
-
-  useEffect(() => {
-    if (isFeedLedgerRecord && !feedItemId && feedItems[0]?.id) {
-      setTimeout(() => {
-        setFeedItemId(String(feedItems[0].id));
-      }, 0);
-    }
-  }, [feedItemId, feedItems, isFeedLedgerRecord]);
 
   const handleFundingChange = (e) => {
     const newNature = e.target.value;
@@ -561,7 +543,7 @@ export default function TransactionLedger({ transactions, setTransactions, activ
       paidTo,
       reference,
       remarks,
-      feedItemId: isFeedLedgerRecord ? feedItemId : null
+      feedItemId: isFeedLedgerRecord ? selectedFeedItemId : null
     };
 
     try {
@@ -614,7 +596,7 @@ export default function TransactionLedger({ transactions, setTransactions, activ
     setTransactionType(tx.type || suggestTransactionType(tx.fundingNature, tx.category));
     setFundingNature(tx.fundingNature);
     setCategory(tx.category);
-    setFeedItemId(tx.feedItemId ? String(tx.feedItemId) : (feedItems[0]?.id ? String(feedItems[0].id) : ''));
+    setFeedItemId(tx.feedItemId ? String(tx.feedItemId) : '');
     setDescription(tx.description);
     setQuantity(tx.quantity == null ? '' : String(tx.quantity));
     setUnitCost(tx.unitCost == null ? '' : String(tx.unitCost));
@@ -680,6 +662,12 @@ export default function TransactionLedger({ transactions, setTransactions, activ
         </div>
       </div>
 
+      {signedOutLedgerMessage && (
+        <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger">
+          {signedOutLedgerMessage}
+        </div>
+      )}
+
       {readOnly && (
         <div className="no-print bg-app-success-bg border border-app-accent rounded-xl p-3 mb-6">
           <p className="text-xs font-black uppercase tracking-wider text-app-accent">Read-only access</p>
@@ -740,7 +728,7 @@ export default function TransactionLedger({ transactions, setTransactions, activ
                 description={description}
                 setDescription={setDescription}
                 isFeedLedgerRecord={isFeedLedgerRecord}
-                feedItemId={feedItemId}
+                feedItemId={selectedFeedItemId}
                 setFeedItemId={setFeedItemId}
                 feedItems={feedItems}
                 quantity={quantity}

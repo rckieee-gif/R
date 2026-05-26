@@ -15,6 +15,7 @@ const emptyForm = {
 };
 
 const CORPO_GROUP_PREFIX = 'employees:';
+const EMPTY_COMPENSATION_STATE = { batchId: null, rows: [], drafts: {} };
 
 function formatMoney(amount) {
   return `PHP ${Number(amount || 0).toLocaleString(undefined, {
@@ -235,14 +236,20 @@ function getCompensationRows(compensations, employees, transactions, compDrafts 
 
 export default function EmployeeManagement({ token, transactions = [], dailyLogs = [], activeBatch, canEditOrDelete = false }) {
   const [employees, setEmployees] = useState([]);
-  const [compensations, setCompensations] = useState([]);
-  const [compDrafts, setCompDrafts] = useState({});
+  const [compensationState, setCompensationState] = useState(EMPTY_COMPENSATION_STATE);
   const [buildings, setBuildings] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const activeBatchId = activeBatch?.id ?? null;
+  const hasActiveCompensations = Boolean(token && activeBatchId);
+  const currentCompensationState = hasActiveCompensations && compensationState.batchId === activeBatchId
+    ? compensationState
+    : EMPTY_COMPENSATION_STATE;
+  const compensations = currentCompensationState.rows;
+  const compDrafts = currentCompensationState.drafts;
   const paySheetEmployees = useMemo(() => employees.filter(isPaySheetEmployee), [employees]);
   const employeeIds = useMemo(() => paySheetEmployees.map((employee) => employee.id), [paySheetEmployees]);
 
@@ -270,117 +277,145 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
     [compensationRows]
   );
 
-  const fetchEmployees = async () => {
-    if (!token) return;
+  const updateActiveCompensationState = (updater) => {
+    if (!activeBatchId) return;
 
-    setIsLoading(true);
-    setError('');
+    setCompensationState((current) => {
+      const base = current.batchId === activeBatchId
+        ? current
+        : { batchId: activeBatchId, rows: [], drafts: {} };
+      const next = updater(base);
 
-    try {
-      const response = await fetch(`${API_BASE}/api/employees`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to load employees.');
-        return;
-      }
-
-      setEmployees(data.filter(isPaySheetEmployee));
-    } catch (err) {
-      console.error(err);
-      setError('Cannot connect to the employee sheet.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchCompensations = async () => {
-    if (!token || !activeBatch?.id) {
-      setCompensations([]);
-      setCompDrafts({});
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_BASE}/api/batches/${activeBatch.id}/employee-compensations`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to load employee batch pay.');
-        return;
-      }
-
-      setCompensations(data);
-      setCompDrafts(data.reduce((drafts, row) => ({
-        ...drafts,
-        [row.employeeId]: buildCompDraft({
-          handledBirds: String(row.handledBirds || ''),
-          ratePerBird: String(row.ratePerBird || 1.5),
-          poolEmployeeIds: parseCorpoGroupIds(row.corpoGroup)
-            .filter((id) => id !== row.employeeId)
-            .map(String),
-          remarks: row.remarks || ''
-        })
-      }), {}));
-    } catch (err) {
-      console.error(err);
-      setError('Cannot connect to the batch pay sheet.');
-    }
-  };
-
-  const fetchBuildings = async () => {
-    if (!token) return;
-
-    try {
-      const response = await fetch(`${API_BASE}/api/buildings`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-
-      if (response.ok) setBuildings(data);
-    } catch (err) {
-      console.error('Failed to load employee building options:', err);
-    }
+      return {
+        batchId: activeBatchId,
+        rows: next.rows ?? base.rows,
+        drafts: next.drafts ?? base.drafts
+      };
+    });
   };
 
   useEffect(() => {
-    setTimeout(() => {
-      fetchEmployees();
-      fetchBuildings();
-    }, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!token) return undefined;
+
+    let isCancelled = false;
+
+    const fetchEmployeeSheet = async () => {
+      setIsLoading(true);
+      setError('');
+
+      try {
+        const [employeeResponse, buildingResponse] = await Promise.all([
+          fetch(`${API_BASE}/api/employees`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          fetch(`${API_BASE}/api/buildings`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
+
+        const employeeData = await employeeResponse.json();
+
+        if (isCancelled) return;
+
+        if (!employeeResponse.ok) {
+          setError(employeeData.error || 'Failed to load employees.');
+          return;
+        }
+
+        setEmployees(employeeData.filter(isPaySheetEmployee));
+
+        if (buildingResponse.ok) {
+          const buildingData = await buildingResponse.json();
+          if (!isCancelled) setBuildings(buildingData);
+        }
+      } catch (err) {
+        if (isCancelled) return;
+        console.error(err);
+        setError('Cannot connect to the employee sheet.');
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchEmployeeSheet();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [token]);
 
   useEffect(() => {
-    setTimeout(() => {
-      fetchCompensations();
-    }, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, activeBatch?.id]);
+    if (!token || !activeBatchId) return undefined;
+
+    let isCancelled = false;
+    const requestBatchId = activeBatchId;
+
+    const fetchCompensations = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/batches/${requestBatchId}/employee-compensations`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (isCancelled) return;
+
+        if (!response.ok) {
+          setError(data.error || 'Failed to load employee batch pay.');
+          return;
+        }
+
+        setCompensationState({
+          batchId: requestBatchId,
+          rows: data,
+          drafts: data.reduce((drafts, row) => ({
+            ...drafts,
+            [row.employeeId]: buildCompDraft({
+              handledBirds: String(row.handledBirds || ''),
+              ratePerBird: String(row.ratePerBird || 1.5),
+              poolEmployeeIds: parseCorpoGroupIds(row.corpoGroup)
+                .filter((id) => id !== row.employeeId)
+                .map(String),
+              remarks: row.remarks || ''
+            })
+          }), {})
+        });
+      } catch (err) {
+        if (isCancelled) return;
+        console.error(err);
+        setError('Cannot connect to the batch pay sheet.');
+      }
+    };
+
+    fetchCompensations();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [token, activeBatchId]);
 
   const updateForm = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
   const updateCompDraft = (employeeId, field, value) => {
-    setCompDrafts((current) => ({
-      ...current,
-      [employeeId]: {
-        ...buildCompDraft(current[employeeId]),
-        [field]: value
+    updateActiveCompensationState(({ drafts }) => ({
+      drafts: {
+        ...drafts,
+        [employeeId]: {
+          ...buildCompDraft(drafts[employeeId]),
+          [field]: value
+        }
       }
     }));
   };
 
   const updatePoolSelection = (employeeId, otherEmployeeId, isSelected) => {
-    setCompDrafts((current) => {
-      const next = { ...current };
-      const currentGroup = getConnectedPoolIds(employeeId, employeeIds, current);
-      const otherGroup = getConnectedPoolIds(otherEmployeeId, employeeIds, current);
+    updateActiveCompensationState(({ drafts }) => {
+      const next = { ...drafts };
+      const currentGroup = getConnectedPoolIds(employeeId, employeeIds, drafts);
+      const otherGroup = getConnectedPoolIds(otherEmployeeId, employeeIds, drafts);
 
       const applyPool = (groupIds) => {
         const normalizedIds = [...new Set(groupIds.map((id) => Number(id)).filter((id) => Number.isFinite(id)))];
@@ -397,7 +432,7 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
 
       if (isSelected) {
         applyPool([...currentGroup, ...otherGroup, Number(employeeId), Number(otherEmployeeId)]);
-        return next;
+        return { drafts: next };
       }
 
       const remainingGroup = currentGroup.filter((id) => id !== Number(otherEmployeeId));
@@ -407,7 +442,7 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
         poolEmployeeIds: []
       });
 
-      return next;
+      return { drafts: next };
     });
   };
 
@@ -454,24 +489,28 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
         setEmployees((current) => current.map((employee) => employee.id === editingId ? data : employee));
       } else {
         setEmployees((current) => [...current, data].sort((a, b) => a.name.localeCompare(b.name)));
-        setCompensations((current) => activeBatch?.id ? [
-          ...current,
-          {
-            employeeId: data.id,
-            employeeName: data.name,
-            position: data.position,
-            assignedBuilding: data.assignedBuilding,
-            batchId: activeBatch.id,
-            handledBirds: 0,
-            ratePerBird: 1.5,
-            corpoGroup: '',
-            remarks: ''
-          }
-        ] : current);
-        setCompDrafts((current) => ({
-          ...current,
-          [data.id]: buildCompDraft()
-        }));
+        if (activeBatchId) {
+          updateActiveCompensationState(({ rows, drafts }) => ({
+            rows: [
+              ...rows,
+              {
+                employeeId: data.id,
+                employeeName: data.name,
+                position: data.position,
+                assignedBuilding: data.assignedBuilding,
+                batchId: activeBatchId,
+                handledBirds: 0,
+                ratePerBird: 1.5,
+                corpoGroup: '',
+                remarks: ''
+              }
+            ],
+            drafts: {
+              ...drafts,
+              [data.id]: buildCompDraft()
+            }
+          }));
+        }
       }
 
       resetForm();
@@ -487,7 +526,7 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
       return;
     }
 
-    if (!activeBatch?.id) {
+    if (!activeBatchId) {
       setError('Select an active batch before saving employee batch pay.');
       return;
     }
@@ -499,7 +538,7 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
       for (const id of employeeIdsToSave) {
         const draft = buildCompDraft(compDrafts[id]);
         const poolIds = getConnectedPoolIds(id, employeeIdsToSave, compDrafts);
-        const response = await fetch(`${API_BASE}/api/batches/${activeBatch.id}/employee-compensations/${id}`, {
+        const response = await fetch(`${API_BASE}/api/batches/${activeBatchId}/employee-compensations/${id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -524,12 +563,11 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
 
       const savedByEmployeeId = new Map(savedRows.map((row) => [row.employeeId, row]));
 
-      setCompensations((current) => current.map((row) => savedByEmployeeId.get(row.employeeId) || row));
-      setCompDrafts((current) => {
-        const next = { ...current };
+      updateActiveCompensationState(({ rows, drafts }) => {
+        const nextDrafts = { ...drafts };
 
         savedRows.forEach((row) => {
-          next[row.employeeId] = buildCompDraft({
+          nextDrafts[row.employeeId] = buildCompDraft({
             handledBirds: String(row.handledBirds || ''),
             ratePerBird: String(row.ratePerBird || 1.5),
             poolEmployeeIds: parseCorpoGroupIds(row.corpoGroup)
@@ -539,7 +577,10 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
           });
         });
 
-        return next;
+        return {
+          rows: rows.map((row) => savedByEmployeeId.get(row.employeeId) || row),
+          drafts: nextDrafts
+        };
       });
     } catch (err) {
       console.error(err);
@@ -583,7 +624,15 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
       }
 
       setEmployees((current) => current.filter((item) => item.id !== employee.id));
-      setCompensations((current) => current.filter((item) => item.employeeId !== employee.id));
+      updateActiveCompensationState(({ rows, drafts }) => {
+        const nextDrafts = { ...drafts };
+        delete nextDrafts[employee.id];
+
+        return {
+          rows: rows.filter((item) => item.employeeId !== employee.id),
+          drafts: nextDrafts
+        };
+      });
       if (editingId === employee.id) resetForm();
     } catch (err) {
       console.error(err);

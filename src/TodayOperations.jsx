@@ -12,6 +12,12 @@ const FEED_VARIANCE_WARNING_PERCENT = 15;
 const MORTALITY_WARNING_RATE = 0.005;
 const MORTALITY_WARNING_HEADS = 5;
 const HARVEST_SOON_DAYS = 7;
+const EMPTY_TODAY_DATA = {
+  loadings: [],
+  assignments: [],
+  feedItems: [],
+  harvestProductionSummary: null
+};
 
 function todayInput() {
   const now = new Date();
@@ -156,53 +162,61 @@ function SummaryMetric({ label, value, detail, tone = 'neutral' }) {
 }
 
 export default function TodayOperations({ token, activeBatch, logs = [], setActiveScreen, previewData = null }) {
-  const [loadings, setLoadings] = useState([]);
-  const [assignments, setAssignments] = useState([]);
-  const [feedItems, setFeedItems] = useState([]);
-  const [harvestProductionSummary, setHarvestProductionSummary] = useState(null);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const activeBatchId = activeBatch?.id ?? null;
+  const previewKey = previewData ? `preview:${previewData.batch?.id || activeBatchId || 'current'}` : null;
+  const todayDataKey = token && activeBatchId ? `batch:${activeBatchId}` : previewKey;
+  const [todayRequest, setTodayRequest] = useState({
+    key: null,
+    data: EMPTY_TODAY_DATA,
+    error: '',
+    isLoading: false
+  });
+  const previewTodayData = previewData ? {
+    loadings: previewData.loadings || [],
+    assignments: previewData.assignments || [],
+    feedItems: previewData.feedItems || [],
+    harvestProductionSummary: previewData.harvestProductionSummary || null
+  } : null;
+  const isCurrentTodayData = Boolean(todayDataKey) && todayRequest.key === todayDataKey;
+  const todayData = !token && previewTodayData
+    ? previewTodayData
+    : (isCurrentTodayData ? todayRequest.data : EMPTY_TODAY_DATA);
+  const { loadings, assignments, feedItems, harvestProductionSummary } = todayData;
+  const error = !token && previewTodayData ? '' : (isCurrentTodayData ? todayRequest.error : '');
+  const isLoading = Boolean(token && isCurrentTodayData && todayRequest.isLoading);
   const today = todayInput();
   const ageDay = activeBatch?.startDate ? getAgeDay(activeBatch.startDate, today) : null;
   const lastTargetDay = getLastBroilerTargetDay();
   const daysToHarvest = diffDays(activeBatch?.targetHarvestDate, today);
 
   useEffect(() => {
-    if (!token && previewData) {
-      setTimeout(() => {
-        setLoadings(previewData.loadings || []);
-        setAssignments(previewData.assignments || []);
-        setFeedItems(previewData.feedItems || []);
-        setHarvestProductionSummary(previewData.harvestProductionSummary || null);
-        setError('');
-        setIsLoading(false);
-      }, 0);
+    if (!todayDataKey) {
       return;
     }
 
-    if (!token || !activeBatch?.id) {
-      setTimeout(() => {
-        setLoadings([]);
-        setAssignments([]);
-        setFeedItems([]);
-        setHarvestProductionSummary(null);
-      }, 0);
+    if (!token || !activeBatchId) {
       return;
     }
 
     let isMounted = true;
     const headers = { Authorization: `Bearer ${token}` };
+    const requestKey = todayDataKey;
+    const requestBatchId = activeBatchId;
 
     const fetchTodayData = async () => {
-      setIsLoading(true);
-      setError('');
+      setTodayRequest((current) => ({
+        key: requestKey,
+        data: current.key === requestKey ? current.data : EMPTY_TODAY_DATA,
+        error: '',
+        isLoading: true
+      }));
 
       try {
         const [loadingResponse, assignmentResponse, feedResponse, harvestResponse] = await Promise.all([
-          fetch(`${API_BASE}/api/batches/${activeBatch.id}/loadings`, { headers }),
-          fetch(`${API_BASE}/api/batches/${activeBatch.id}/employee-assignments`, { headers }),
+          fetch(`${API_BASE}/api/batches/${requestBatchId}/loadings`, { headers }),
+          fetch(`${API_BASE}/api/batches/${requestBatchId}/employee-assignments`, { headers }),
           fetch(`${API_BASE}/api/inventory/items?category=Feed`, { headers }),
-          fetch(`${API_BASE}/api/batches/${activeBatch.id}/harvest-production-summary`, { headers })
+          fetch(`${API_BASE}/api/batches/${requestBatchId}/harvest-production-summary`, { headers })
         ]);
 
         const [loadingData, assignmentData, feedData, harvestData] = await Promise.all([
@@ -215,19 +229,36 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
         if (!isMounted) return;
 
         if (!loadingResponse.ok || !assignmentResponse.ok || !feedResponse.ok) {
-          setError(loadingData.error || assignmentData.error || feedData.error || 'Failed to load today operations.');
+          setTodayRequest({
+            key: requestKey,
+            data: EMPTY_TODAY_DATA,
+            error: loadingData.error || assignmentData.error || feedData.error || 'Failed to load today operations.',
+            isLoading: false
+          });
           return;
         }
 
-        setLoadings(loadingData);
-        setAssignments(assignmentData);
-        setFeedItems(feedData);
-        setHarvestProductionSummary(harvestResponse.ok ? harvestData : null);
+        setTodayRequest({
+          key: requestKey,
+          data: {
+            loadings: loadingData,
+            assignments: assignmentData,
+            feedItems: feedData,
+            harvestProductionSummary: harvestResponse.ok ? harvestData : null
+          },
+          error: '',
+          isLoading: false
+        });
       } catch (err) {
         console.error(err);
-        if (isMounted) setError('Cannot connect to today operations.');
-      } finally {
-        if (isMounted) setIsLoading(false);
+        if (isMounted) {
+          setTodayRequest({
+            key: requestKey,
+            data: EMPTY_TODAY_DATA,
+            error: 'Cannot connect to today operations.',
+            isLoading: false
+          });
+        }
       }
     };
 
@@ -236,7 +267,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     return () => {
       isMounted = false;
     };
-  }, [activeBatch?.id, token, previewData]);
+  }, [activeBatchId, token, todayDataKey]);
 
   const todayLogs = useMemo(
     () => logs.filter((log) => log.date === today),

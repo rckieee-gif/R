@@ -19,6 +19,8 @@ import { publicViewerUser } from './publicViewerData';
 
 const ZERO_GRAVITY_STORAGE_KEY = 'octavioZeroGravityEnabled';
 const LEGACY_ZERO_GRAVITY_STORAGE_KEY = 'antigravityMode';
+const EMPTY_TRANSACTION_STATE = { batchId: null, rows: [] };
+const EMPTY_LOG_STATE = { batchId: null, rows: [] };
 
 const roleRank = {
   Viewer: 1,
@@ -182,7 +184,7 @@ function App() {
 
   const [activeScreen, setActiveScreen] = useState('today');
   // --- LEDGER DATABASE (NOW CONNECTED TO POSTGRESQL!) ---
-  const [transactions, setTransactions] = useState([]);
+  const [transactionState, setTransactionState] = useState(EMPTY_TRANSACTION_STATE);
   const [activeBatch, setActiveBatch] = useState(null);
   const [batches, setBatches] = useState([]);
   const [isBatchListLoading, setIsBatchListLoading] = useState(false);
@@ -190,13 +192,47 @@ function App() {
   const isPublicViewer = Boolean(user?.isPublicViewer);
   const apiToken = isPublicViewer ? null : token;
   const viewerPreviewData = isPublicViewer ? viewerSnapshot : null;
-  const activeBatchId = activeBatch?.id;
+  const viewerActiveBatch = viewerPreviewData?.batch || viewerPreviewData?.batches?.[0] || null;
+  const visibleActiveBatch = isPublicViewer ? viewerActiveBatch : activeBatch;
+  const activeBatchId = visibleActiveBatch?.id;
   // --- DAILY LOGS DATABASE (NOW CONNECTED TO POSTGRESQL!) ---
-  const [logs, setLogs] = useState([]);
+  const [logState, setLogState] = useState(EMPTY_LOG_STATE);
   const canEnterDaily = hasMinimumRole(user?.role, 'DataEntry');
   const canManageOperations = hasMinimumRole(user?.role, 'OperationManager');
   const canViewFinancial = canManageOperations;
   const canEditOrDelete = Boolean(user?.isPrimaryOwner);
+  const transactions = canViewFinancial && activeBatchId && transactionState.batchId === activeBatchId
+    ? transactionState.rows
+    : [];
+  const visibleLogs = isPublicViewer
+    ? (viewerPreviewData?.logs || [])
+    : (activeBatchId && logState.batchId === activeBatchId ? logState.rows : []);
+  const setVisibleTransactions = useCallback((value) => {
+    if (!activeBatchId) return;
+
+    setTransactionState((current) => {
+      const currentRows = current.batchId === activeBatchId ? current.rows : [];
+      const nextRows = typeof value === 'function' ? value(currentRows) : value;
+
+      return {
+        batchId: activeBatchId,
+        rows: Array.isArray(nextRows) ? nextRows : []
+      };
+    });
+  }, [activeBatchId]);
+  const setVisibleLogs = useCallback((value) => {
+    if (!activeBatchId) return;
+
+    setLogState((current) => {
+      const currentRows = current.batchId === activeBatchId ? current.rows : [];
+      const nextRows = typeof value === 'function' ? value(currentRows) : value;
+
+      return {
+        batchId: activeBatchId,
+        rows: Array.isArray(nextRows) ? nextRows : []
+      };
+    });
+  }, [activeBatchId]);
   const allowedScreens = useMemo(() => {
     if (isPublicViewer) {
       return ['today', 'dashboard', 'batches', 'dailyLog', 'inventory', 'analytics'];
@@ -241,8 +277,8 @@ function App() {
     setBatchListError('');
     setViewerSnapshot(null);
     setViewerError('');
-    setTransactions([]);
-    setLogs([]);
+    setTransactionState(EMPTY_TRANSACTION_STATE);
+    setLogState(EMPTY_LOG_STATE);
     localStorage.removeItem('octavioUser');
     localStorage.removeItem('octavioToken');
     setAuthView('intro');
@@ -251,21 +287,11 @@ function App() {
 
   useEffect(() => {
     if (isPublicViewer) {
-      setTimeout(() => {
-        const liveBatch = viewerPreviewData?.batch || viewerPreviewData?.batches?.[0] || null;
-        setBatches(viewerPreviewData?.batches || (liveBatch ? [liveBatch] : []));
-        setActiveBatch(liveBatch);
-      }, 0);
-      return;
+      return undefined;
     }
 
     if (!token) {
-      if (!user) return;
-
-      setTimeout(() => {
-        clearSession();
-      }, 0);
-      return;
+      return undefined;
     }
 
     let isCancelled = false;
@@ -323,7 +349,7 @@ function App() {
     return () => {
       isCancelled = true;
     };
-  }, [token, clearSession, isPublicViewer, user, viewerPreviewData]);
+  }, [token, clearSession, isPublicViewer, user]);
 
   const selectActiveBatch = useCallback((batch) => {
     setActiveBatch(batch || null);
@@ -340,14 +366,13 @@ function App() {
 
   const refreshTransactions = useCallback(async () => {
     if (isPublicViewer || !token || !activeBatchId || !canViewFinancial) {
-      setTimeout(() => {
-        setTransactions([]);
-      }, 0);
       return;
     }
 
+    const requestBatchId = activeBatchId;
+
     try {
-      const response = await fetch(`${API_BASE}/api/batches/${activeBatchId}/transactions`, {
+      const response = await fetch(`${API_BASE}/api/batches/${requestBatchId}/transactions`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -357,36 +382,23 @@ function App() {
       }
 
       const data = await response.json();
-      setTransactions(data);
+      setTransactionState({ batchId: requestBatchId, rows: data });
     } catch (error) {
       console.error("Failed to fetch transactions:", error);
     }
   }, [token, activeBatchId, canViewFinancial, clearSession, isPublicViewer]);
 
   useEffect(() => {
-    setTimeout(() => {
-      refreshTransactions();
-    }, 0);
-  }, [refreshTransactions]);
-
-  useEffect(() => {
-    if (isPublicViewer) {
-      setTimeout(() => {
-        setLogs(viewerPreviewData?.logs || []);
-      }, 0);
-      return;
+    if (isPublicViewer || !token || !activeBatchId || !canViewFinancial) {
+      return undefined;
     }
 
-    if (!token || !activeBatchId) {
-      setTimeout(() => {
-        setLogs([]);
-      }, 0);
-      return;
-    }
+    let isCancelled = false;
+    const requestBatchId = activeBatchId;
 
-    const fetchLogs = async () => {
+    const fetchTransactions = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/logs?batchId=${activeBatchId}`, {
+        const response = await fetch(`${API_BASE}/api/batches/${requestBatchId}/transactions`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -396,14 +408,53 @@ function App() {
         }
 
         const data = await response.json();
-        setLogs(data);
+
+        if (!isCancelled) {
+          setTransactionState({ batchId: requestBatchId, rows: data });
+        }
+      } catch (error) {
+        console.error("Failed to fetch transactions:", error);
+      }
+    };
+
+    fetchTransactions();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [token, activeBatchId, canViewFinancial, clearSession, isPublicViewer]);
+
+  useEffect(() => {
+    if (isPublicViewer) {
+      return undefined;
+    }
+
+    if (!token || !activeBatchId) {
+      return undefined;
+    }
+
+    const requestBatchId = activeBatchId;
+
+    const fetchLogs = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/logs?batchId=${requestBatchId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (response.status === 401) {
+          clearSession();
+          return;
+        }
+
+        const data = await response.json();
+        setLogState({ batchId: requestBatchId, rows: data });
       } catch (error) {
         console.error("Failed to fetch logs:", error);
       }
     };
 
     fetchLogs();
-  }, [token, activeBatchId, clearSession, isPublicViewer, viewerPreviewData]);
+  }, [token, activeBatchId, clearSession, isPublicViewer]);
 
   // --- LOGIN HANDLER ---
   const handleLogin = (userData, authToken) => {
@@ -451,8 +502,8 @@ function App() {
       setToken(null);
       setActiveBatch(liveBatch);
       setBatches(nextSnapshot.batches);
-      setTransactions([]);
-      setLogs(nextSnapshot.logs);
+      setTransactionState(EMPTY_TRANSACTION_STATE);
+      setLogState({ batchId: liveBatch.id, rows: nextSnapshot.logs });
       setActiveScreen('today');
     } catch (error) {
       console.error('Failed to open viewer mode:', error);
@@ -465,14 +516,6 @@ function App() {
   const handleLogout = () => {
     clearSession();
   };
-
-  useEffect(() => {
-    if (user && !allowedScreens.includes(activeScreen)) {
-      setTimeout(() => {
-        setActiveScreen('dashboard');
-      }, 0);
-    }
-  }, [activeScreen, user, allowedScreens]);
 
   // --- SECURITY GATEKEEPER ---
   // If there is no user logged in, show ONLY the Login Screen!
@@ -493,8 +536,9 @@ function App() {
   }
 
   // If they ARE logged in, show the App!
+  const currentScreen = allowedScreens.includes(activeScreen) ? activeScreen : 'dashboard';
   const getNavLinkClass = (screen) => {
-    const isActive = activeScreen === screen;
+    const isActive = currentScreen === screen;
     return `px-3.5 py-1.5 rounded uppercase tracking-wider font-bold text-[10px] sm:text-xs whitespace-nowrap transition-all duration-200 ${
       isActive
         ? 'bg-app-accent text-app-on-accent shadow-sm scale-[1.02]'
@@ -504,7 +548,7 @@ function App() {
 
   return (
     <div className={`${isDarkMode ? 'dark' : ''}`}>
-      <div className="bg-app-bg text-app-text min-h-screen flex flex-col md:flex-row transition-colors duration-300 font-sans">
+      <div className="bg-app-bg text-app-text min-h-screen flex min-w-0 flex-col md:flex-row transition-colors duration-300 font-sans">
         
         {/* --- DESKTOP SIDE NAVIGATION (md and up) --- */}
         <aside 
@@ -539,7 +583,7 @@ function App() {
           {/* Navigation links */}
           <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1.5 ag-scrollbar">
             {visibleNavItems.map((item) => {
-              const isActive = activeScreen === item.id;
+              const isActive = currentScreen === item.id;
               return (
                 <button
                   key={item.id}
@@ -622,14 +666,14 @@ function App() {
                   className={`w-full group flex items-center transition-all duration-300 rounded border-l-[3px] border-r-[3px] py-2 ${
                     isNavMinimized ? 'px-5 gap-0' : 'px-3.5 gap-3'
                   } ${
-                    activeScreen === 'settings'
+                    currentScreen === 'settings'
                       ? 'bg-gradient-to-r from-app-accent/10 to-transparent border-l-app-accent border-r-transparent text-app-text font-bold'
                       : 'border-l-transparent border-r-transparent text-app-text-secondary hover:bg-app-bg/50 hover:text-app-text'
                   }`}
                   title="Settings"
                 >
                   <span className={`flex items-center justify-center h-[18px] w-[18px] shrink-0 transition-colors ${
-                    activeScreen === 'settings' ? 'text-app-accent' : 'text-app-text-secondary group-hover:text-app-text'
+                    currentScreen === 'settings' ? 'text-app-accent' : 'text-app-text-secondary group-hover:text-app-text'
                   }`}>
                     <CogIcon />
                   </span>
@@ -679,7 +723,7 @@ function App() {
         </aside>
 
         {/* --- MAIN PAGE CONTENT CONTAINER --- */}
-        <div className="flex-1 min-h-screen flex flex-col overflow-x-hidden">
+        <div className="flex-1 min-w-0 min-h-screen flex flex-col overflow-x-hidden">
           
           {/* --- MOBILE NAVIGATION BAR (md:hidden) --- */}
           <div className="no-print bg-app-card border-b border-app-border p-3 flex justify-between items-center sticky top-0 z-10 transition-colors duration-300 md:hidden">
@@ -736,7 +780,7 @@ function App() {
                 <button
                   onClick={() => setActiveScreen('settings')}
                   className={`h-8 w-8 inline-flex items-center justify-center rounded border transition ${
-                    activeScreen === 'settings'
+                    currentScreen === 'settings'
                       ? 'bg-app-accent text-app-on-accent border-app-accent'
                       : 'bg-app-card text-app-text-secondary border-app-border'
                   }`}
@@ -762,20 +806,20 @@ function App() {
           )}
 
           {/* Screen Content Render */}
-          <div className="flex-1">
-            {activeScreen === 'today' && (
+          <div className="flex-1 min-w-0">
+            {currentScreen === 'today' && (
               <TodayOperations
                 token={apiToken}
-                activeBatch={activeBatch}
-                logs={logs}
+                activeBatch={visibleActiveBatch}
+                logs={visibleLogs}
                 setActiveScreen={setActiveScreen}
                 previewData={viewerPreviewData}
               />
             )}
 
-            {activeScreen === 'batches' && (
+            {currentScreen === 'batches' && (
               <BatchManagement
-                activeBatch={activeBatch}
+                activeBatch={visibleActiveBatch}
                 setActiveBatch={selectActiveBatch}
                 token={apiToken}
                 readOnly={!canManageOperations}
@@ -784,73 +828,73 @@ function App() {
               />
             )}
             
-            {activeScreen === 'dashboard' && (
-              <Dashboard setActiveScreen={setActiveScreen} logs={logs} activeBatch={activeBatch} user={user} />
+            {currentScreen === 'dashboard' && (
+              <Dashboard setActiveScreen={setActiveScreen} logs={visibleLogs} activeBatch={visibleActiveBatch} user={user} />
             )}
 
-            {activeScreen === 'employees' && canManageOperations && (
+            {currentScreen === 'employees' && canManageOperations && (
               <EmployeeManagement
                 token={token}
                 transactions={transactions}
-                dailyLogs={logs}
-                activeBatch={activeBatch}
+                dailyLogs={visibleLogs}
+                activeBatch={visibleActiveBatch}
                 canEditOrDelete={canEditOrDelete}
               />
             )}
 
-            {activeScreen === 'paySummary' && (
-              <EmployeePaySummary token={token} activeBatch={activeBatch} transactions={transactions} />
+            {currentScreen === 'paySummary' && (
+              <EmployeePaySummary token={token} activeBatch={visibleActiveBatch} transactions={transactions} />
             )}
 
-            {activeScreen === 'ledger' && canViewFinancial && (
+            {currentScreen === 'ledger' && canViewFinancial && (
               <TransactionLedger
                 transactions={transactions}
-                setTransactions={setTransactions}
-                activeBatch={activeBatch}
+                setTransactions={setVisibleTransactions}
+                activeBatch={visibleActiveBatch}
                 token={token}
                 readOnly={!canManageOperations}
                 canEditOrDelete={canEditOrDelete}
               />
             )}
 
-            {activeScreen === 'harvest' && canViewFinancial && (
+            {currentScreen === 'harvest' && canViewFinancial && (
               <HarvestRecording
-                activeBatch={activeBatch}
+                activeBatch={visibleActiveBatch}
                 token={token}
                 readOnly={!canManageOperations}
                 onLedgerPosted={refreshTransactions}
               />
             )}
 
-            {activeScreen === 'dailyLog' && (
-              <DailyLog logs={logs} setLogs={setLogs} activeBatch={activeBatch} token={apiToken} readOnly={!canEnterDaily} canEditOrDelete={canEditOrDelete} />
+            {currentScreen === 'dailyLog' && (
+              <DailyLog logs={visibleLogs} setLogs={setVisibleLogs} activeBatch={visibleActiveBatch} token={apiToken} readOnly={!canEnterDaily} canEditOrDelete={canEditOrDelete} />
             )}
 
-            {activeScreen === 'inventory' && (
-              <InventoryManagement activeBatch={activeBatch} token={apiToken} readOnly={!canManageOperations} canEditOrDelete={canEditOrDelete} previewData={viewerPreviewData} />
+            {currentScreen === 'inventory' && (
+              <InventoryManagement activeBatch={visibleActiveBatch} token={apiToken} readOnly={!canManageOperations} canEditOrDelete={canEditOrDelete} previewData={viewerPreviewData} />
             )}
 
-            {activeScreen === 'analytics' && (
-              <Analytics transactions={canViewFinancial ? transactions : []} logs={logs} activeBatch={activeBatch} showFinancials={canViewFinancial} />
+            {currentScreen === 'analytics' && (
+              <Analytics transactions={canViewFinancial ? transactions : []} logs={visibleLogs} activeBatch={visibleActiveBatch} showFinancials={canViewFinancial} />
             )}
 
-            {activeScreen === 'statement' && canViewFinancial && (
-              <FinancialStatement transactions={transactions} activeBatch={activeBatch} />
+            {currentScreen === 'statement' && canViewFinancial && (
+              <FinancialStatement transactions={transactions} activeBatch={visibleActiveBatch} />
             )}
 
-            {activeScreen === 'settings' && (
+            {currentScreen === 'settings' && (
               <Settings 
                 user={user} 
                 token={token} 
-                activeBatch={activeBatch} 
+                activeBatch={visibleActiveBatch} 
                 isZeroGravity={isZeroGravity}
                 setIsZeroGravity={setIsZeroGravity}
               />
             )}
             
             <AntigravityAssistant
-              activeBatch={activeBatch}
-              logs={logs}
+              activeBatch={visibleActiveBatch}
+              logs={visibleLogs}
               transactions={transactions}
               user={user}
               isZeroGravity={isZeroGravity}
