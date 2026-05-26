@@ -799,7 +799,7 @@ function App() {
             )}
 
             {activeScreen === 'paySummary' && (
-              <EmployeePaySummary token={token} activeBatch={activeBatch} />
+              <EmployeePaySummary token={token} activeBatch={activeBatch} transactions={transactions} />
             )}
 
             {activeScreen === 'ledger' && canViewFinancial && (

@@ -14,10 +14,32 @@ function formatBirds(amount) {
   });
 }
 
-export default function EmployeePaySummary({ token, activeBatch }) {
+export default function EmployeePaySummary({ token, activeBatch, transactions = [] }) {
   const [summary, setSummary] = useState({ totals: {}, rows: [] });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [expandedIds, setExpandedIds] = useState({});
+
+  const toggleExpand = (employeeId) => {
+    setExpandedIds((prev) => ({
+      ...prev,
+      [employeeId]: !prev[employeeId]
+    }));
+  };
+
+  const isAllExpanded = summary.rows.length > 0 && summary.rows.every(row => expandedIds[row.employeeId]);
+
+  const toggleAll = () => {
+    if (isAllExpanded) {
+      setExpandedIds({});
+    } else {
+      const next = {};
+      summary.rows.forEach(row => {
+        next[row.employeeId] = true;
+      });
+      setExpandedIds(next);
+    }
+  };
 
   useEffect(() => {
     if (!token || !activeBatch?.id) {
@@ -100,62 +122,172 @@ export default function EmployeePaySummary({ token, activeBatch }) {
         <p className="text-sm text-app-text-secondary mb-3 font-semibold">Loading pay summary...</p>
       )}
 
-      <div className="space-y-3">
-        {summary.rows.map((employee) => (
-          <div
-            key={employee.employeeId}
-            className="bg-app-card p-4 rounded-xl shadow-sm border border-app-border"
+      <div className="flex items-center justify-between mb-3 ml-1 no-print">
+        <h3 className="text-xs font-bold text-app-text-secondary uppercase tracking-wider font-hanken">
+          Pay Summary Sheet
+        </h3>
+        {summary.rows.length > 0 && (
+          <button
+            type="button"
+            onClick={toggleAll}
+            className="text-[10px] font-bold text-app-accent hover:underline cursor-pointer transition-colors"
           >
-            <div className="flex justify-between gap-3">
-              <div>
-                <p className="text-lg font-black text-app-text font-hanken">{employee.employeeName}</p>
-                <p className="text-xs text-app-text-secondary font-bold uppercase mt-1">
-                  {employee.position || 'Employee'} {employee.assignedBuilding ? `- Bldg ${employee.assignedBuilding}` : ''}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] font-bold uppercase text-app-text-secondary">Net Payable</p>
-                <p className={`font-black font-jetbrains ${Number(employee.netPayable || 0) > 0 ? 'text-app-warning' : 'text-app-success'}`}>
-                  {formatMoney(employee.netPayable)}
-                </p>
-              </div>
-            </div>
+            {isAllExpanded ? 'Collapse All' : 'Expand All'}
+          </button>
+        )}
+      </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 mt-4 text-xs">
-              <div className="bg-app-bg border border-app-border/30 p-2 rounded-lg">
-                <p className="text-app-text-secondary font-bold uppercase">Handled</p>
-                <p className="font-black text-app-text mt-1 font-jetbrains">{formatBirds(employee.grossHandledBirds)}</p>
-              </div>
-              <div className="bg-app-bg border border-app-border/30 p-2 rounded-lg">
-                <p className="text-app-text-secondary font-bold uppercase">Mortality</p>
-                <p className="font-black text-app-danger mt-1 font-jetbrains">{formatBirds(employee.mortality)}</p>
-              </div>
-              <div className="bg-app-bg border border-app-border/30 p-2 rounded-lg">
-                <p className="text-app-text-secondary font-bold uppercase">Payable Birds</p>
-                <p className="font-black text-app-text mt-1 font-jetbrains">
-                  {formatBirds(employee.payableBirds)}
-                  {employee.memberCount > 1 ? ` / pool ${employee.memberCount}` : ''}
-                </p>
-              </div>
-              <div className="bg-app-bg border border-app-border/30 p-2 rounded-lg">
-                <p className="text-app-text-secondary font-bold uppercase">Cycle Income</p>
-                <p className="font-black text-app-text mt-1 font-jetbrains">{formatMoney(employee.cycleIncome)}</p>
-              </div>
-              <div className="bg-app-bg border border-app-border/30 p-2 rounded-lg">
-                <p className="text-app-text-secondary font-bold uppercase">Debt Balance</p>
-                <p className={`font-black mt-1 font-jetbrains ${Number(employee.outstandingAdvance || 0) > 0 ? 'text-app-danger' : 'text-app-success'}`}>
-                  {formatMoney(employee.outstandingAdvance)}
-                </p>
-              </div>
-            </div>
+      <div className="space-y-3">
+        {summary.rows.map((employee) => {
+          const isExpanded = expandedIds[employee.employeeId];
+          const names = new Set([employee.employeeName].filter(Boolean));
+          const employeeTransactions = transactions.filter((tx) => {
+            const isAdvance = tx.fundingNature === 'Receivable' && tx.category === 'Cash Advance' && names.has(tx.paidTo);
+            const isRepayment = tx.fundingNature === 'Receivable' && (tx.type === 'Reimbursement' || tx.category === 'Reimbursement') && names.has(tx.paidBy);
+            return isAdvance || isRepayment;
+          });
 
-            <div className="grid grid-cols-3 gap-2 mt-3 text-[10px]">
-              <p className="text-app-text-secondary">Paid: <span className="font-bold font-jetbrains">{formatMoney(employee.laborPaid)}</span></p>
-              <p className="text-app-text-secondary">Advance: <span className="font-bold font-jetbrains">{formatMoney(employee.cashAdvance)}</span></p>
-              <p className="text-app-text-secondary">Repaid: <span className="font-bold font-jetbrains">{formatMoney(employee.reimbursement)}</span></p>
+          return (
+            <div
+              key={employee.employeeId}
+              className="bg-app-card rounded-xl shadow-sm border border-app-border overflow-hidden transition-all duration-200"
+            >
+              {/* Clickable Header */}
+              <div
+                onClick={() => toggleExpand(employee.employeeId)}
+                className="p-4 flex items-center justify-between gap-3 cursor-pointer select-none hover:bg-app-bg/20 transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-lg font-black text-app-text font-hanken tracking-tight">
+                      {employee.employeeName}
+                    </p>
+                    {Number(employee.outstandingAdvance || 0) > 0 && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-app-danger-bg text-app-danger font-jetbrains whitespace-nowrap">
+                        Advance: {formatMoney(employee.outstandingAdvance)}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-app-text-secondary font-bold uppercase mt-1">
+                    {employee.position || 'Employee'} {employee.assignedBuilding ? `- Bldg ${employee.assignedBuilding}` : ''}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="text-right">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-app-text-secondary">Net Payable</p>
+                    <p className={`text-base font-black font-jetbrains ${Number(employee.netPayable || 0) > 0 ? 'text-app-warning' : 'text-app-success'}`}>
+                      {formatMoney(employee.netPayable)}
+                    </p>
+                  </div>
+                  <span className="material-symbols-outlined text-app-text-secondary select-none no-print">
+                    {isExpanded ? 'expand_less' : 'expand_more'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Collapsible Details Panel */}
+              <div
+                className={`p-4 pt-0 border-t border-app-border/40 ${
+                  isExpanded ? 'block' : 'hidden print:block'
+                }`}
+              >
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 mt-4 text-xs">
+                  <div className="bg-app-bg border border-app-border/30 p-2 rounded-lg">
+                    <p className="text-app-text-secondary font-bold uppercase">Handled</p>
+                    <p className="font-black text-app-text mt-1 font-jetbrains">{formatBirds(employee.grossHandledBirds)}</p>
+                  </div>
+                  <div className="bg-app-bg border border-app-border/30 p-2 rounded-lg">
+                    <p className="text-app-text-secondary font-bold uppercase">Mortality</p>
+                    <p className="font-black text-app-danger mt-1 font-jetbrains">{formatBirds(employee.mortality)}</p>
+                  </div>
+                  <div className="bg-app-bg border border-app-border/30 p-2 rounded-lg">
+                    <p className="text-app-text-secondary font-bold uppercase">Payable Birds</p>
+                    <p className="font-black text-app-text mt-1 font-jetbrains">
+                      {formatBirds(employee.payableBirds)}
+                      {employee.memberCount > 1 ? ` / pool ${employee.memberCount}` : ''}
+                    </p>
+                  </div>
+                  <div className="bg-app-bg border border-app-border/30 p-2 rounded-lg">
+                    <p className="text-app-text-secondary font-bold uppercase">Cycle Income</p>
+                    <p className="font-black text-app-text mt-1 font-jetbrains">{formatMoney(employee.cycleIncome)}</p>
+                  </div>
+                  <div className="bg-app-bg border border-app-border/30 p-2 rounded-lg">
+                    <p className="text-app-text-secondary font-bold uppercase">Debt Balance</p>
+                    <p className={`font-black mt-1 font-jetbrains ${Number(employee.outstandingAdvance || 0) > 0 ? 'text-app-danger' : 'text-app-success'}`}>
+                      {formatMoney(employee.outstandingAdvance)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 mt-3 text-[10px] bg-app-bg/30 p-2 rounded-lg border border-app-border/20">
+                  <p className="text-app-text-secondary">Paid: <span className="font-bold font-jetbrains">{formatMoney(employee.laborPaid)}</span></p>
+                  <p className="text-app-text-secondary">Advance: <span className="font-bold font-jetbrains">{formatMoney(employee.cashAdvance)}</span></p>
+                  <p className="text-app-text-secondary">Repaid: <span className="font-bold font-jetbrains">{formatMoney(employee.reimbursement)}</span></p>
+                </div>
+
+                {/* Detailed Cash Advance & Repayment History */}
+                <div className="border-t border-app-border/40 mt-4 pt-4">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary mb-2">
+                    Cash Advance & Repayment Ledger
+                  </p>
+                  
+                  {employeeTransactions.length > 0 ? (
+                    <div className="bg-app-bg rounded-lg border border-app-border/30 overflow-hidden mb-1">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-app-border/30 bg-app-card/30 text-[9px] font-black uppercase text-app-text-secondary">
+                            <th className="p-2 font-hanken">Date</th>
+                            <th className="p-2 font-hanken">Type</th>
+                            <th className="p-2 font-hanken">Description</th>
+                            <th className="p-2 text-right font-hanken">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-app-border/20">
+                          {employeeTransactions.map((tx) => {
+                            const isAdvance = tx.fundingNature === 'Receivable' && tx.category === 'Cash Advance' && names.has(tx.paidTo);
+                            return (
+                              <tr key={tx.id} className="hover:bg-app-card/20 transition-colors">
+                                <td className="p-2 font-semibold font-jetbrains whitespace-nowrap text-app-text">
+                                  {new Date(tx.date).toLocaleDateString(undefined, {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  })}
+                                </td>
+                                <td className="p-2">
+                                  <span className={`px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold uppercase tracking-wider ${
+                                    isAdvance 
+                                      ? 'bg-app-danger-bg text-app-danger' 
+                                      : 'bg-app-success-bg text-app-success'
+                                  }`}>
+                                    {isAdvance ? 'Advance' : 'Repayment'}
+                                  </span>
+                                </td>
+                                <td className="p-2 text-app-text-secondary font-medium max-w-[180px] truncate" title={tx.description || tx.remarks}>
+                                  {tx.description || tx.remarks || '--'}
+                                </td>
+                                <td className={`p-2 text-right font-black font-jetbrains ${
+                                  isAdvance ? 'text-app-danger' : 'text-app-success'
+                                }`}>
+                                  {isAdvance ? '+' : '-'}{formatMoney(tx.amount).replace('PHP ', '')}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-app-text-secondary italic mb-1">
+                      No cash advance or repayment transactions for this batch.
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {summary.rows.length === 0 && !isLoading && (
           <p className="text-center text-app-text-secondary text-sm mt-4 font-semibold">No employee pay data yet.</p>
