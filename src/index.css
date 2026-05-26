@@ -1,0 +1,638 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Here is your beautiful custom brand palette! */
+@theme {
+  --color-primary: #1D4ED8;
+  --color-primary-light: #93C5FD;
+  --color-secondary: #475569;
+  
+  --color-neutral-light: #F4F7FB;
+  --color-neutral-border: #D8DEE8;
+  
+  --color-semantic-danger: #DC2626;
+  --color-semantic-success: #15803D;
+  --color-semantic-warning: #D97706;
+  --color-semantic-info: #0284C7;
+
+  /* Legacy aliases kept for older class names, now tied to the app theme */
+  --color-stitch-bg: var(--app-bg);
+  --color-stitch-primary: var(--app-accent);
+  --color-stitch-on-primary: var(--app-on-accent);
+  --color-stitch-primary-container: var(--app-accent);
+  --color-stitch-primary-fixed: var(--app-accent);
+  --color-stitch-primary-fixed-dim: var(--app-accent);
+  --color-stitch-secondary: var(--app-text-secondary);
+  --color-stitch-secondary-container: var(--app-border);
+  --color-stitch-secondary-fixed: var(--app-text-secondary);
+  --color-stitch-secondary-fixed-dim: var(--app-text-secondary);
+  --color-stitch-on-secondary: var(--app-text);
+  --color-stitch-on-secondary-container: var(--app-text-secondary);
+  --color-stitch-surface: var(--app-card);
+  --color-stitch-surface-dim: var(--app-bg);
+  --color-stitch-surface-bright: var(--app-card);
+  --color-stitch-surface-container: var(--app-card);
+  --color-stitch-surface-container-low: var(--app-bg);
+  --color-stitch-surface-container-high: var(--app-bg);
+  --color-stitch-surface-container-highest: var(--app-card);
+  --color-stitch-surface-container-lowest: var(--app-bg);
+  --color-stitch-on-surface: var(--app-text);
+  --color-stitch-on-surface-variant: var(--app-text-secondary);
+  --color-stitch-outline: var(--app-border);
+  --color-stitch-outline-variant: var(--app-border);
+  --color-stitch-error: var(--app-danger);
+  --color-stitch-error-container: var(--app-danger-bg);
+
+  /* Stitch Typography */
+  --font-hanken: "Manrope", sans-serif;
+  --font-jetbrains: "JetBrains Mono", monospace;
+  --font-inter: "Inter", sans-serif;
+
+  /* Custom Romer SaaS Dashboard Radius Overrides */
+  --radius-xl: 0.5rem;   /* 8px */
+  --radius-2xl: 0.5rem;  /* 8px */
+  --radius-lg: 0.5rem;   /* 8px */
+  --radius-md: 0.25rem;  /* 4px */
+  --radius-sm: 0.25rem;  /* 4px */
+
+  /* Dynamic High-Readability Application Theme Variables */
+  --color-app-bg: var(--app-bg);
+  --color-app-card: var(--app-card);
+  --color-app-border: var(--app-border);
+  --color-app-text: var(--app-text);
+  --color-app-text-secondary: var(--app-text-secondary);
+  --color-app-accent: var(--app-accent);
+  --color-app-on-accent: var(--app-on-accent);
+  --color-app-success: var(--app-success);
+  --color-app-success-bg: var(--app-success-bg);
+  --color-app-danger: var(--app-danger);
+  --color-app-danger-bg: var(--app-danger-bg);
+  --color-app-warning: var(--app-warning);
+  --color-app-warning-bg: var(--app-warning-bg);
+  --color-app-chart-target: var(--app-chart-target);
+  --color-app-chart-actual: var(--app-chart-actual);
+  --color-app-chart-compare: var(--app-chart-compare);
+  --color-app-chart-expense: var(--app-chart-expense);
+
+  /* Backward Compatibility Aliases for Dashboard */
+  --color-dashboard-bg: var(--app-bg);
+  --color-dashboard-card: var(--app-card);
+  --color-dashboard-border: var(--app-border);
+  --color-dashboard-text: var(--app-text);
+  --color-dashboard-text-secondary: var(--app-text-secondary);
+  --color-dashboard-accent: var(--app-accent);
+  --color-dashboard-on-accent: var(--app-on-accent);
+  --color-dashboard-success: var(--app-success);
+  --color-dashboard-success-bg: var(--app-success-bg);
+  --color-dashboard-danger: var(--app-danger);
+  --color-dashboard-danger-bg: var(--app-danger-bg);
+  --color-dashboard-warning: var(--app-warning);
+  --color-dashboard-warning-bg: var(--app-warning-bg);
+}
+
+/* Stitch custom 3D utilities and animations (only active on desktop viewports) */
+@media (min-width: 768px) {
+  .btn-3d {
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+    transform-style: preserve-3d;
+  }
+  
+  .btn-3d:hover {
+    transform: perspective(500px) translateZ(10px) rotateX(5deg) translateY(-4px);
+    box-shadow: 0 15px 25px -5px rgba(0,0,0,0.5);
+  }
+
+  .perspective-container {
+    perspective: 1200px;
+  }
+
+  @keyframes float-3d {
+    0% { transform: rotateY(-12deg) rotateX(8deg) translateY(0); }
+    50% { transform: rotateY(-8deg) rotateX(4deg) translateY(-15px); }
+    100% { transform: rotateY(-12deg) rotateX(8deg) translateY(0); }
+  }
+
+  .model-3d {
+    transform-style: preserve-3d;
+    animation: float-3d 6s ease-in-out infinite;
+    box-shadow: -30px 30px 50px -15px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(255,255,255,0.05);
+    transform: rotateY(-12deg) rotateX(8deg);
+  }
+}
+
+:root {
+  color-scheme: light;
+  --app-bg: #f6f7f9;
+  --app-card: #ffffff;
+  --app-border: #d7dce3;
+  --app-text: #111827;
+  --app-text-secondary: #4b5563;
+  --app-accent: #1d4ed8;
+  --app-on-accent: #ffffff;
+  --app-success: #15803d;
+  --app-success-bg: rgba(21, 128, 61, 0.1);
+  --app-danger: #b91c1c;
+  --app-danger-bg: rgba(185, 28, 28, 0.1);
+  --app-warning: #b45309;
+  --app-warning-bg: rgba(180, 83, 9, 0.12);
+  --app-chart-target: #475569;
+  --app-chart-actual: #1d4ed8;
+  --app-chart-compare: #0f766e;
+  --app-chart-expense: #b91c1c;
+
+  --dashboard-bg: var(--app-bg);
+  --dashboard-card: var(--app-card);
+  --dashboard-border: var(--app-border);
+  --dashboard-text: var(--app-text);
+  --dashboard-text-secondary: var(--app-text-secondary);
+  --dashboard-accent: var(--app-accent);
+  --dashboard-on-accent: var(--app-on-accent);
+  --dashboard-success: var(--app-success);
+  --dashboard-success-bg: var(--app-success-bg);
+  --dashboard-danger: var(--app-danger);
+  --dashboard-danger-bg: var(--app-danger-bg);
+  --dashboard-warning: var(--app-warning);
+  --dashboard-warning-bg: var(--app-warning-bg);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--app-bg);
+  color: var(--app-text);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--app-accent);
+  outline-offset: 2px;
+}
+
+.dark {
+  color-scheme: dark;
+  --app-bg: #0b1020;
+  --app-card: #111827;
+  --app-border: #2b3445;
+  --app-text: #f8fafc;
+  --app-text-secondary: #cbd5e1;
+  --app-accent: #93c5fd;
+  --app-on-accent: #0b1020;
+  --app-success: #86efac;
+  --app-success-bg: rgba(134, 239, 172, 0.14);
+  --app-danger: #fca5a5;
+  --app-danger-bg: rgba(252, 165, 165, 0.14);
+  --app-warning: #fde68a;
+  --app-warning-bg: rgba(253, 230, 138, 0.14);
+  --app-chart-target: #cbd5e1;
+  --app-chart-actual: #93c5fd;
+  --app-chart-compare: #5eead4;
+  --app-chart-expense: #fca5a5;
+
+  --dashboard-bg: var(--app-bg);
+  --dashboard-card: var(--app-card);
+  --dashboard-border: var(--app-border);
+  --dashboard-text: var(--app-text);
+  --dashboard-text-secondary: var(--app-text-secondary);
+  --dashboard-accent: var(--app-accent);
+  --dashboard-on-accent: var(--app-on-accent);
+  --dashboard-success: var(--app-success);
+  --dashboard-success-bg: var(--app-success-bg);
+  --dashboard-danger: var(--app-danger);
+  --dashboard-danger-bg: var(--app-danger-bg);
+  --dashboard-warning: var(--app-warning);
+  --dashboard-warning-bg: var(--app-warning-bg);
+}
+
+.tonal-layer-1 {
+  background-color: var(--app-card);
+  border: 1px solid var(--app-border);
+}
+
+.app-page {
+  width: min(calc(100% - 1rem), 72rem);
+  margin-inline: auto;
+  padding: 1rem 0 3rem;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.report-page {
+  width: min(calc(100% - 1rem), 80rem);
+  margin-inline: auto;
+  padding: 1rem 0 3rem;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.print-only {
+  display: none !important;
+}
+
+@media (min-width: 768px) {
+  .app-page,
+  .report-page {
+    width: min(calc(100% - 3rem), 72rem);
+    padding-top: 1.5rem;
+  }
+
+  .report-page {
+    width: min(calc(100% - 3rem), 80rem);
+  }
+}
+
+@media print {
+  @page {
+    margin: 15mm;
+    size: portrait;
+  }
+
+  .no-print,
+  .screen-only,
+  button,
+  nav,
+  header:not(.print-only),
+  aside {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* Force light theme on all elements during print, overriding dark mode classes */
+  html,
+  body,
+  #root,
+  .dark,
+  .dark body,
+  .dark #root {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif !important;
+  }
+
+  /* Disable all screen-only fancy effects, transitions, shadows, and animations */
+  *,
+  *::before,
+  *::after {
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  /* Structural elements borders */
+  table, th, td, tr {
+    border-color: #d1d5db !important;
+  }
+
+  .print-container {
+    max-width: none !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-size: 10pt !important;
+  }
+
+  /* Reset print card container styles */
+  .print-card,
+  .print-card.bg-white,
+  .dark .print-card,
+  .dark .bg-gray-800.print-card {
+    border: 1px solid #9ca3af !important;
+    border-radius: 6px !important;
+    padding: 1.5rem !important;
+    margin-bottom: 1.5rem !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    break-inside: avoid;
+  }
+
+  /* General print card text defaults */
+  .print-card,
+  .print-card p,
+  .print-card span,
+  .print-card div,
+  .print-card td,
+  .print-card th,
+  .print-card h1,
+  .print-card h2,
+  .print-card h3,
+  .print-card h4,
+  .print-card h5,
+  .print-card h6 {
+    color: #1f2937 !important;
+  }
+
+  /* Strict semantic text colors with print-friendly contrast */
+  .text-semantic-success,
+  .dark .text-semantic-success,
+  span.text-semantic-success,
+  .dark span.text-semantic-success {
+    color: #166534 !important; /* Rich dark green */
+    font-weight: 700 !important;
+  }
+
+  .text-semantic-danger,
+  .dark .text-semantic-danger,
+  span.text-semantic-danger,
+  .dark span.text-semantic-danger {
+    color: #991b1b !important; /* Rich dark red */
+    font-weight: 700 !important;
+  }
+
+  .text-primary,
+  .dark .text-primary,
+  span.text-primary,
+  .dark span.text-primary {
+    color: #1e40af !important; /* Rich dark blue */
+    font-weight: 700 !important;
+  }
+
+  /* Subtle background fills for structural elements */
+  th,
+  .print-simple-table th,
+  thead th,
+  .bg-neutral-light,
+  .dark .bg-gray-700 {
+    background-color: #f3f4f6 !important;
+    background: #f3f4f6 !important;
+    color: #1f2937 !important;
+  }
+
+  /* Printable header adjustments */
+  .statement-print-header,
+  .dark .statement-print-header {
+    background-color: #f3f4f6 !important;
+    background: #f3f4f6 !important;
+    border: 1px solid #9ca3af !important;
+    border-bottom: none !important;
+    color: #111827 !important;
+    padding: 1rem !important;
+    text-align: center !important;
+    border-top-left-radius: 6px !important;
+    border-top-right-radius: 6px !important;
+    box-shadow: none !important;
+  }
+
+  .statement-print-header h2,
+  .statement-print-header p,
+  .statement-print-header * {
+    color: #111827 !important;
+  }
+
+  .print-title {
+    font-size: 16pt !important;
+    font-weight: 800 !important;
+    color: #111827 !important;
+  }
+
+  /* Table styling */
+  .print-simple-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 1rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .print-simple-table th,
+  .print-simple-table td {
+    border: 1px solid #d1d5db !important;
+    padding: 8px 12px !important;
+    text-align: left !important;
+    font-size: 9pt !important;
+    vertical-align: top !important;
+  }
+
+  .print-simple-table th {
+    background-color: #f3f4f6 !important;
+    font-weight: bold !important;
+  }
+
+  .print-simple-table .numeric {
+    text-align: right !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* ==========================================
+   ANTIGRAVITY SYSTEM STYLES & ANIMATIONS
+   ========================================== */
+
+@keyframes antigravity-bob {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(0.5deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes antigravity-bob-slow {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(-0.5deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes antigravity-bob-fast {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(1deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes particle-drift {
+  0% { transform: translateY(100vh) translateX(0) scale(0.8); opacity: 0; }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.6; }
+  100% { transform: translateY(-10vh) translateX(50px) scale(1.2); opacity: 0; }
+}
+
+/* Apply slow floating bobs ONLY to custom zero-g decor elements when active */
+.antigravity-active .zero-g-float-1 {
+  animation: antigravity-bob 9s ease-in-out infinite;
+}
+
+.antigravity-active .zero-g-float-2 {
+  animation: antigravity-bob-slow 11s ease-in-out infinite;
+}
+
+.antigravity-active .zero-g-float-3 {
+  animation: antigravity-bob-fast 7s ease-in-out infinite;
+}
+
+/* Hover gravity defiance - subtle lift for surfaces, while controls stay anchored. */
+@media (hover: hover) and (pointer: fine) {
+  .antigravity-active .hover-float,
+  .antigravity-active :where(.bg-white, .bg-app-card):not(.no-float):not(button):not(a):not(input):not(select):not(textarea):not(label) {
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+  }
+
+  .antigravity-active .hover-float:hover,
+  .antigravity-active :where(.bg-white, .bg-app-card):not(.no-float):not(button):not(a):not(input):not(select):not(textarea):not(label):hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 12px 24px -10px rgba(59, 130, 246, 0.2) !important;
+    z-index: 5;
+  }
+}
+
+/* Glassmorphism futuristic panel */
+.ag-glass {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.light .ag-glass {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+/* Custom scrollbar for chat */
+.ag-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.ag-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ag-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.3);
+  border-radius: 4px;
+}
+.ag-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.6);
+}
+
+/* Rising particles container */
+.ag-particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.ag-particle {
+  position: absolute;
+  bottom: -20px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--app-accent) 18%, transparent) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: particle-drift 22s linear infinite;
+}
+
+/* Cosmic background overlay - disabled for minimal distraction */
+.ag-cosmic-bg {
+  /* Retained class name but cleared overrides to preserve original theme backgrounds */
+}
+
+/* ==========================================
+   STITCH MODERN LOGIN GRAPHICS & UTILITIES
+   ========================================== */
+
+.login-app-bg {
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--app-accent) 18%, transparent), transparent 42%),
+    linear-gradient(to bottom, var(--app-bg), color-mix(in srgb, var(--app-bg) 84%, var(--app-card)));
+}
+
+.glass-card {
+  background: color-mix(in srgb, var(--app-card) 75%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid color-mix(in srgb, var(--app-border) 60%, transparent);
+  transform-style: preserve-3d;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), 
+              box-shadow 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), 
+              border-color 0.3s ease;
+  box-shadow: 
+    0 20px 50px -10px color-mix(in srgb, var(--app-text) 15%, transparent),
+    inset 0 1.5px 0 color-mix(in srgb, var(--app-card) 40%, transparent);
+}
+
+.glass-card:hover {
+  border-color: color-mix(in srgb, var(--app-accent) 60%, transparent);
+  box-shadow: 
+    0 30px 60px -15px color-mix(in srgb, var(--app-text) 25%, transparent),
+    0 0 25px -5px color-mix(in srgb, var(--app-accent) 25%, transparent),
+    inset 0 1.5px 0 color-mix(in srgb, var(--app-card) 60%, transparent);
+}
+
+.card-content-3d {
+  transform: translateZ(30px);
+}
+
+.input-glass::placeholder {
+  color: color-mix(in srgb, var(--app-text-secondary) 82%, transparent);
+}
+
+.input-glass {
+  background: color-mix(in srgb, var(--app-bg) 60%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid color-mix(in srgb, var(--app-border) 50%, transparent);
+  transform: translateZ(10px);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), 
+              background-color 0.3s ease, 
+              border-color 0.3s ease, 
+              box-shadow 0.3s ease;
+}
+
+.input-glass:hover {
+  border-color: color-mix(in srgb, var(--app-border) 80%, transparent);
+  background: color-mix(in srgb, var(--app-bg) 70%, transparent);
+}
+
+.input-glass:focus {
+  transform: translateZ(15px);
+  border-color: var(--app-accent);
+  background: color-mix(in srgb, var(--app-card) 95%, transparent);
+  box-shadow: 
+    0 0 15px -3px color-mix(in srgb, var(--app-accent) 25%, transparent),
+    inset 0 1px 1px rgba(0, 0, 0, 0.05);
+  outline: none;
+}
+
+.btn-login-3d {
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--app-accent) 88%, white), var(--app-accent));
+  box-shadow:
+    0 6px 0 color-mix(in srgb, var(--app-accent) 72%, black),
+    0 10px 15px color-mix(in srgb, var(--app-text) 20%, transparent);
+  transition: all 0.15s ease-in-out;
+  transform: translateZ(20px);
+}
+
+.btn-login-3d:hover {
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--app-accent) 78%, white), var(--app-accent));
+  transform: translateZ(20px) translateY(2px);
+  box-shadow:
+    0 4px 0 color-mix(in srgb, var(--app-accent) 72%, black),
+    0 8px 10px color-mix(in srgb, var(--app-text) 20%, transparent);
+}
+
+.btn-login-3d:active {
+  transform: translateZ(20px) translateY(6px);
+  box-shadow: 0 0px 0 color-mix(in srgb, var(--app-accent) 72%, black), 0 2px 5px color-mix(in srgb, var(--app-text) 20%, transparent);
+}
+
+.back-btn-3d {
+  transform: translateZ(10px);
+}
+
+.blend-logo {
+  mix-blend-mode: screen; 
+  transform: translateZ(40px);
+}
