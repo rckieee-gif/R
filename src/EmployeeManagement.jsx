@@ -655,6 +655,7 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
         handleCompSave={handleCompSave}
         isLoading={isLoading}
         activeBatch={activeBatch}
+        transactions={transactions}
       />
     </div>
   );
