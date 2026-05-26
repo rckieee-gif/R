@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { API_BASE } from './api';
@@ -142,7 +142,7 @@ export default function TransactionLedger() {
   const [categoriesByFunding, setCategoriesByFunding] = useState({});
   const [stakeholders, setStakeholders] = useState([]);
   const [feedItems, setFeedItems] = useState([]);
-  const { register, handleSubmit: hookSubmit, watch, setValue, getValues, reset, formState: { errors } } = useForm({
+  const { register, handleSubmit: hookSubmit, watch, control, setValue, reset, formState: { errors } } = useForm({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
@@ -162,7 +162,7 @@ export default function TransactionLedger() {
     }
   });
 
-  const watchedValues = watch();
+  const watchedValues = useWatch({ control }) || {};
   const date = watchedValues.date;
   const building = watchedValues.building;
   const transactionType = watchedValues.transactionType;
@@ -223,7 +223,6 @@ export default function TransactionLedger() {
     return Number((Number(quantity || 0) * Number(unitCost || 0)).toFixed(2));
   }, [hasCalculatedAmount, quantity, unitCost]);
 
-  const displayedAmount = hasCalculatedAmount ? (calculatedAmount != null ? calculatedAmount.toFixed(2) : '') : amount;
   const isFeedLedgerRecord = category === 'Feed'
     && ['OPEX', 'CAPEX', 'CAPEX-Recoverable'].includes(fundingNature)
     && transactionType === 'Expense';
@@ -375,7 +374,7 @@ export default function TransactionLedger() {
     };
 
     fetchMasterData();
-  }, [token]);
+  }, [token, editingId, setValue]);
 
   const handleFundingChange = (e) => {
     const newNature = e.target.value;
@@ -793,7 +792,6 @@ export default function TransactionLedger() {
                 register={register}
                 errors={errors}
                 watch={watch}
-                setValue={setValue}
                 buildings={buildings}
                 fundingNatures={fundingNatures}
                 categoriesByFunding={categoriesByFunding}

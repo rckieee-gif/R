@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { API_BASE } from './api';
@@ -84,7 +84,7 @@ export default function DailyLog() {
   const [buildings, setBuildings] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [feedItems, setFeedItems] = useState([]);
-  const { register, handleSubmit: hookSubmit, watch, setValue, reset, formState: { errors } } = useForm({
+  const { register, handleSubmit: hookSubmit, watch, control, setValue, getValues, reset, formState: { errors } } = useForm({
     resolver: zodResolver(dailyLogSchema),
     defaultValues: {
       date: todayInput(),
@@ -98,7 +98,7 @@ export default function DailyLog() {
     }
   });
 
-  const watchedValues = watch();
+  const watchedValues = useWatch({ control }) || {};
   const date = watchedValues.date;
   const activeBuilding = watchedValues.activeBuilding;
   const selectedEmployeeId = watchedValues.selectedEmployeeId;
@@ -106,7 +106,6 @@ export default function DailyLog() {
   const feedConsumed = watchedValues.feedConsumed;
   const mortality = watchedValues.mortality;
   const averageWeightGrams = watchedValues.averageWeightGrams;
-  const remarks = watchedValues.remarks;
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);

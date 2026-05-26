@@ -7,7 +7,6 @@ export default function TransactionForm({
   register,
   errors,
   watch,
-  setValue,
   buildings,
   fundingNatures,
   categoriesByFunding,

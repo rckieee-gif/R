@@ -5,7 +5,7 @@ import {
   getLastBroilerTargetDay
 } from './broilerTargets';
 import WeatherForecast from './Components/WeatherForecast';
-import { useStore, useVisibleLogs, useVisibleActiveBatch, usePermissions } from './useStore';
+import { useVisibleLogs, useVisibleActiveBatch, usePermissions } from './useStore';
 
 function todayInput() {
   const now = new Date();

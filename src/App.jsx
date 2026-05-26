@@ -16,16 +16,9 @@ import Settings from './Settings';
 import { API_BASE } from './api';
 import AntigravityAssistant from './Components/AntigravityAssistant';
 import { publicViewerUser } from './publicViewerData';
-import { useStore, hasMinimumRole, normalizeRole } from './useStore';
+import { useStore, hasMinimumRole } from './useStore';
 
 const EMPTY_TRANSACTION_STATE = { batchId: null, rows: [] };
-const EMPTY_LOG_STATE = { batchId: null, rows: [] };
-
-function readZeroGravityPreference() {
-  const saved = localStorage.getItem(ZERO_GRAVITY_STORAGE_KEY);
-
-  return saved !== 'false';
-}
 
 function CogIcon() {
   return (
@@ -62,9 +55,6 @@ function App() {
     batches,
     isBatchListLoading,
     batchListError,
-    transactionState,
-    logState,
-    viewerSnapshot,
     viewerError,
     isViewerLoading,
     preloadedSnapshot,
@@ -78,15 +68,12 @@ function App() {
     logout,
     setActiveBatch,
     setBatches,
-    setIsBatchListLoading,
-    setBatchListError,
     setTransactionState,
     setLogState,
     setViewerSnapshot,
     setViewerError,
     setIsViewerLoading,
     toggleDarkMode,
-    toggleZeroGravity,
     toggleNavMinimized,
     fetchBatches,
     fetchTransactions,
@@ -134,10 +121,8 @@ function App() {
   const isPublicViewer = Boolean(user?.isPublicViewer);
   const activeBatchId = activeBatch?.id;
 
-  const canEnterDaily = hasMinimumRole(user?.role, 'DataEntry');
   const canManageOperations = hasMinimumRole(user?.role, 'OperationManager');
   const canViewFinancial = canManageOperations;
-  const canEditOrDelete = Boolean(user?.isPrimaryOwner);
 
   const allowedScreens = useMemo(() => {
     if (isPublicViewer) {
