@@ -1,0 +1,4 @@
+[submodule "farm-backend"]
+	path = farm-backend
+	url = https://github.com/rckieee-gif/Octavio-Poultry-farms.git
+	branch = main
