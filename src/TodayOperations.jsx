@@ -171,6 +171,37 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     error: '',
     isLoading: false
   });
+
+  const [prepChecklist, setPrepChecklist] = useState({
+    clean: false,
+    bedding: false,
+    equipment: false,
+    feed: false,
+    prewarm: false
+  });
+
+  useEffect(() => {
+    if (activeBatchId) {
+      const saved = localStorage.getItem(`octavioPrepChecklist:${activeBatchId}`);
+      setPrepChecklist(saved ? JSON.parse(saved) : {
+        clean: false,
+        bedding: false,
+        equipment: false,
+        feed: false,
+        prewarm: false
+      });
+    }
+  }, [activeBatchId]);
+
+  const togglePrepItem = (key) => {
+    setPrepChecklist((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      if (activeBatchId) {
+        localStorage.setItem(`octavioPrepChecklist:${activeBatchId}`, JSON.stringify(next));
+      }
+      return next;
+    });
+  };
   const previewTodayData = previewData ? {
     loadings: previewData.loadings || [],
     assignments: previewData.assignments || [],
@@ -615,6 +646,275 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
             Open Batches
           </button>
         </div>
+      </div>
+    );
+  }
+
+  const status = getBatchStatus(activeBatch);
+  const daysUntilArrival = activeBatch?.startDate ? diffDays(activeBatch.startDate, today) : null;
+  const isOnTheWay = status === 'ON_THE_WAY' || status === 'ON THE WAY' || (daysUntilArrival !== null && daysUntilArrival > 0);
+
+  if (isOnTheWay) {
+    const checklistItems = [
+      { key: 'clean', title: 'Sanitize & Disinfect', desc: 'Clean houses and apply virucidal sanitizers' },
+      { key: 'bedding', title: 'Lay Dry Bedding', desc: 'Spread dry wood shavings or rice hulls 2" deep' },
+      { key: 'equipment', title: 'Brooder & Heater Test', desc: 'Ensure all heating lamps and regulators function' },
+      { key: 'feed', title: 'Feed & Water Prep', desc: 'Confirm starter feed is on hand and flush drinker lines' },
+      { key: 'prewarm', title: '24-Hour Pre-warming', desc: 'Start heaters 24h before arrival to warm concrete to 32°C' }
+    ];
+
+    const checkedCount = Object.values(prepChecklist).filter(Boolean).length;
+    const percentComplete = Math.round((checkedCount / checklistItems.length) * 100);
+
+    const countdownText = daysUntilArrival !== null && daysUntilArrival > 0
+      ? `Starts in ${daysUntilArrival} day${daysUntilArrival === 1 ? '' : 's'}`
+      : daysUntilArrival === 0
+        ? 'Arriving Today'
+        : 'In Transit / Delayed';
+
+    const countdownSubtext = daysUntilArrival !== null && daysUntilArrival > 0
+      ? `Expected arrival: ${formatDate(activeBatch.startDate)}`
+      : daysUntilArrival === 0
+        ? 'Prepare for reception and unloading.'
+        : `Expected arrival date was ${formatDate(activeBatch.startDate)}`;
+
+    const readinessTone = percentComplete === 100
+      ? 'success'
+      : percentComplete >= 60
+        ? 'warning'
+        : 'danger';
+
+    const readinessToneClass = {
+      success: 'border-app-success/30 bg-app-success-bg text-app-success',
+      warning: 'border-app-warning/30 bg-app-warning-bg text-app-warning',
+      danger: 'border-app-danger/30 bg-app-danger-bg text-app-danger'
+    }[readinessTone];
+
+    return (
+      <div className="app-page text-app-text">
+        {/* Header */}
+        <div className="mb-5 mt-2">
+          <p className="text-xs font-bold uppercase tracking-wider text-app-text-secondary font-jetbrains">Operations</p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-3xl font-extrabold text-app-accent tracking-tight font-hanken">Pre-Arrival Prep</h2>
+              <p className="text-sm text-app-text-secondary mt-1 font-jetbrains">
+                Batch {activeBatch.id} • Status: {activeBatch.status || 'ON THE WAY'}
+              </p>
+            </div>
+            
+            {/* Countdown Badge */}
+            <div className="rounded-xl border border-app-border bg-app-card px-4 py-2 flex items-center gap-3 shadow-sm min-w-56">
+              <svg className="h-6 w-6 text-app-accent shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-jetbrains">ETA Status</p>
+                <p className="text-sm font-black font-jetbrains text-app-accent">
+                  {countdownText}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Hero Card / Countdown Section */}
+        <div className="relative overflow-hidden rounded-2xl border border-app-border bg-gradient-to-br from-app-card via-app-card to-app-accent/5 p-6 shadow-sm mb-6">
+          {/* Decorative background grid */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
+          
+          <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div className="space-y-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-app-accent/10 px-2.5 py-0.5 text-xs font-semibold text-app-accent">
+                <span className="h-1.5 w-1.5 rounded-full bg-app-accent animate-pulse" />
+                Transit & Setup Mode
+              </span>
+              <h3 className="text-2xl font-black font-hanken tracking-tight">
+                {countdownText}
+              </h3>
+              <p className="text-sm text-app-text-secondary font-inter">
+                {countdownSubtext}
+              </p>
+            </div>
+
+            {/* Checklist Progress Bar */}
+            <div className="w-full md:w-80 shrink-0 space-y-2">
+              <div className="flex justify-between text-xs font-bold font-jetbrains">
+                <span className="text-app-text-secondary">PREPARATION PROGRESS</span>
+                <span className="text-app-accent">{percentComplete}% READY</span>
+              </div>
+              <div className="h-3 w-full rounded-full bg-app-bg overflow-hidden border border-app-border">
+                <div 
+                  className="h-full rounded-full bg-gradient-to-r from-app-accent to-[#50B8F9] transition-all duration-500 ease-out"
+                  style={{ width: `${percentComplete}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-app-text-secondary text-right font-inter font-semibold">
+                {checkedCount} of {checklistItems.length} essential tasks complete
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Expected Metrics Bento Grid */}
+        <div className="grid gap-3 md:grid-cols-4">
+          <SummaryMetric
+            label="Arrival Date"
+            value={formatDate(activeBatch.startDate)}
+            detail="Scheduled reception day"
+          />
+          <SummaryMetric
+            label="Planned Flock"
+            value={formatNumber(activeBatch.plannedFlock || activeBatch.totalChicksLoaded)}
+            detail="Target flock size"
+          />
+          <SummaryMetric
+            label="Target Feed Requirement"
+            value={activeBatch.targetFeedKg ? `${formatNumber(activeBatch.targetFeedKg)} kg` : '--'}
+            detail="Expected starter feed"
+          />
+          <div className={`rounded-xl border p-4 shadow-sm transition-colors ${readinessToneClass}`}>
+            <p className="text-[10px] font-black uppercase tracking-wider opacity-85 font-jetbrains">Readiness Status</p>
+            <p className="mt-1 text-2xl font-black font-jetbrains">{percentComplete}%</p>
+            <p className="mt-2 text-xs font-bold leading-snug opacity-90 font-inter">
+              {percentComplete === 100 
+                ? 'All systems go! Houses prepped.' 
+                : `${checklistItems.length - checkedCount} tasks remaining before chicks arrive.`}
+            </p>
+          </div>
+        </div>
+
+        {/* Interactive Checklist Cards */}
+        <section className="mt-6">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent font-hanken">Pre-Arrival Checklist</h3>
+            <span className="text-[10px] font-bold text-app-text-secondary font-jetbrains">
+              {checkedCount}/5 Completed
+            </span>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {checklistItems.map((item) => {
+              const isChecked = prepChecklist[item.key];
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => togglePrepItem(item.key)}
+                  className={`group relative flex flex-col justify-between rounded-xl border p-5 text-left shadow-sm transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${
+                    isChecked
+                      ? 'border-app-success bg-app-success-bg/20 text-app-text'
+                      : 'border-app-border bg-app-card hover:border-app-accent text-app-text'
+                  }`}
+                >
+                  <div className="w-full flex items-start justify-between gap-3">
+                    <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+                      isChecked ? 'bg-app-success-bg text-app-success' : 'bg-app-bg text-app-text-secondary group-hover:text-app-accent group-hover:bg-app-accent/5'
+                    } transition-colors`}>
+                      {item.key === 'clean' && (
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.656 48.656 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3M3 12l3-3m-3 3l-3-3M19.5 12a45.54 45.54 0 01-15 0" />
+                        </svg>
+                      )}
+                      {item.key === 'bedding' && (
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18M3 12h18" />
+                        </svg>
+                      )}
+                      {item.key === 'equipment' && (
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      )}
+                      {item.key === 'feed' && (
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                      )}
+                      {item.key === 'prewarm' && (
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
+                        </svg>
+                      )}
+                    </span>
+
+                    {/* Custom circle checkbox */}
+                    <div className="shrink-0">
+                      {isChecked ? (
+                        <svg className="h-6 w-6 text-app-success" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      ) : (
+                        <svg className="h-6 w-6 text-app-text-secondary/30 group-hover:text-app-accent/60 transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="10" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <p className="font-extrabold text-sm font-hanken tracking-tight leading-tight group-hover:text-app-accent transition-colors">
+                      {item.title}
+                    </p>
+                    <p className="mt-1.5 text-xs text-app-text-secondary leading-snug font-inter">
+                      {item.desc}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Action Quick Links */}
+        <section className="mt-6">
+          <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent mb-3 font-hanken">Quick Actions</h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setActiveScreen('batches')}
+              className="flex items-center justify-between rounded-xl border border-app-border bg-app-card p-4 shadow-sm hover:border-app-accent transition-all duration-200 cursor-pointer text-left active:scale-[0.98]"
+            >
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-app-accent/10 text-app-accent">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </span>
+                <div>
+                  <p className="font-black text-sm text-app-text font-hanken">Manage Batches</p>
+                  <p className="text-xs text-app-text-secondary font-inter">Configure start dates, planned counts, or switch active batches.</p>
+                </div>
+              </div>
+              <svg className="h-5 w-5 text-app-text-secondary" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveScreen('inventory')}
+              className="flex items-center justify-between rounded-xl border border-app-border bg-app-card p-4 shadow-sm hover:border-app-accent transition-all duration-200 cursor-pointer text-left active:scale-[0.98]"
+            >
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-app-accent/10 text-app-accent">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                </span>
+                <div>
+                  <p className="font-black text-sm text-app-text font-hanken">Check Feed Stock</p>
+                  <p className="text-xs text-app-text-secondary font-inter">Verify starter feed inventory levels before bird arrival.</p>
+                </div>
+              </div>
+              <svg className="h-5 w-5 text-app-text-secondary" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </section>
       </div>
     );
   }
