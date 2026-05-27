@@ -172,42 +172,58 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     isLoading: false
   });
 
-  const [prepChecklist, setPrepChecklist] = useState({
-    dungCleanup: false,
-    pressureWasher: false,
-    clean: false,
-    bedding: false,
-    equipment: false,
-    feed: false,
-    inventory: false,
-    prewarm: false
-  });
-
-  useEffect(() => {
+  const [prepChecklist, setPrepChecklist] = useState(() => {
+    const initial = {
+      dungCleanup: false,
+      pressureWasher: false,
+      clean: false,
+      bedding: false,
+      equipment: false,
+      feed: false,
+      inventory: false,
+      prewarm: false
+    };
     if (activeBatchId) {
       const saved = localStorage.getItem(`octavioPrepChecklist:${activeBatchId}`);
-      setPrepChecklist(saved ? {
-        dungCleanup: false,
-        pressureWasher: false,
-        clean: false,
-        bedding: false,
-        equipment: false,
-        feed: false,
-        inventory: false,
-        prewarm: false,
-        ...JSON.parse(saved)
-      } : {
-        dungCleanup: false,
-        pressureWasher: false,
-        clean: false,
-        bedding: false,
-        equipment: false,
-        feed: false,
-        inventory: false,
-        prewarm: false
-      });
+      if (saved) {
+        try {
+          return { ...initial, ...JSON.parse(saved) };
+        } catch {
+          // ignore
+        }
+      }
     }
-  }, [activeBatchId]);
+    return initial;
+  });
+
+  const [prevActiveBatchId, setPrevActiveBatchId] = useState(activeBatchId);
+  if (activeBatchId !== prevActiveBatchId) {
+    setPrevActiveBatchId(activeBatchId);
+    const initial = {
+      dungCleanup: false,
+      pressureWasher: false,
+      clean: false,
+      bedding: false,
+      equipment: false,
+      feed: false,
+      inventory: false,
+      prewarm: false
+    };
+    if (activeBatchId) {
+      const saved = localStorage.getItem(`octavioPrepChecklist:${activeBatchId}`);
+      if (saved) {
+        try {
+          setPrepChecklist({ ...initial, ...JSON.parse(saved) });
+        } catch {
+          setPrepChecklist(initial);
+        }
+      } else {
+        setPrepChecklist(initial);
+      }
+    } else {
+      setPrepChecklist(initial);
+    }
+  }
 
   const togglePrepItem = (key) => {
     setPrepChecklist((prev) => {

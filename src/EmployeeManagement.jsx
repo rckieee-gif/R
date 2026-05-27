@@ -280,6 +280,15 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
   const [isLoading, setIsLoading] = useState(false);
 
   const activeBatchId = activeBatch?.id ?? null;
+  const [prevActiveBatchId, setPrevActiveBatchId] = useState(activeBatchId);
+  const [prevToken, setPrevToken] = useState(token);
+
+  if (activeBatchId !== prevActiveBatchId || token !== prevToken) {
+    setPrevActiveBatchId(activeBatchId);
+    setPrevToken(token);
+    setBatchLoadings([]);
+  }
+
   const hasActiveCompensations = Boolean(token && activeBatchId);
   const currentCompensationState = hasActiveCompensations && compensationState.batchId === activeBatchId
     ? compensationState
@@ -433,7 +442,6 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
 
   useEffect(() => {
     if (!token || !activeBatchId) {
-      setBatchLoadings([]);
       return undefined;
     }
 
