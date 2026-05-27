@@ -6,6 +6,7 @@ import {
   calculateTargetFeedForHeads,
   getAgeDay
 } from './broilerTargets';
+import { calculateMortalityBuffer, applyMortalityBuffer } from './mortalityBuffer';
 import DailyLogForm from './Components/DailyLog/DailyLogForm';
 import DailyLogHistory from './Components/DailyLog/DailyLogHistory';
 
@@ -75,6 +76,18 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     [buildingAssignments, selectedEmployeeId]
   );
 
+  const selectedEmployeeBuffer = useMemo(() => {
+    if (!selectedAssignment) return 0;
+    const totalBuildingHandled = buildingAssignments.reduce(
+      (sum, a) => sum + Number(a.handledBirds || 0), 0
+    );
+    return calculateMortalityBuffer(
+      selectedAssignment.buildingChicksLoaded,
+      selectedAssignment.handledBirds,
+      totalBuildingHandled
+    );
+  }, [buildingAssignments, selectedAssignment]);
+
   const selectedFeedItem = useMemo(
     () => feedItems.find((item) => String(item.id) === String(feedItemId)) || null,
     [feedItems, feedItemId]
@@ -130,9 +143,10 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
 
   const actualFcr = useMemo(() => {
     if (!averageWeightGrams || !selectedAssignment) return null;
-    const liveHeads = Math.max(Number(selectedAssignment.handledBirds || 0) - employeeActualToDate.mortality, 0);
+    const effectiveMortality = applyMortalityBuffer(employeeActualToDate.mortality, selectedEmployeeBuffer);
+    const liveHeads = Math.max(Number(selectedAssignment.handledBirds || 0) - effectiveMortality, 0);
     return calculateActualFcr(employeeActualToDate.feedBags * BAG_WEIGHT_KG, liveHeads, averageWeightGrams);
-  }, [averageWeightGrams, employeeActualToDate.feedBags, employeeActualToDate.mortality, selectedAssignment]);
+  }, [averageWeightGrams, employeeActualToDate.feedBags, employeeActualToDate.mortality, selectedAssignment, selectedEmployeeBuffer]);
 
   const feedStockAfterLog = useMemo(() => {
     if (!selectedFeedItem) return null;

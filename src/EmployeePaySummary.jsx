@@ -236,6 +236,11 @@ export default function EmployeePaySummary({ token, activeBatch, transactions = 
                   <div className="bg-app-bg border border-app-border/30 p-2 rounded-lg">
                     <p className="text-app-text-secondary font-bold uppercase">Mortality</p>
                     <p className="font-black text-app-danger mt-1 font-jetbrains">{formatBirds(employee.mortality)}</p>
+                    {employee.mortalityBuffer > 0 && (
+                      <p className="text-[9px] font-bold text-app-success mt-0.5 font-jetbrains">
+                        Buffer absorbed {formatBirds(Math.min(employee.mortality, employee.mortalityBuffer))}
+                      </p>
+                    )}
                   </div>
                   <div className="bg-app-bg border border-app-border/30 p-2 rounded-lg">
                     <p className="text-app-text-secondary font-bold uppercase">Payable Birds</p>

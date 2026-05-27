@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { API_BASE } from './api';
+import { calculateMortalityBuffer, applyMortalityBuffer } from './mortalityBuffer';
 import EmployeeList from './Components/Employee/EmployeeList';
 import CompensationForm from './Components/Employee/CompensationForm';
 
@@ -138,7 +139,7 @@ function getEmployeeSummary(employee, transactions) {
   });
 }
 
-function getCompensationRows(compensations, employees, transactions, compDrafts = {}, dailyLogs = []) {
+function getCompensationRows(compensations, employees, transactions, compDrafts = {}, dailyLogs = [], batchLoadings = []) {
   const employeeMap = new Map(employees.filter(isPaySheetEmployee).map((employee) => [employee.id, employee]));
   const parent = new Map();
   const effectiveRows = compensations.filter((compensation) => employeeMap.has(compensation.employeeId)).map((compensation) => {
@@ -185,17 +186,41 @@ function getCompensationRows(compensations, employees, transactions, compDrafts 
     parseCorpoGroupIds(row.corpoGroup).forEach((otherId) => union(row.employeeId, otherId));
   });
 
+  // Build loading map: building -> chicksLoaded
+  const loadingMap = new Map();
+  batchLoadings.forEach((loading) => {
+    const key = String(loading.building || '').toUpperCase();
+    if (key) loadingMap.set(key, Number(loading.chicksLoaded || 0));
+  });
+
+  // Build per-building total handledBirds
+  const buildingHandledTotals = new Map();
+  effectiveRows.forEach((row) => {
+    const employee = employeeMap.get(row.employeeId) || {};
+    const bldg = String(employee.assignedBuilding || row.assignedBuilding || '').toUpperCase();
+    if (bldg) {
+      buildingHandledTotals.set(bldg, (buildingHandledTotals.get(bldg) || 0) + Number(row.handledBirds || 0));
+    }
+  });
+
   const groups = new Map();
 
   effectiveRows.forEach((compensation) => {
     const key = find(compensation.employeeId);
-
     const group = groups.get(key) || {
       handledBirds: 0,
       members: []
     };
-
-    group.handledBirds += Math.max(Number(compensation.handledBirds || 0) - getEmployeeMortality(compensation.employeeId, dailyLogs), 0);
+    const employee = employeeMap.get(compensation.employeeId) || {};
+    const bldg = String(employee.assignedBuilding || compensation.assignedBuilding || '').toUpperCase();
+    const buffer = calculateMortalityBuffer(
+      loadingMap.get(bldg),
+      compensation.handledBirds,
+      buildingHandledTotals.get(bldg)
+    );
+    const mortality = getEmployeeMortality(compensation.employeeId, dailyLogs);
+    const effectiveMortality = applyMortalityBuffer(mortality, buffer);
+    group.handledBirds += Math.max(Number(compensation.handledBirds || 0) - effectiveMortality, 0);
     group.members.push(compensation.employeeId);
     groups.set(key, group);
   });
@@ -206,7 +231,15 @@ function getCompensationRows(compensations, employees, transactions, compDrafts 
     const group = groups.get(find(compensation.employeeId));
     const handledBirds = Number(compensation.handledBirds || 0);
     const mortality = getEmployeeMortality(compensation.employeeId, dailyLogs);
-    const netHandledBirds = Math.max(handledBirds - mortality, 0);
+    const employeeObj = employeeMap.get(compensation.employeeId) || {};
+    const empBldg = String(employeeObj.assignedBuilding || compensation.assignedBuilding || '').toUpperCase();
+    const mortalityBuffer = calculateMortalityBuffer(
+      loadingMap.get(empBldg),
+      handledBirds,
+      buildingHandledTotals.get(empBldg)
+    );
+    const effectiveMortality = applyMortalityBuffer(mortality, mortalityBuffer);
+    const netHandledBirds = Math.max(handledBirds - effectiveMortality, 0);
     const ratePerBird = Number(compensation.ratePerBird || 1.5);
     const memberCount = group?.members.length || 1;
     const poolBirds = memberCount > 1 ? group.handledBirds : netHandledBirds;
@@ -222,6 +255,8 @@ function getCompensationRows(compensations, employees, transactions, compDrafts 
       ...summary,
       grossHandledBirds: handledBirds,
       mortality,
+      mortalityBuffer,
+      effectiveMortality,
       netHandledBirds,
       outstandingAdvance,
       poolBirds,
@@ -238,6 +273,7 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
   const [employees, setEmployees] = useState([]);
   const [compensationState, setCompensationState] = useState(EMPTY_COMPENSATION_STATE);
   const [buildings, setBuildings] = useState([]);
+  const [batchLoadings, setBatchLoadings] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState('');
@@ -254,8 +290,8 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
   const employeeIds = useMemo(() => paySheetEmployees.map((employee) => employee.id), [paySheetEmployees]);
 
   const compensationRows = useMemo(
-    () => getCompensationRows(compensations, paySheetEmployees, transactions, compDrafts, dailyLogs),
-    [compensations, paySheetEmployees, transactions, compDrafts, dailyLogs]
+    () => getCompensationRows(compensations, paySheetEmployees, transactions, compDrafts, dailyLogs, batchLoadings),
+    [compensations, paySheetEmployees, transactions, compDrafts, dailyLogs, batchLoadings]
   );
 
   const totals = useMemo(
@@ -393,6 +429,33 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
     return () => {
       isCancelled = true;
     };
+  }, [token, activeBatchId]);
+
+  useEffect(() => {
+    if (!token || !activeBatchId) {
+      setBatchLoadings([]);
+      return undefined;
+    }
+
+    let isCancelled = false;
+
+    const fetchLoadings = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/batches/${activeBatchId}/loadings`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (isCancelled) return;
+        if (response.ok) setBatchLoadings(data);
+      } catch (err) {
+        if (isCancelled) return;
+        console.error('Failed to load batch loadings for buffer:', err);
+      }
+    };
+
+    fetchLoadings();
+    return () => { isCancelled = true; };
   }, [token, activeBatchId]);
 
   const updateForm = (field, value) => {

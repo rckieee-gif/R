@@ -266,6 +266,16 @@ export default function CompensationForm({
                     {employee.mortality > 0 && (
                       <p className="text-[10px] font-bold text-app-danger mt-1 font-jetbrains">
                         Less mortality: {formatBirds(employee.mortality)}
+                        {employee.mortalityBuffer > 0 && (
+                          <span className="text-app-success ml-1">
+                            (buffer absorbed {formatBirds(Math.min(employee.mortality, employee.mortalityBuffer))})
+                          </span>
+                        )}
+                      </p>
+                    )}
+                    {employee.mortalityBuffer > 0 && employee.mortality === 0 && (
+                      <p className="text-[10px] font-bold text-app-success mt-1 font-jetbrains">
+                        Buffer: {formatBirds(employee.mortalityBuffer)} birds
                       </p>
                     )}
                   </div>
