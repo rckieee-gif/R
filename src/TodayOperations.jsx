@@ -173,21 +173,37 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
   });
 
   const [prepChecklist, setPrepChecklist] = useState({
+    dungCleanup: false,
+    pressureWasher: false,
     clean: false,
     bedding: false,
     equipment: false,
     feed: false,
+    inventory: false,
     prewarm: false
   });
 
   useEffect(() => {
     if (activeBatchId) {
       const saved = localStorage.getItem(`octavioPrepChecklist:${activeBatchId}`);
-      setPrepChecklist(saved ? JSON.parse(saved) : {
+      setPrepChecklist(saved ? {
+        dungCleanup: false,
+        pressureWasher: false,
         clean: false,
         bedding: false,
         equipment: false,
         feed: false,
+        inventory: false,
+        prewarm: false,
+        ...JSON.parse(saved)
+      } : {
+        dungCleanup: false,
+        pressureWasher: false,
+        clean: false,
+        bedding: false,
+        equipment: false,
+        feed: false,
+        inventory: false,
         prewarm: false
       });
     }
@@ -656,10 +672,13 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
 
   if (isOnTheWay) {
     const checklistItems = [
+      { key: 'dungCleanup', title: 'Chicken Dung Cleanup', desc: 'Thorough removal and disposal of previous flock\'s dung' },
+      { key: 'pressureWasher', title: 'Pressure Washer Setup', desc: 'Inspect hoses, nozzle, and fuel for the pressure washer' },
       { key: 'clean', title: 'Sanitize & Disinfect', desc: 'Clean houses and apply virucidal sanitizers' },
       { key: 'bedding', title: 'Lay Dry Bedding', desc: 'Spread dry wood shavings or rice hulls 2" deep' },
       { key: 'equipment', title: 'Brooder & Heater Test', desc: 'Ensure all heating lamps and regulators function' },
       { key: 'feed', title: 'Feed & Water Prep', desc: 'Confirm starter feed is on hand and flush drinker lines' },
+      { key: 'inventory', title: 'Inventory Audit', desc: 'Check and record starter feed, medicine, and vitamins' },
       { key: 'prewarm', title: '24-Hour Pre-warming', desc: 'Start heaters 24h before arrival to warm concrete to 32°C' }
     ];
 
@@ -789,7 +808,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           <div className="mb-3 flex items-center justify-between gap-3">
             <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent font-hanken">Pre-Arrival Checklist</h3>
             <span className="text-[10px] font-bold text-app-text-secondary font-jetbrains">
-              {checkedCount}/5 Completed
+              {checkedCount}/{checklistItems.length} Completed
             </span>
           </div>
 
@@ -811,6 +830,16 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
                     <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${
                       isChecked ? 'bg-app-success-bg text-app-success' : 'bg-app-bg text-app-text-secondary group-hover:text-app-accent group-hover:bg-app-accent/5'
                     } transition-colors`}>
+                      {item.key === 'dungCleanup' && (
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      )}
+                      {item.key === 'pressureWasher' && (
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072M6 18H4a2 2 0 01-2-2v-4a2 2 0 012-2h2m10-4H8a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2V8a2 2 0 00-2-2z" />
+                        </svg>
+                      )}
                       {item.key === 'clean' && (
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.656 48.656 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3M3 12l3-3m-3 3l-3-3M19.5 12a45.54 45.54 0 01-15 0" />
@@ -830,6 +859,11 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
                       {item.key === 'feed' && (
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                      )}
+                      {item.key === 'inventory' && (
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                         </svg>
                       )}
                       {item.key === 'prewarm' && (
