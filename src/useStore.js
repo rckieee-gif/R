@@ -49,19 +49,24 @@ function pickPreferredBatch(batches, user) {
 }
 
 const initialUser = (() => {
-  const savedToken = localStorage.getItem('octavioToken');
-  const savedUser = localStorage.getItem('octavioUser');
-  if (!savedToken || !savedUser) {
+  // Clean up legacy localStorage session data if present
+  if (localStorage.getItem('octavioToken') || localStorage.getItem('octavioUser')) {
     localStorage.removeItem('octavioUser');
     localStorage.removeItem('octavioToken');
+  }
+  const savedToken = sessionStorage.getItem('octavioToken');
+  const savedUser = sessionStorage.getItem('octavioUser');
+  if (!savedToken || !savedUser) {
+    sessionStorage.removeItem('octavioUser');
+    sessionStorage.removeItem('octavioToken');
     return null;
   }
   try {
     return JSON.parse(savedUser);
   } catch (err) {
     console.error("Failed to parse user session:", err);
-    localStorage.removeItem('octavioUser');
-    localStorage.removeItem('octavioToken');
+    sessionStorage.removeItem('octavioUser');
+    sessionStorage.removeItem('octavioToken');
     return null;
   }
 })();
@@ -69,7 +74,7 @@ const initialUser = (() => {
 export const useStore = create((set, get) => ({
   // --- AUTHENTICATION STATE ---
   user: initialUser,
-  token: localStorage.getItem('octavioToken'),
+  token: sessionStorage.getItem('octavioToken'),
   authView: 'intro',
   
   // --- BATCH STATE ---
@@ -107,18 +112,18 @@ export const useStore = create((set, get) => ({
   setPreloadedSnapshot: (snapshot) => set({ preloadedSnapshot: snapshot }),
 
   login: (userData, authToken) => {
-    localStorage.setItem('octavioUser', JSON.stringify(userData));
+    sessionStorage.setItem('octavioUser', JSON.stringify(userData));
     if (authToken) {
-      localStorage.setItem('octavioToken', authToken);
+      sessionStorage.setItem('octavioToken', authToken);
     } else {
-      localStorage.removeItem('octavioToken');
+      sessionStorage.removeItem('octavioToken');
     }
     set({ user: userData, token: authToken, authView: 'intro' });
   },
 
   logout: () => {
-    localStorage.removeItem('octavioUser');
-    localStorage.removeItem('octavioToken');
+    sessionStorage.removeItem('octavioUser');
+    sessionStorage.removeItem('octavioToken');
     set({
       user: null,
       token: null,

@@ -274,24 +274,36 @@ function App() {
         
         {/* --- DESKTOP SIDE NAVIGATION (md and up) --- */}
         <aside 
-          className={`no-print hidden md:flex flex-col h-screen sticky top-0 left-0 z-40 bg-app-card border-r border-app-border transition-all duration-300 flex-shrink-0 overflow-hidden ${
+          className={`no-print hidden md:flex flex-col h-screen sticky top-0 left-0 z-40 bg-gradient-to-b from-sidebar-grad-start to-sidebar-grad-end border-r border-white/10 text-white transition-all duration-300 flex-shrink-0 overflow-hidden ${
             isNavMinimized ? 'w-16' : 'w-56'
           }`}
         >
           {/* Header */}
-          <div className="p-4 flex items-center justify-between border-b border-app-border shrink-0 h-[65px] transition-all duration-300">
+          <div className="p-4 flex items-center justify-between border-b border-white/10 shrink-0 h-[65px] transition-all duration-300">
             <div className={`min-w-0 transition-all duration-300 ${
               isNavMinimized ? 'w-0 opacity-0 pointer-events-none overflow-hidden' : 'w-auto opacity-100 flex-1'
             }`}>
-              <h2 className="text-sm font-bold text-app-text tracking-tighter truncate uppercase font-hanken whitespace-nowrap">Octavio Farms</h2>
-              <p className="text-[9px] font-mono text-app-text-secondary truncate mt-0.5 uppercase tracking-widest font-jetbrains whitespace-nowrap">
-                {user?.role || 'Viewer'}
-              </p>
+              <div className="flex items-center">
+                {/* Logo/Avatar rounded square */}
+                <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-transparent mr-2.5 shadow-inner border border-white/10">
+                  <img 
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuABNsQ960Pmrnk68ERL8H1V7nTNgR3VcAhTQXfjz54-FzDhXtDujsFIH0JzNSozB1jq8KcKbnBMU0gkAWJTk9GX9myEeB1tWAyvtANgNNFQ66WQ31VJbRwGVC8BY0mhR-bRO0HPeLoB8xtdcQ1nOIzlL20AQ01eQQe5-PICHUimZgBgPMPZESXFLDMNCpO0Bv7p9mVW78U-HcnNZyRrppjA3inwLIZGJI2_o6DNMav2H25TGm0xApDdSwy_jmRqO97c9Q8yvn7ketUJ" 
+                    alt="Octavio Farms Logo" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-xs font-extrabold text-white tracking-tighter truncate uppercase font-hanken whitespace-nowrap">Octavio Farms</h2>
+                  <p className="text-[9px] font-bold text-white/60 truncate mt-0.5 uppercase tracking-widest font-jetbrains whitespace-nowrap">
+                    {user?.role === 'Admin' ? 'ADMIN OWNER' : (user?.role || 'Viewer').toUpperCase()}
+                  </p>
+                </div>
+              </div>
             </div>
             
             <button 
               onClick={toggleNavMinimized}
-              className={`rounded hover:bg-app-bg text-app-text-secondary hover:text-app-text transition-all duration-300 flex items-center justify-center ${
+              className={`rounded hover:bg-white/10 text-white/80 hover:text-white transition-all duration-300 flex items-center justify-center ${
                 isNavMinimized ? 'w-full py-1.5' : 'p-1.5 ml-2'
               }`}
               title={isNavMinimized ? "Expand Sidebar" : "Minimize Sidebar"}
@@ -306,78 +318,94 @@ function App() {
           <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1.5 ag-scrollbar">
             {visibleNavItems.map((item) => {
               const isActive = currentScreen === item.id;
+              const showDividerAfter = ['dashboard', 'ledger', 'statement'];
               return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveScreen(item.id)}
-                  className={`w-full group flex items-center transition-all duration-300 rounded border-l-[3px] border-r-[3px] py-2 ${
-                    isNavMinimized ? 'px-5 gap-0' : 'px-3.5 gap-3'
-                  } ${
-                    isActive
-                      ? 'bg-gradient-to-r from-app-accent/10 to-transparent border-l-app-accent border-r-transparent text-app-text font-bold'
-                      : 'border-l-transparent border-r-transparent text-app-text-secondary hover:bg-app-bg/50 hover:text-app-text'
-                  }`}
-                  title={item.label}
-                >
-                  <span 
-                    className={`material-symbols-outlined text-[18px] transition-colors shrink-0 ${
-                      isActive ? 'text-app-accent' : 'text-app-text-secondary group-hover:text-app-text'
+                <div key={item.id}>
+                  <button
+                    onClick={() => setActiveScreen(item.id)}
+                    className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 ${
+                      isNavMinimized ? 'px-4 gap-0 justify-center' : 'px-3.5 gap-3'
+                    } ${
+                      isActive
+                        ? 'bg-[#70B8F9] text-[#0A2540] font-black shadow-sm'
+                        : 'bg-transparent text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
-                    style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}
+                    title={item.label}
                   >
-                    {item.icon}
-                  </span>
-                  
-                  <span className={`transition-all duration-300 text-[10px] font-bold tracking-wider uppercase truncate ${
-                    isNavMinimized ? 'w-0 opacity-0 pointer-events-none' : 'w-28 opacity-100'
-                  }`}>
-                    {item.label}
-                  </span>
-                </button>
+                    <span 
+                      className={`material-symbols-outlined text-[18px] transition-colors shrink-0 ${
+                        isActive ? 'text-[#0A2540]' : 'text-white/80 group-hover:text-white'
+                      }`}
+                      style={{ fontVariationSettings: "'FILL' 1" }}
+                    >
+                      {item.icon}
+                    </span>
+                    
+                    <span className={`transition-all duration-200 text-[10px] font-bold tracking-wider uppercase truncate ${
+                      isNavMinimized ? 'w-0 opacity-0 pointer-events-none' : 'w-28 opacity-100'
+                    }`}>
+                      {item.label}
+                    </span>
+                  </button>
+                  {showDividerAfter.includes(item.id) && (
+                    <hr className="border-t border-white/10 my-2 mx-2" />
+                  )}
+                </div>
               );
             })}
           </nav>
 
           {/* Footer controls */}
-          <div className="p-3 border-t border-app-border shrink-0 flex flex-col gap-3">
+          <div className="p-3 border-t border-white/10 shrink-0 flex flex-col gap-3">
             {/* Active Batch Indicator / Selector */}
             {!isPublicViewer && (
-              <div className="relative min-h-[38px] transition-all duration-300">
-                <div className={`transition-all duration-300 ${
-                  isNavMinimized ? 'opacity-0 scale-95 pointer-events-none absolute inset-0' : 'opacity-100 scale-100'
-                }`}>
-                  <div className="flex flex-col gap-1">
-                    <label htmlFor="desktop-batch-selector" className="text-[9px] font-bold uppercase tracking-wider text-app-text-secondary">
-                      Active Batch
-                    </label>
-                    <select
-                      id="desktop-batch-selector"
-                      value={activeBatch?.id || ''}
-                      onChange={handleBatchSelectorChange}
-                      disabled={isBatchListLoading || batches.length === 0}
-                      className="w-full h-8 rounded border border-app-border bg-app-bg px-2 text-xs font-bold text-app-text outline-none transition focus:ring-1 focus:ring-app-accent disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {isBatchListLoading && <option value="">Loading...</option>}
-                      {!isBatchListLoading && batches.length === 0 && <option value="">None</option>}
-                      {batches.map((batch) => (
-                        <option key={batch.id} value={batch.id}>
-                          {batch.id} ({batch.status || 'No status'})
-                        </option>
-                      ))}
-                    </select>
+              <>
+                <div className="relative min-h-[38px] transition-all duration-300">
+                  <div className={`transition-all duration-300 ${
+                    isNavMinimized ? 'opacity-0 scale-95 pointer-events-none absolute inset-0' : 'opacity-100 scale-100'
+                  }`}>
+                    <div className="flex flex-col gap-1">
+                      <label htmlFor="desktop-batch-selector" className="text-[9px] font-bold uppercase tracking-wider text-white/60">
+                        Active Batch
+                      </label>
+                      <div className="relative">
+                        <select
+                          id="desktop-batch-selector"
+                          value={activeBatch?.id || ''}
+                          onChange={handleBatchSelectorChange}
+                          disabled={isBatchListLoading || batches.length === 0}
+                          className="w-full h-8 rounded-xl border-none bg-[#70B8F9] px-3 pr-8 text-xs font-bold text-[#0A2540] outline-none appearance-none cursor-pointer focus:ring-1 focus:ring-white/20 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isBatchListLoading && <option value="">Loading...</option>}
+                          {!isBatchListLoading && batches.length === 0 && <option value="">None</option>}
+                          {batches.map((batch) => (
+                            <option key={batch.id} value={batch.id} className="bg-white text-app-text">
+                              {batch.id} ({batch.status || 'No status'})
+                            </option>
+                          ))}
+                        </select>
+                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-[#0A2540]">
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                          </svg>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className={`transition-all duration-300 ${
+                    isNavMinimized ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none absolute inset-0'
+                  }`}>
+                    <div className="flex justify-center" title={`Active Batch: ${activeBatch?.id || 'None'}`}>
+                      <span className="px-1.5 py-0.5 bg-[#70B8F9] rounded text-[9px] font-bold text-[#0A2540] font-jetbrains">
+                        B:{activeBatch?.id || 'N/A'}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                
-                <div className={`transition-all duration-300 ${
-                  isNavMinimized ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none absolute inset-0'
-                }`}>
-                  <div className="flex justify-center" title={`Active Batch: ${activeBatch?.id || 'None'}`}>
-                    <span className="px-1.5 py-0.5 bg-app-accent/15 border border-app-accent/20 rounded text-[9px] font-bold text-app-accent font-jetbrains">
-                      B:{activeBatch?.id || 'N/A'}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                {/* Divider after Active Batch */}
+                <hr className="border-t border-white/10 my-1 mx-2" />
+              </>
             )}
 
             {/* Utility Buttons */}
@@ -385,21 +413,21 @@ function App() {
               {allowedScreens.includes('settings') && (
                 <button
                   onClick={() => setActiveScreen('settings')}
-                  className={`w-full group flex items-center transition-all duration-300 rounded border-l-[3px] border-r-[3px] py-2 ${
-                    isNavMinimized ? 'px-5 gap-0' : 'px-3.5 gap-3'
+                  className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 ${
+                    isNavMinimized ? 'px-4 gap-0 justify-center' : 'px-3.5 gap-3'
                   } ${
                     currentScreen === 'settings'
-                      ? 'bg-gradient-to-r from-app-accent/10 to-transparent border-l-app-accent border-r-transparent text-app-text font-bold'
-                      : 'border-l-transparent border-r-transparent text-app-text-secondary hover:bg-app-bg/50 hover:text-app-text'
+                      ? 'bg-[#70B8F9] text-[#0A2540] font-black shadow-sm'
+                      : 'bg-transparent text-white/90 hover:bg-white/10 hover:text-white'
                   }`}
                   title="Settings"
                 >
                   <span className={`flex items-center justify-center h-[18px] w-[18px] shrink-0 transition-colors ${
-                    currentScreen === 'settings' ? 'text-app-accent' : 'text-app-text-secondary group-hover:text-app-text'
+                    currentScreen === 'settings' ? 'text-[#0A2540]' : 'text-white/80 group-hover:text-white'
                   }`}>
                     <CogIcon />
                   </span>
-                  <span className={`transition-all duration-300 text-[10px] font-bold tracking-wider uppercase truncate ${
+                  <span className={`transition-all duration-200 text-[10px] font-bold tracking-wider uppercase truncate ${
                     isNavMinimized ? 'w-0 opacity-0 pointer-events-none' : 'w-28 opacity-100'
                   }`}>
                     Settings
@@ -409,15 +437,15 @@ function App() {
 
               <button
                 onClick={toggleDarkMode}
-                className={`w-full group flex items-center transition-all duration-300 rounded border-l-[3px] border-r-[3px] py-2 border-l-transparent border-r-transparent text-app-text-secondary hover:bg-app-bg/50 hover:text-app-text ${
-                  isNavMinimized ? 'px-5 gap-0' : 'px-3.5 gap-3'
+                className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 bg-transparent text-white/90 hover:bg-white/10 hover:text-white ${
+                  isNavMinimized ? 'px-4 gap-0 justify-center' : 'px-3.5 gap-3'
                 }`}
                 title={isDarkMode ? "Use Light Mode" : "Use Dark Mode"}
               >
-                <span className="flex items-center justify-center h-[18px] w-[18px] shrink-0 text-app-text-secondary group-hover:text-app-text">
+                <span className="flex items-center justify-center h-[18px] w-[18px] shrink-0 text-white/80 group-hover:text-white transition-colors">
                   <ThemeIcon isDarkMode={isDarkMode} />
                 </span>
-                <span className={`transition-all duration-300 text-[10px] font-bold tracking-wider uppercase truncate ${
+                <span className={`transition-all duration-200 text-[10px] font-bold tracking-wider uppercase truncate ${
                   isNavMinimized ? 'w-0 opacity-0 pointer-events-none' : 'w-28 opacity-100'
                 }`}>
                   {isDarkMode ? "Light Mode" : "Dark Mode"}
@@ -426,15 +454,15 @@ function App() {
 
               <button 
                 onClick={handleLogout} 
-                className={`w-full group flex items-center transition-all duration-300 rounded border-l-[3px] border-r-[3px] py-2 text-app-text-secondary hover:bg-app-danger-bg hover:text-app-danger border-l-transparent border-r-transparent ${
-                  isNavMinimized ? 'px-5 gap-0' : 'px-3.5 gap-3'
+                className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 bg-transparent text-white/90 hover:bg-white/10 hover:text-white ${
+                  isNavMinimized ? 'px-4 gap-0 justify-center' : 'px-3.5 gap-3'
                 }`}
                 title={isPublicViewer ? "Exit Preview" : "Logout"}
               >
-                <span className="material-symbols-outlined text-[18px] shrink-0 text-app-text-secondary group-hover:text-app-danger transition-colors">
+                <span className="material-symbols-outlined text-[18px] shrink-0 text-white/80 group-hover:text-white transition-colors" style={{ fontVariationSettings: "'FILL' 1" }}>
                   logout
                 </span>
-                <span className={`transition-all duration-300 text-[10px] font-bold tracking-wider uppercase truncate ${
+                <span className={`transition-all duration-200 text-[10px] font-bold tracking-wider uppercase truncate ${
                   isNavMinimized ? 'w-0 opacity-0 pointer-events-none' : 'w-28 opacity-100'
                 }`}>
                   {isPublicViewer ? "Exit Preview" : "Logout"}
