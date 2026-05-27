@@ -13,6 +13,20 @@ function formatNumber(num) {
   return Number(num).toLocaleString();
 }
 
+function formatDateStr(value) {
+  if (!value) return '--';
+  const parts = String(value).split('T')[0].split('-');
+  const year = Number(parts[0]);
+  const month = Number(parts[1]);
+  const day = Number(parts[2]);
+  if (!year || !month || !day) return '--';
+  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+}
+
 function IntroMetric({ label, value }) {
   return (
     <div>
@@ -44,6 +58,56 @@ function PreviewStat({ label, value, tone = 'text-app-text', suffix = null, isAl
 
 export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerLoading = false, viewerError = '', preloadedSnapshot = null }) {
   const todayStr = getTodayDateString();
+
+  const batch = preloadedSnapshot?.batch;
+  const status = batch?.status?.trim()?.toUpperCase() || '';
+  
+  const parseDateOnly = (val) => {
+    if (!val) return null;
+    const [year, month, day] = String(val).split('T')[0].split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+  
+  const startD = batch?.startDate ? parseDateOnly(batch.startDate) : null;
+  const todayD = parseDateOnly(todayStr);
+  const daysUntilArrival = startD && todayD ? Math.round((startD - todayD) / (24 * 60 * 60 * 1000)) : null;
+
+  const isPrepMode = preloadedSnapshot
+    ? (status === 'ON_THE_WAY' || status === 'ON THE WAY' || (daysUntilArrival !== null && daysUntilArrival > 0))
+    : true; // Default to showing prep mode preview for the new system demo!
+
+  const activeBatchId = batch?.id ?? null;
+  const savedPrepChecklist = activeBatchId ? localStorage.getItem(`octavioPrepChecklist:${activeBatchId}`) : null;
+  const prepChecklist = savedPrepChecklist ? JSON.parse(savedPrepChecklist) : {
+    dungCleanup: true,
+    pressureWasher: true,
+    clean: true,
+    bedding: true,
+    equipment: false,
+    feed: false,
+    inventory: false,
+    prewarm: false
+  };
+
+  const checklistItems = [
+    { key: 'dungCleanup', title: 'Chicken Dung Cleanup', desc: 'Thorough removal and disposal of previous flock\'s dung' },
+    { key: 'pressureWasher', title: 'Pressure Washer Setup', desc: 'Inspect hoses, nozzle, and fuel for the pressure washer' },
+    { key: 'clean', title: 'Sanitize & Disinfect', desc: 'Clean houses and apply virucidal sanitizers' },
+    { key: 'bedding', title: 'Lay Dry Bedding', desc: 'Spread dry wood shavings or rice hulls 2" deep' },
+    { key: 'equipment', title: 'Brooder & Heater Test', desc: 'Ensure all heating lamps and regulators function' },
+    { key: 'feed', title: 'Feed & Water Prep', desc: 'Confirm starter feed is on hand and flush drinker lines' },
+    { key: 'inventory', title: 'Inventory Audit', desc: 'Check and record starter feed, medicine, and vitamins' },
+    { key: 'prewarm', title: '24-Hour Pre-warming', desc: 'Start heaters 24h before arrival to warm concrete to 32°C' }
+  ];
+
+  const checkedCount = Object.keys(prepChecklist).filter(key => prepChecklist[key]).length;
+  const percentComplete = Math.round((checkedCount / checklistItems.length) * 100);
+
+  const countdownText = daysUntilArrival !== null && daysUntilArrival > 0
+    ? `Starts in ${daysUntilArrival} day${daysUntilArrival === 1 ? '' : 's'}`
+    : daysUntilArrival === 0
+      ? 'Arriving Today'
+      : 'In Transit / Delayed';
 
   const liveBirdsValue = preloadedSnapshot
     ? Math.max(
@@ -217,51 +281,117 @@ export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerL
           <div className="glass-card model-3d rounded-xl p-6 w-full max-w-lg relative overflow-hidden group">
             <div className="absolute inset-0 bg-app-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
 
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <div className="text-app-accent text-xs font-semibold tracking-widest uppercase mb-2 font-jetbrains">
-                  LIVE PREVIEW
-                </div>
-                <h2 className="text-xl font-bold font-hanken text-app-text">Today at a glance</h2>
-              </div>
-              <div className="px-2.5 py-1 bg-app-accent/15 text-app-accent rounded text-[10px] font-semibold tracking-widest font-jetbrains border border-app-accent/20">
-                READ-ONLY
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <PreviewStat label="LIVE BIRDS" value={formatNumber(liveBirdsValue)} tone="text-app-success" />
-              <PreviewStat label="LOGS TODAY" value={formatNumber(logsTodayValue)} tone="text-app-accent" />
-              <PreviewStat label="FEED STOCK" value={formatNumber(feedStockValue)} suffix="sx" />
-              <PreviewStat label="LOW ALERTS" value={formatNumber(lowAlertsValue)} isAlert={lowAlertsValue > 0} />
-            </div>
-
-            <div className="space-y-2">
-              {displayItems.map((item) => {
-                const isAlert = item.status === 'alert';
-                const isWarning = item.status === 'warning';
-                
-                let containerClass = "flex items-center justify-between p-3 bg-app-bg/50 backdrop-blur-sm rounded-lg border border-app-border/40 hover:border-app-accent/30 transition-colors duration-200";
-                let dotClass = "w-2.5 h-2.5 rounded-full bg-app-accent";
-                
-                if (isAlert) {
-                  containerClass = "flex items-center justify-between p-3 bg-app-danger-bg/25 backdrop-blur-sm rounded-lg border border-app-danger/25 hover:border-app-danger/50 transition-colors duration-200 relative overflow-hidden";
-                  dotClass = "w-2.5 h-2.5 rounded-full bg-app-danger relative z-10 animate-pulse";
-                } else if (isWarning) {
-                  containerClass = "flex items-center justify-between p-3 bg-app-warning-bg/25 backdrop-blur-sm rounded-lg border border-app-warning/25 hover:border-app-warning/50 transition-colors duration-200 relative overflow-hidden";
-                  dotClass = "w-2.5 h-2.5 rounded-full bg-app-warning relative z-10 animate-pulse";
-                }
-
-                return (
-                  <div key={item.key} className={containerClass}>
-                    <span className={`text-sm text-app-text ${isAlert || isWarning ? 'relative z-10 font-medium' : ''}`}>
-                      {item.label}
-                    </span>
-                    <div className={dotClass}></div>
+            {isPrepMode ? (
+              <>
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <div className="text-app-accent text-xs font-semibold tracking-widest uppercase mb-2 font-jetbrains">
+                      LIVE PREVIEW • PRE-ARRIVAL
+                    </div>
+                    <h2 className="text-xl font-bold font-hanken text-app-text">Pre-Arrival Prep</h2>
                   </div>
-                );
-              })}
-            </div>
+                  <div className="px-2.5 py-1 bg-app-accent/15 text-app-accent rounded text-[10px] font-semibold tracking-widest font-jetbrains border border-app-accent/20">
+                    READ-ONLY
+                  </div>
+                </div>
+
+                {/* Countdown / ETA Progress */}
+                <div className="bg-app-accent/5 rounded-lg border border-app-accent/15 p-4 mb-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-bold font-hanken text-app-text">{countdownText}</span>
+                    <span className="text-xs font-bold font-jetbrains text-app-accent">{percentComplete}% READY</span>
+                  </div>
+                  <div className="h-2.5 w-full rounded-full bg-app-bg overflow-hidden border border-app-border">
+                    <div 
+                      className="h-full rounded-full bg-gradient-to-r from-app-accent to-[#70B8F9]"
+                      style={{ width: `${percentComplete}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-app-text-secondary mt-2 font-inter font-semibold">
+                    {checkedCount} of 8 preparation tasks completed
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <PreviewStat label="ARRIVING ON" value={formatDateStr(batch?.startDate || '2026-06-01')} tone="text-app-accent" />
+                  <PreviewStat label="PLANNED FLOCK" value={formatNumber(batch?.plannedFlock || 40000)} />
+                  <PreviewStat label="TARGET FEED" value={batch?.targetFeedKg ? `${formatNumber(batch.targetFeedKg)} kg` : '5,200 kg'} />
+                  <PreviewStat label="READINESS" value={`${percentComplete}%`} tone={percentComplete === 100 ? 'text-app-success' : 'text-app-warning'} />
+                </div>
+
+                <div className="space-y-2">
+                  {checklistItems.slice(0, 4).map((item) => {
+                    const isChecked = prepChecklist[item.key];
+                    return (
+                      <div key={item.key} className="flex items-center justify-between p-3 bg-app-bg/50 backdrop-blur-sm rounded-lg border border-app-border/40 hover:border-app-accent/30 transition-colors duration-200">
+                        <span className="text-sm text-app-text font-medium">
+                          {item.title}
+                        </span>
+                        <div className="shrink-0">
+                          {isChecked ? (
+                            <svg className="h-5 w-5 text-app-success" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          ) : (
+                            <svg className="h-5 w-5 text-app-text-secondary/30" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <circle cx="12" cy="12" r="10" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <div className="text-app-accent text-xs font-semibold tracking-widest uppercase mb-2 font-jetbrains">
+                      LIVE PREVIEW
+                    </div>
+                    <h2 className="text-xl font-bold font-hanken text-app-text">Today at a glance</h2>
+                  </div>
+                  <div className="px-2.5 py-1 bg-app-accent/15 text-app-accent rounded text-[10px] font-semibold tracking-widest font-jetbrains border border-app-accent/20">
+                    READ-ONLY
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <PreviewStat label="LIVE BIRDS" value={formatNumber(liveBirdsValue)} tone="text-app-success" />
+                  <PreviewStat label="LOGS TODAY" value={formatNumber(logsTodayValue)} tone="text-app-accent" />
+                  <PreviewStat label="FEED STOCK" value={formatNumber(feedStockValue)} suffix="sx" />
+                  <PreviewStat label="LOW ALERTS" value={formatNumber(lowAlertsValue)} isAlert={lowAlertsValue > 0} />
+                </div>
+
+                <div className="space-y-2">
+                  {displayItems.map((item) => {
+                    const isAlert = item.status === 'alert';
+                    const isWarning = item.status === 'warning';
+                    
+                    let containerClass = "flex items-center justify-between p-3 bg-app-bg/50 backdrop-blur-sm rounded-lg border border-app-border/40 hover:border-app-accent/30 transition-colors duration-200";
+                    let dotClass = "w-2.5 h-2.5 rounded-full bg-app-accent";
+                    
+                    if (isAlert) {
+                      containerClass = "flex items-center justify-between p-3 bg-app-danger-bg/25 backdrop-blur-sm rounded-lg border border-app-danger/25 hover:border-app-danger/50 transition-colors duration-200 relative overflow-hidden";
+                      dotClass = "w-2.5 h-2.5 rounded-full bg-app-danger relative z-10 animate-pulse";
+                    } else if (isWarning) {
+                      containerClass = "flex items-center justify-between p-3 bg-app-warning-bg/25 backdrop-blur-sm rounded-lg border border-app-warning/25 hover:border-app-warning/50 transition-colors duration-200 relative overflow-hidden";
+                      dotClass = "w-2.5 h-2.5 rounded-full bg-app-warning relative z-10 animate-pulse";
+                    }
+
+                    return (
+                      <div key={item.key} className={containerClass}>
+                        <span className={`text-sm text-app-text ${isAlert || isWarning ? 'relative z-10 font-medium' : ''}`}>
+                          {item.label}
+                        </span>
+                        <div className={dotClass}></div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
         </section>
       </main>
