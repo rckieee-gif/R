@@ -58,6 +58,7 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
   const [plannedFlock, setPlannedFlock] = useState('');
   const [targetFeedKg, setTargetFeedKg] = useState('');
   const [notes, setNotes] = useState('');
+  const [statusField, setStatusField] = useState('ONGOING');
   const [error, setError] = useState('');
   const [editingBatchId, setEditingBatchId] = useState(null);
   const [isLoadingLoadings, setIsLoadingLoadings] = useState(false);
@@ -119,6 +120,7 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
     setPlannedFlock('');
     setTargetFeedKg('');
     setNotes('');
+    setStatusField('ONGOING');
     setLoadings(buildLoadingRows(buildings));
     setError('');
   };
@@ -190,7 +192,7 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
       plannedFlock: parseInt(plannedFlock || 0),
       targetFeedKg: parseFloat(targetFeedKg || 0),
       notes,
-      status: 'ONGOING',
+      status: editingBatchId ? statusField : 'ONGOING',
       loadings: loadingsWithShares.map((row) => ({
         building: row.building,
         chicksLoaded: parseInt(row.chicksLoaded || 0),
@@ -248,6 +250,7 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
     setPlannedFlock(batch.plannedFlock || '');
     setTargetFeedKg(batch.targetFeedKg || '');
     setNotes(batch.notes || '');
+    setStatusField(batch.status || 'ONGOING');
     await fetchBatchLoadings(batch.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -483,6 +486,23 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
 
           {isLoadingLoadings && (
             <p className="text-xs text-app-text-secondary font-jetbrains">Loading building rows...</p>
+          )}
+
+          {editingBatchId && (
+            <div>
+              <label className="block text-xs font-bold text-app-text-secondary mb-1 font-jetbrains">
+                Status
+              </label>
+              <select
+                value={statusField}
+                onChange={(e) => setStatusField(e.target.value)}
+                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-bold"
+              >
+                <option value="ONGOING">ONGOING</option>
+                <option value="HARVESTED">HARVESTED</option>
+                <option value="CLOSED">CLOSED</option>
+              </select>
+            </div>
           )}
 
           <div>
