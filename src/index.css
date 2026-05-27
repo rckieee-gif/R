@@ -16,6 +16,12 @@
   --color-semantic-warning: #D97706;
   --color-semantic-info: #0284C7;
 
+  /* Custom Sidebar Design Variables matching 'Modern Farm Admin Sidebar Variant 2' */
+  --color-sidebar-active-bg: #70B8F9;
+  --color-sidebar-active-text: #0A2540;
+  --color-sidebar-grad-start: #0A2540;
+  --color-sidebar-grad-end: #12536B;
+
   /* Legacy aliases kept for older class names, now tied to the app theme */
   --color-stitch-bg: var(--app-bg);
   --color-stitch-primary: var(--app-accent);
