@@ -1,21 +1,22 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import Login from './login';
 import IntroPage from './IntroPage';
-import TransactionLedger from './TransactionLedger';
-import DailyLog from './DailyLog';
-import Dashboard from './Dashboard';
-import TodayOperations from './TodayOperations';
-import Analytics from './Analytics';
-import FinancialStatement from './FinancialStatement';
-import HarvestRecording from './HarvestRecording';
-import BatchManagement from './BatchManagement';
-import EmployeeManagement from './EmployeeManagement';
-import EmployeePaySummary from './EmployeePaySummary';
-import InventoryManagement from './InventoryManagement';
-import Settings from './Settings';
 import { API_BASE } from './api';
 import AntigravityAssistant from './Components/AntigravityAssistant';
 import { publicViewerUser } from './publicViewerData';
+
+const TransactionLedger = lazy(() => import('./TransactionLedger'));
+const DailyLog = lazy(() => import('./DailyLog'));
+const Dashboard = lazy(() => import('./Dashboard'));
+const TodayOperations = lazy(() => import('./TodayOperations'));
+const Analytics = lazy(() => import('./Analytics'));
+const FinancialStatement = lazy(() => import('./FinancialStatement'));
+const HarvestRecording = lazy(() => import('./HarvestRecording'));
+const BatchManagement = lazy(() => import('./BatchManagement'));
+const EmployeeManagement = lazy(() => import('./EmployeeManagement'));
+const EmployeePaySummary = lazy(() => import('./EmployeePaySummary'));
+const InventoryManagement = lazy(() => import('./InventoryManagement'));
+const Settings = lazy(() => import('./Settings'));
 
 const ZERO_GRAVITY_STORAGE_KEY = 'octavioZeroGravityEnabled';
 const LEGACY_ZERO_GRAVITY_STORAGE_KEY = 'antigravityMode';
@@ -882,91 +883,102 @@ function App() {
 
           {/* Screen Content Render */}
           <div className="flex-1 min-w-0">
-            {currentScreen === 'today' && (
-              <TodayOperations
-                token={apiToken}
-                activeBatch={visibleActiveBatch}
-                logs={visibleLogs}
-                setActiveScreen={setActiveScreen}
-                previewData={viewerPreviewData}
-              />
-            )}
+            <Suspense fallback={
+              <div className="flex h-64 w-full flex-col items-center justify-center gap-3">
+                <span className="material-symbols-outlined text-app-accent animate-spin text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  progress_activity
+                </span>
+                <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-jetbrains">
+                  Loading screen...
+                </p>
+              </div>
+            }>
+              {currentScreen === 'today' && (
+                <TodayOperations
+                  token={apiToken}
+                  activeBatch={visibleActiveBatch}
+                  logs={visibleLogs}
+                  setActiveScreen={setActiveScreen}
+                  previewData={viewerPreviewData}
+                />
+              )}
 
-            {currentScreen === 'batches' && (
-              <BatchManagement
-                activeBatch={visibleActiveBatch}
-                setActiveBatch={selectActiveBatch}
-                token={apiToken}
-                readOnly={!canManageOperations}
-                canEditOrDelete={canEditOrDelete}
-                previewData={viewerPreviewData}
-              />
-            )}
-            
-            {currentScreen === 'dashboard' && (
-              <Dashboard setActiveScreen={setActiveScreen} logs={visibleLogs} activeBatch={visibleActiveBatch} user={user} />
-            )}
+              {currentScreen === 'batches' && (
+                <BatchManagement
+                  activeBatch={visibleActiveBatch}
+                  setActiveBatch={selectActiveBatch}
+                  token={apiToken}
+                  readOnly={!canManageOperations}
+                  canEditOrDelete={canEditOrDelete}
+                  previewData={viewerPreviewData}
+                />
+              )}
+              
+              {currentScreen === 'dashboard' && (
+                <Dashboard setActiveScreen={setActiveScreen} logs={visibleLogs} activeBatch={visibleActiveBatch} user={user} />
+              )}
 
-            {currentScreen === 'employees' && canManageOperations && (
-              <EmployeeManagement
-                token={token}
-                transactions={transactions}
-                dailyLogs={visibleLogs}
-                activeBatch={visibleActiveBatch}
-                canEditOrDelete={canEditOrDelete}
-              />
-            )}
+              {currentScreen === 'employees' && canManageOperations && (
+                <EmployeeManagement
+                  token={token}
+                  transactions={transactions}
+                  dailyLogs={visibleLogs}
+                  activeBatch={visibleActiveBatch}
+                  canEditOrDelete={canEditOrDelete}
+                />
+              )}
 
-            {currentScreen === 'paySummary' && (
-              <EmployeePaySummary token={token} activeBatch={visibleActiveBatch} transactions={transactions} />
-            )}
+              {currentScreen === 'paySummary' && (
+                <EmployeePaySummary token={token} activeBatch={visibleActiveBatch} transactions={transactions} />
+              )}
 
-            {currentScreen === 'ledger' && canViewFinancial && (
-              <TransactionLedger
-                transactions={transactions}
-                setTransactions={setVisibleTransactions}
-                activeBatch={visibleActiveBatch}
-                token={token}
-                readOnly={!canManageOperations}
-                canEditOrDelete={canEditOrDelete}
-              />
-            )}
+              {currentScreen === 'ledger' && canViewFinancial && (
+                <TransactionLedger
+                  transactions={transactions}
+                  setTransactions={setVisibleTransactions}
+                  activeBatch={visibleActiveBatch}
+                  token={token}
+                  readOnly={!canManageOperations}
+                  canEditOrDelete={canEditOrDelete}
+                />
+              )}
 
-            {currentScreen === 'harvest' && canViewFinancial && (
-              <HarvestRecording
-                activeBatch={visibleActiveBatch}
-                token={token}
-                readOnly={!canManageOperations}
-                onLedgerPosted={refreshTransactions}
-                onBatchesChanged={refreshBatches}
-              />
-            )}
+              {currentScreen === 'harvest' && canViewFinancial && (
+                <HarvestRecording
+                  activeBatch={visibleActiveBatch}
+                  token={token}
+                  readOnly={!canManageOperations}
+                  onLedgerPosted={refreshTransactions}
+                  onBatchesChanged={refreshBatches}
+                />
+              )}
 
-            {currentScreen === 'dailyLog' && (
-              <DailyLog logs={visibleLogs} setLogs={setVisibleLogs} activeBatch={visibleActiveBatch} token={apiToken} readOnly={!canEnterDaily} canEditOrDelete={canEditOrDelete} />
-            )}
+              {currentScreen === 'dailyLog' && (
+                <DailyLog logs={visibleLogs} setLogs={setVisibleLogs} activeBatch={visibleActiveBatch} token={apiToken} readOnly={!canEnterDaily} canEditOrDelete={canEditOrDelete} />
+              )}
 
-            {currentScreen === 'inventory' && (
-              <InventoryManagement activeBatch={visibleActiveBatch} token={apiToken} readOnly={!canManageOperations} canEditOrDelete={canEditOrDelete} previewData={viewerPreviewData} />
-            )}
+              {currentScreen === 'inventory' && (
+                <InventoryManagement activeBatch={visibleActiveBatch} token={apiToken} readOnly={!canManageOperations} canEditOrDelete={canEditOrDelete} previewData={viewerPreviewData} />
+              )}
 
-            {currentScreen === 'analytics' && (
-              <Analytics transactions={canViewFinancial ? transactions : []} logs={visibleLogs} activeBatch={visibleActiveBatch} showFinancials={canViewFinancial} />
-            )}
+              {currentScreen === 'analytics' && (
+                <Analytics transactions={canViewFinancial ? transactions : []} logs={visibleLogs} activeBatch={visibleActiveBatch} showFinancials={canViewFinancial} />
+              )}
 
-            {currentScreen === 'statement' && canViewFinancial && (
-              <FinancialStatement transactions={transactions} activeBatch={visibleActiveBatch} />
-            )}
+              {currentScreen === 'statement' && canViewFinancial && (
+                <FinancialStatement transactions={transactions} activeBatch={visibleActiveBatch} />
+              )}
 
-            {currentScreen === 'settings' && (
-              <Settings 
-                user={user} 
-                token={token} 
-                activeBatch={visibleActiveBatch} 
-                isZeroGravity={isZeroGravity}
-                setIsZeroGravity={setIsZeroGravity}
-              />
-            )}
+              {currentScreen === 'settings' && (
+                <Settings 
+                  user={user} 
+                  token={token} 
+                  activeBatch={visibleActiveBatch} 
+                  isZeroGravity={isZeroGravity}
+                  setIsZeroGravity={setIsZeroGravity}
+                />
+              )}
+            </Suspense>
             
             <AntigravityAssistant
               activeBatch={visibleActiveBatch}
