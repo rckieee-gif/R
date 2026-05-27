@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { API_BASE } from './api';
 
 const emptyItemForm = {
@@ -110,7 +110,40 @@ function uniqueStakeholders(stakeholders) {
   }, []);
 }
 
+async function readInventoryData({ token, activeBatchId, signal }) {
+  const headers = { Authorization: `Bearer ${token}` };
+  const [itemResponse, movementResponse, buildingResponse, stakeholderResponse] = await Promise.all([
+    fetch(`${API_BASE}/api/inventory/items`, { headers, signal }),
+    fetch(`${API_BASE}/api/inventory/movements${activeBatchId ? `?batchId=${activeBatchId}` : ''}`, { headers, signal }),
+    fetch(`${API_BASE}/api/buildings`, { headers, signal }),
+    fetch(`${API_BASE}/api/stakeholders`, { headers, signal })
+  ]);
+
+  const [itemData, movementData, buildingData, stakeholderData] = await Promise.all([
+    itemResponse.json(),
+    movementResponse.json(),
+    buildingResponse.json(),
+    stakeholderResponse.json()
+  ]);
+
+  if (!itemResponse.ok || !movementResponse.ok) {
+    throw new Error(itemData.error || movementData.error || 'Failed to load inventory.');
+  }
+
+  return {
+    items: itemData,
+    movements: movementData,
+    buildings: buildingResponse.ok && Array.isArray(buildingData)
+      ? ['All', ...buildingData.map((building) => building.name)]
+      : null,
+    stakeholders: stakeholderResponse.ok && Array.isArray(stakeholderData)
+      ? uniqueStakeholders(stakeholderData)
+      : null
+  };
+}
+
 export default function InventoryManagement({ token, activeBatch, readOnly = false, canEditOrDelete = false, previewData = null }) {
+  const activeBatchId = activeBatch?.id;
   const [items, setItems] = useState([]);
   const [movements, setMovements] = useState([]);
   const [buildings, setBuildings] = useState(['All']);
@@ -120,93 +153,127 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
   const [editingItemId, setEditingItemId] = useState(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const isPreviewMode = !token && Boolean(previewData);
+  const visibleItems = useMemo(
+    () => isPreviewMode ? previewData.inventoryItems || [] : items,
+    [isPreviewMode, items, previewData]
+  );
+  const visibleMovements = useMemo(
+    () => isPreviewMode ? previewData.inventoryMovements || [] : movements,
+    [isPreviewMode, movements, previewData]
+  );
+  const visibleBuildings = useMemo(
+    () => isPreviewMode
+      ? ['All', ...(previewData.buildings || []).map((building) => building.name)]
+      : buildings,
+    [buildings, isPreviewMode, previewData]
+  );
+  const visibleStakeholders = useMemo(
+    () => isPreviewMode ? previewData.stakeholders || [] : stakeholders,
+    [isPreviewMode, previewData, stakeholders]
+  );
 
   const lowStockItems = useMemo(
-    () => items.filter((item) => getStockWarningType(item) === 'low-stock'),
-    [items]
+    () => visibleItems.filter((item) => getStockWarningType(item) === 'low-stock'),
+    [visibleItems]
   );
 
   const neededStockItems = useMemo(
-    () => items.filter((item) => getStockWarningType(item) === 'needed-stock'),
-    [items]
+    () => visibleItems.filter((item) => getStockWarningType(item) === 'needed-stock'),
+    [visibleItems]
   );
 
   const feedStock = useMemo(
-    () => items
+    () => visibleItems
       .filter((item) => item.category === 'Feed')
       .reduce((sum, item) => sum + Number(item.currentStock || 0), 0),
-    [items]
+    [visibleItems]
   );
 
   const movementAmount = movementForm.unitCost && movementForm.quantity
     ? Number(movementForm.quantity || 0) * Number(movementForm.unitCost || 0)
     : 0;
 
-  const fetchInventory = async () => {
+  const fetchInventory = useCallback(async (signal) => {
     if (!token) return;
 
     setIsLoading(true);
     setError('');
 
     try {
-      const headers = { Authorization: `Bearer ${token}` };
-      const [itemResponse, movementResponse, buildingResponse, stakeholderResponse] = await Promise.all([
-        fetch(`${API_BASE}/api/inventory/items`, { headers }),
-        fetch(`${API_BASE}/api/inventory/movements${activeBatch?.id ? `?batchId=${activeBatch.id}` : ''}`, { headers }),
-        fetch(`${API_BASE}/api/buildings`, { headers }),
-        fetch(`${API_BASE}/api/stakeholders`, { headers })
-      ]);
+      const inventoryData = await readInventoryData({ token, activeBatchId, signal });
 
-      const [itemData, movementData, buildingData, stakeholderData] = await Promise.all([
-        itemResponse.json(),
-        movementResponse.json(),
-        buildingResponse.json(),
-        stakeholderResponse.json()
-      ]);
+      if (signal?.aborted) return;
 
-      if (!itemResponse.ok || !movementResponse.ok) {
-        setError(itemData.error || movementData.error || 'Failed to load inventory.');
-        return;
-      }
-
-      setItems(itemData);
-      setMovements(movementData);
-      if (buildingResponse.ok) setBuildings(['All', ...buildingData.map((building) => building.name)]);
-      const nextStakeholders = uniqueStakeholders(stakeholderData);
-      if (stakeholderResponse.ok) setStakeholders(nextStakeholders);
+      setItems(inventoryData.items);
+      setMovements(inventoryData.movements);
+      if (inventoryData.buildings) setBuildings(inventoryData.buildings);
+      if (inventoryData.stakeholders) setStakeholders(inventoryData.stakeholders);
 
       setMovementForm((current) => ({
         ...current,
-        itemId: current.itemId || itemData[0]?.id || '',
-        paidBy: normalizeStakeholderName(current.paidBy) || nextStakeholders.find((item) => item.name === 'Rolly')?.name || nextStakeholders[0]?.name || '',
-        paidTo: normalizeStakeholderName(current.paidTo) || nextStakeholders[0]?.name || ''
+        itemId: current.itemId || inventoryData.items[0]?.id || '',
+        paidBy: normalizeStakeholderName(current.paidBy) || inventoryData.stakeholders?.find((item) => item.name === 'Rolly')?.name || inventoryData.stakeholders?.[0]?.name || '',
+        paidTo: normalizeStakeholderName(current.paidTo) || inventoryData.stakeholders?.[0]?.name || ''
       }));
     } catch (err) {
+      if (err.name === 'AbortError') return;
       console.error(err);
-      setError('Cannot connect to inventory.');
+      setError(err.message || 'Cannot connect to inventory.');
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) {
+        setIsLoading(false);
+      }
     }
-  };
+  }, [activeBatchId, token]);
 
   useEffect(() => {
-    if (!token && previewData) {
-      setTimeout(() => {
-        setItems(previewData.inventoryItems || []);
-        setMovements(previewData.inventoryMovements || []);
-        setBuildings(['All', ...(previewData.buildings || []).map((building) => building.name)]);
-        setStakeholders(previewData.stakeholders || []);
-        setError('');
-        setIsLoading(false);
-      }, 0);
-      return;
-    }
+    if (!token) return;
+    const controller = new AbortController();
 
-    setTimeout(() => {
-      fetchInventory();
-    }, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, activeBatch?.id, previewData]);
+    const loadInventory = async () => {
+      await Promise.resolve();
+      if (controller.signal.aborted) return;
+
+      setIsLoading(true);
+      setError('');
+
+      try {
+        const inventoryData = await readInventoryData({
+          token,
+          activeBatchId,
+          signal: controller.signal
+        });
+
+        if (controller.signal.aborted) return;
+
+        setItems(inventoryData.items);
+        setMovements(inventoryData.movements);
+        if (inventoryData.buildings) setBuildings(inventoryData.buildings);
+        if (inventoryData.stakeholders) setStakeholders(inventoryData.stakeholders);
+
+        setMovementForm((current) => ({
+          ...current,
+          itemId: current.itemId || inventoryData.items[0]?.id || '',
+          paidBy: normalizeStakeholderName(current.paidBy) || inventoryData.stakeholders?.find((item) => item.name === 'Rolly')?.name || inventoryData.stakeholders?.[0]?.name || '',
+          paidTo: normalizeStakeholderName(current.paidTo) || inventoryData.stakeholders?.[0]?.name || ''
+        }));
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+        console.error(err);
+        setError(err.message || 'Cannot connect to inventory.');
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadInventory();
+    return () => {
+      controller.abort();
+    };
+  }, [activeBatchId, token]);
 
   const updateItemForm = (field, value) => {
     setItemForm((current) => ({ ...current, [field]: value }));
@@ -217,7 +284,7 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
       const next = { ...current, [field]: value };
 
       if (field === 'itemId') {
-        const item = items.find((entry) => String(entry.id) === String(value));
+        const item = visibleItems.find((entry) => String(entry.id) === String(value));
         if (item) next.ledgerCategory = item.category === 'Feed' ? 'Feed' : item.category;
       }
 
@@ -534,8 +601,8 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
               onChange={(event) => updateMovementForm('itemId', event.target.value)}
               className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-bold transition-all"
             >
-              {items.length === 0 && <option value="">No inventory items</option>}
-              {items.map((item) => (
+              {visibleItems.length === 0 && <option value="">No inventory items</option>}
+              {visibleItems.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name} ({formatQuantity(item.currentStock)} {item.unit})
                 </option>
@@ -577,7 +644,7 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
                 onChange={(event) => updateMovementForm('building', event.target.value)}
                 className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-bold transition-all"
               >
-                {buildings.map((building) => (
+                {visibleBuildings.map((building) => (
                   <option key={building} value={building}>{building}</option>
                 ))}
               </select>
@@ -643,7 +710,7 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
                         className="w-full p-2 border border-app-border rounded-lg bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all"
                       >
                         <option value="">-- Select --</option>
-                        {stakeholders.map((stakeholder) => (
+                        {visibleStakeholders.map((stakeholder) => (
                           <option key={stakeholder.id} value={stakeholder.name}>{stakeholder.name}</option>
                         ))}
                       </select>
@@ -657,7 +724,7 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
                         className="w-full p-2 border border-app-border rounded-lg bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all"
                       >
                         <option value="">-- Select --</option>
-                        {stakeholders.map((stakeholder) => (
+                        {visibleStakeholders.map((stakeholder) => (
                           <option key={stakeholder.id} value={stakeholder.name}>{stakeholder.name}</option>
                         ))}
                       </select>
@@ -696,7 +763,7 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
           Current Stock
         </h3>
         <div className="space-y-3">
-          {items.map((item) => {
+          {visibleItems.map((item) => {
             const warningType = getStockWarningType(item);
             const warningMeta = getStockWarningMeta(warningType);
 
@@ -752,7 +819,7 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
           Recent Movements
         </h3>
         <div className="space-y-3">
-          {movements.map((movement) => (
+          {visibleMovements.map((movement) => (
             <div key={movement.id} className="bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
               <div className="flex justify-between gap-3">
                 <div className="min-w-0">
@@ -777,7 +844,7 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
             </div>
           ))}
 
-          {movements.length === 0 && (
+          {visibleMovements.length === 0 && (
             <p className="text-center text-app-text-secondary text-sm mt-4">No inventory movements yet.</p>
           )}
         </div>

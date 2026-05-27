@@ -61,6 +61,8 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
   const [error, setError] = useState('');
   const [editingBatchId, setEditingBatchId] = useState(null);
   const [isLoadingLoadings, setIsLoadingLoadings] = useState(false);
+  const isPreviewMode = !token && Boolean(previewData);
+  const visibleBatches = isPreviewMode ? previewData.batches || [] : batches;
 
   const loadingsWithShares = useMemo(
     () => calculateLoadingShares(loadings),
@@ -77,54 +79,38 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
     [loadingsWithShares]
   );
 
-  const fetchBatches = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/api/batches`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setBatches(data);
-    } catch (err) {
-      console.error('Failed to fetch batches:', err);
-    }
-  };
-
-  const fetchBuildings = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/api/buildings`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setBuildings(data);
-      setLoadings((current) => current.length ? current : buildLoadingRows(data));
-    } catch (err) {
-      console.error('Failed to fetch buildings:', err);
-    }
-  };
-
   useEffect(() => {
-    if (!token && previewData) {
-      setTimeout(() => {
-        setBatches(previewData.batches || []);
-        setBuildings(previewData.buildings || []);
-        setLoadings((previewData.loadings || []).map((row) => ({
-          building: row.building,
-          owner: row.owner || getBuildingOwner(row.building),
-          chicksLoaded: String(row.chicksLoaded || ''),
-          loadingSharePct: row.loadingSharePct || 0,
-          remarks: row.remarks || ''
-        })));
-      }, 0);
-      return;
-    }
-
     if (!token) return;
-    setTimeout(() => {
-      fetchBatches();
-      fetchBuildings();
-    }, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, previewData]);
+    const controller = new AbortController();
+
+    const loadBatchSetup = async () => {
+      try {
+        const headers = { Authorization: `Bearer ${token}` };
+        const [batchResponse, buildingResponse] = await Promise.all([
+          fetch(`${API_BASE}/api/batches`, { headers, signal: controller.signal }),
+          fetch(`${API_BASE}/api/buildings`, { headers, signal: controller.signal })
+        ]);
+        const [batchData, buildingData] = await Promise.all([
+          batchResponse.json(),
+          buildingResponse.json()
+        ]);
+
+        if (controller.signal.aborted) return;
+
+        setBatches(batchData);
+        setBuildings(buildingData);
+        setLoadings((current) => current.length ? current : buildLoadingRows(buildingData));
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+        console.error('Failed to load batch setup:', err);
+      }
+    };
+
+    loadBatchSetup();
+    return () => {
+      controller.abort();
+    };
+  }, [setBatches, token]);
 
   const resetForm = () => {
     setEditingBatchId(null);
@@ -540,7 +526,7 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
         </h3>
 
         <div className="space-y-3">
-          {batches.map((batch) => (
+          {visibleBatches.map((batch) => (
             <div
               key={batch.id}
               className={`bg-app-card p-4 rounded-xl shadow-sm border transition-all ${
@@ -602,7 +588,7 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
             </div>
           ))}
 
-          {batches.length === 0 && (
+          {visibleBatches.length === 0 && (
             <p className="text-center text-app-text-secondary text-sm mt-4 font-inter">
               No batches created yet.
             </p>

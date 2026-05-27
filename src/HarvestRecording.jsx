@@ -101,6 +101,10 @@ function calculateSummary(report) {
     byproductQty: sum.byproductQty + row.byproductQty,
     byproductSales: sum.byproductSales + row.byproductSales,
     grossSales: sum.grossSales + row.grossSales,
+    permitShipping: sum.permitShipping + row.permitShipping,
+    tollingFee: sum.tollingFee + row.tollingFee,
+    docAddOn: sum.docAddOn + row.docAddOn,
+    truckingFee: sum.truckingFee + row.truckingFee,
     totalExpenses: sum.totalExpenses + row.totalExpenses,
     netSales: sum.netSales + row.netSales
   }), {
@@ -110,6 +114,10 @@ function calculateSummary(report) {
     byproductQty: 0,
     byproductSales: 0,
     grossSales: 0,
+    permitShipping: 0,
+    tollingFee: 0,
+    docAddOn: 0,
+    truckingFee: 0,
     totalExpenses: 0,
     netSales: 0
   });
@@ -120,6 +128,8 @@ function calculateSummary(report) {
     perHarvest,
     totals: {
       ...totals,
+      kilos: Number(totals.kilos.toFixed(3)),
+      byproductQty: Number(totals.byproductQty.toFixed(3)),
       financingTotal: roundMoney(financingTotal),
       netProceeds: roundMoney(netProceeds),
       netProceedsPerBird: totals.birds > 0 ? Number((netProceeds / totals.birds).toFixed(4)) : 0
@@ -172,7 +182,7 @@ function KpiCard({ label, value, tone = 'default' }) {
   );
 }
 
-export default function HarvestRecording({ activeBatch, token, readOnly = false, onLedgerPosted }) {
+export default function HarvestRecording({ activeBatch, token, readOnly = false, onLedgerPosted, onBatchesChanged }) {
   const [report, setReport] = useState(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -303,6 +313,7 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
 
       setReport(data);
       setMessage('Harvest summary posted to the ledger.');
+      onBatchesChanged?.();
       onLedgerPosted?.();
     } catch (err) {
       console.error(err);

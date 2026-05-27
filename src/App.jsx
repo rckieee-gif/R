@@ -285,6 +285,53 @@ function App() {
     setActiveScreen('today');
   }, []);
 
+  const refreshBatches = useCallback(async () => {
+    if (isPublicViewer || !token) {
+      return;
+    }
+
+    setIsBatchListLoading(true);
+    setBatchListError('');
+
+    try {
+      const response = await fetch(`${API_BASE}/api/batches`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.status === 401) {
+        clearSession();
+        return;
+      }
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to load batches.');
+      }
+
+      const data = await response.json();
+      const nextBatches = Array.isArray(data) ? data : [];
+
+      setBatches(nextBatches);
+      setActiveBatch((currentBatch) => {
+        const currentMatch = nextBatches.find((batch) => String(batch.id) === String(currentBatch?.id));
+        const nextBatch = currentMatch || pickPreferredBatch(nextBatches, user);
+
+        if (nextBatch?.id) {
+          localStorage.setItem(getBatchPreferenceKey(user), String(nextBatch.id));
+        }
+
+        return nextBatch;
+      });
+    } catch (error) {
+      console.error("Failed to fetch batches:", error);
+      setBatches([]);
+      setActiveBatch(null);
+      setBatchListError('Batch list is unavailable. Try refreshing or open Batches after the connection recovers.');
+    } finally {
+      setIsBatchListLoading(false);
+    }
+  }, [clearSession, isPublicViewer, token, user]);
+
   useEffect(() => {
     if (isPublicViewer) {
       return undefined;
@@ -891,6 +938,7 @@ function App() {
                 token={token}
                 readOnly={!canManageOperations}
                 onLedgerPosted={refreshTransactions}
+                onBatchesChanged={refreshBatches}
               />
             )}
 
