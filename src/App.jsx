@@ -4,6 +4,7 @@ import IntroPage from './IntroPage';
 import { API_BASE } from './api';
 import AntigravityAssistant from './Components/AntigravityAssistant';
 import { publicViewerUser } from './publicViewerData';
+import { apiClient, registerAuthFailureHandler } from './utils/apiClient';
 
 const TransactionLedger = lazy(() => import('./TransactionLedger'));
 const DailyLog = lazy(() => import('./DailyLog'));
@@ -124,15 +125,19 @@ function App() {
   const [preloadedSnapshot, setPreloadedSnapshot] = useState(null);
 
   useEffect(() => {
+    registerAuthFailureHandler(clearSession);
+    return () => {
+      registerAuthFailureHandler(null);
+    };
+  }, [clearSession]);
+
+  useEffect(() => {
     let isMounted = true;
     const preloadSnapshot = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/public/current-batch`);
-        if (response.ok) {
-          const data = await response.json();
-          if (isMounted) {
-            setPreloadedSnapshot(data);
-          }
+        const data = await apiClient.get('/api/public/current-batch');
+        if (isMounted) {
+          setPreloadedSnapshot(data);
         }
       } catch (err) {
         console.error("Failed to preload public current batch snapshot:", err);
@@ -295,21 +300,7 @@ function App() {
     setBatchListError('');
 
     try {
-      const response = await fetch(`${API_BASE}/api/batches`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (response.status === 401) {
-        clearSession();
-        return;
-      }
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to load batches.');
-      }
-
-      const data = await response.json();
+      const data = await apiClient.get('/api/batches', { expectArray: true });
       const nextBatches = Array.isArray(data) ? data : [];
 
       setBatches(nextBatches);
@@ -331,7 +322,7 @@ function App() {
     } finally {
       setIsBatchListLoading(false);
     }
-  }, [clearSession, isPublicViewer, token, user]);
+  }, [isPublicViewer, token, user]);
 
   useEffect(() => {
     if (isPublicViewer) {
@@ -349,36 +340,20 @@ function App() {
       setBatchListError('');
 
       try {
-        const response = await fetch(`${API_BASE}/api/batches`, {
-          headers: { Authorization: `Bearer ${token}` }
+        const data = await apiClient.get('/api/batches', { expectArray: true });
+        if (isCancelled) return;
+
+        setBatches(data);
+        setActiveBatch((currentBatch) => {
+          const currentMatch = data.find((batch) => String(batch.id) === String(currentBatch?.id));
+          const nextBatch = currentMatch || pickPreferredBatch(data, user);
+
+          if (nextBatch?.id) {
+            localStorage.setItem(getBatchPreferenceKey(user), String(nextBatch.id));
+          }
+
+          return nextBatch;
         });
-
-        if (response.status === 401) {
-          clearSession();
-          return;
-        }
-
-        if (response.ok) {
-          const data = await response.json();
-          const nextBatches = Array.isArray(data) ? data : [];
-
-          if (isCancelled) return;
-
-          setBatches(nextBatches);
-          setActiveBatch((currentBatch) => {
-            const currentMatch = nextBatches.find((batch) => String(batch.id) === String(currentBatch?.id));
-            const nextBatch = currentMatch || pickPreferredBatch(nextBatches, user);
-
-            if (nextBatch?.id) {
-              localStorage.setItem(getBatchPreferenceKey(user), String(nextBatch.id));
-            }
-
-            return nextBatch;
-          });
-        } else {
-          const data = await response.json().catch(() => ({}));
-          throw new Error(data.error || 'Failed to load batches.');
-        }
       } catch (error) {
         if (isCancelled) return;
         console.error("Failed to fetch batches:", error);
@@ -397,7 +372,7 @@ function App() {
     return () => {
       isCancelled = true;
     };
-  }, [token, clearSession, isPublicViewer, user]);
+  }, [token, isPublicViewer, user]);
 
   const selectActiveBatch = useCallback((batch) => {
     setActiveBatch(batch || null);
@@ -420,21 +395,12 @@ function App() {
     const requestBatchId = activeBatchId;
 
     try {
-      const response = await fetch(`${API_BASE}/api/batches/${requestBatchId}/transactions`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (response.status === 401) {
-        clearSession();
-        return;
-      }
-
-      const data = await response.json();
+      const data = await apiClient.get(`/api/batches/${requestBatchId}/transactions`, { expectArray: true });
       setTransactionState({ batchId: requestBatchId, rows: data });
     } catch (error) {
       console.error("Failed to fetch transactions:", error);
     }
-  }, [token, activeBatchId, canViewFinancial, clearSession, isPublicViewer]);
+  }, [token, activeBatchId, canViewFinancial, isPublicViewer]);
 
   useEffect(() => {
     if (isPublicViewer || !token || !activeBatchId || !canViewFinancial) {
@@ -446,17 +412,7 @@ function App() {
 
     const fetchTransactions = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/batches/${requestBatchId}/transactions`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        if (response.status === 401) {
-          clearSession();
-          return;
-        }
-
-        const data = await response.json();
-
+        const data = await apiClient.get(`/api/batches/${requestBatchId}/transactions`, { expectArray: true });
         if (!isCancelled) {
           setTransactionState({ batchId: requestBatchId, rows: data });
         }
@@ -470,7 +426,7 @@ function App() {
     return () => {
       isCancelled = true;
     };
-  }, [token, activeBatchId, canViewFinancial, clearSession, isPublicViewer]);
+  }, [token, activeBatchId, canViewFinancial, isPublicViewer]);
 
   useEffect(() => {
     if (isPublicViewer) {
@@ -485,16 +441,7 @@ function App() {
 
     const fetchLogs = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/logs?batchId=${requestBatchId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        if (response.status === 401) {
-          clearSession();
-          return;
-        }
-
-        const data = await response.json();
+        const data = await apiClient.get(`/api/logs?batchId=${requestBatchId}`, { expectArray: true });
         setLogState({ batchId: requestBatchId, rows: data });
       } catch (error) {
         console.error("Failed to fetch logs:", error);
@@ -502,7 +449,7 @@ function App() {
     };
 
     fetchLogs();
-  }, [token, activeBatchId, clearSession, isPublicViewer]);
+  }, [token, activeBatchId, isPublicViewer]);
 
   // --- LOGIN HANDLER ---
   const handleLogin = (userData, authToken) => {
@@ -520,12 +467,7 @@ function App() {
     try {
       let data = preloadedSnapshot;
       if (!data) {
-        const response = await fetch(`${API_BASE}/api/public/current-batch`);
-        data = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Current batch is unavailable.');
-        }
+        data = await apiClient.get('/api/public/current-batch');
       }
 
       const liveBatch = data.batch || data.batches?.[0] || null;
@@ -895,6 +837,7 @@ function App() {
             }>
               {currentScreen === 'today' && (
                 <TodayOperations
+                  key={visibleActiveBatch?.id ?? 'none'}
                   token={apiToken}
                   activeBatch={visibleActiveBatch}
                   logs={visibleLogs}

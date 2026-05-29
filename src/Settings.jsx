@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { API_BASE } from './api';
+import { apiClient } from './utils/apiClient';
+import { useNotification } from './Components/NotificationProvider';
 import ChangePassword from './Components/Settings/ChangePassword';
 import DataSync from './Components/Settings/DataSync';
 import AccountManagement from './Components/Settings/AccountManagement';
@@ -39,18 +40,12 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordMessage, setPasswordMessage] = useState('');
-  const [passwordError, setPasswordError] = useState('');
   const [dataset, setDataset] = useState('transactions');
   const [exportScope, setExportScope] = useState('active');
-  const [exportError, setExportError] = useState('');
   const [importType, setImportType] = useState('transactions');
   const [importFile, setImportFile] = useState(null);
-  const [importError, setImportError] = useState('');
-  const [importMessage, setImportMessage] = useState('');
   const [importSummary, setImportSummary] = useState(null);
   const [archiveScope, setArchiveScope] = useState('active');
-  const [archiveError, setArchiveError] = useState('');
   const [accounts, setAccounts] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
   const [activitySearch, setActivitySearch] = useState('');
@@ -58,15 +53,13 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
   const [activityEntityFilter, setActivityEntityFilter] = useState(allFilterValue);
   const [activitySort, setActivitySort] = useState('newest');
   const [accountForm, setAccountForm] = useState(emptyAccountForm);
-  const [accountError, setAccountError] = useState('');
-  const [accountMessage, setAccountMessage] = useState('');
-  const [activityError, setActivityError] = useState('');
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
   const [isLoadingActivity, setIsLoadingActivity] = useState(false);
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
+  const { success, error: toastError, confirm } = useNotification();
 
   const exportAllowed = canExport(user?.role);
   const canManageAccounts = Boolean(user?.isPrimaryOwner);
@@ -127,23 +120,13 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
     if (!canManageAccounts) return;
 
     setIsLoadingAccounts(true);
-    setAccountError('');
 
     try {
-      const response = await fetch(`${API_BASE}/api/admin/users`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setAccountError(data.error || 'Failed to load user accounts.');
-        return;
-      }
-
+      const data = await apiClient.get('/api/admin/users', { expectArray: true });
       setAccounts(data);
     } catch (err) {
       console.error(err);
-      setAccountError('Cannot connect to account manager.');
+      toastError(err.message || 'Cannot connect to account manager.');
     } finally {
       setIsLoadingAccounts(false);
     }
@@ -160,23 +143,13 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
     if (!canManageAccounts) return;
 
     setIsLoadingActivity(true);
-    setActivityError('');
 
     try {
-      const response = await fetch(`${API_BASE}/api/admin/audit-logs?limit=150`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setActivityError(data.error || 'Failed to load activity logs.');
-        return;
-      }
-
+      const data = await apiClient.get('/api/admin/audit-logs?limit=150', { expectArray: true });
       setActivityLogs(data);
     } catch (err) {
       console.error(err);
-      setActivityError('Cannot connect to activity logs.');
+      toastError(err.message || 'Cannot connect to activity logs.');
     } finally {
       setIsLoadingActivity(false);
     }
@@ -191,59 +164,41 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
 
   const handlePasswordSubmit = async (event) => {
     event.preventDefault();
-    setPasswordError('');
-    setPasswordMessage('');
 
     if (newPassword !== confirmPassword) {
-      setPasswordError('New password and confirmation do not match.');
+      toastError('New password and confirmation do not match.');
       return;
     }
 
     if (newPassword.length < 8) {
-      setPasswordError('Use at least 8 characters for the new password.');
+      toastError('Use at least 8 characters for the new password.');
       return;
     }
 
     setIsPasswordSaving(true);
 
     try {
-      const response = await fetch(`${API_BASE}/api/auth/change-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ currentPassword, newPassword })
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setPasswordError(data.error || 'Failed to change password.');
-        return;
-      }
-
+      const data = await apiClient.post('/api/auth/change-password', { currentPassword, newPassword });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setPasswordMessage(data.message || 'Password changed successfully.');
+      success(data.message || 'Password changed successfully.');
     } catch (err) {
       console.error(err);
-      setPasswordError('Cannot connect to password settings.');
+      toastError(err.message || 'Cannot connect to password settings.');
     } finally {
       setIsPasswordSaving(false);
     }
   };
 
   const handleExport = async () => {
-    setExportError('');
-
     if (!exportAllowed) {
-      setExportError('Your role cannot export farm files.');
+      toastError('Your role cannot export farm files.');
       return;
     }
 
     if (exportUsesBatch && exportScope === 'active' && !activeBatch?.id) {
-      setExportError('Select or create an active batch first, or switch scope to all batches.');
+      toastError('Select or create an active batch first, or switch scope to all batches.');
       return;
     }
 
@@ -253,15 +208,7 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
       const params = new URLSearchParams({ dataset });
       if (effectiveBatchId) params.set('batchId', effectiveBatchId);
 
-      const response = await fetch(`${API_BASE}/api/settings/export?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        setExportError(data.error || 'Failed to export file.');
-        return;
-      }
+      const response = await apiClient.get(`/api/settings/export?${params.toString()}`, { returnResponse: true });
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -272,24 +219,23 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
+      success('CSV exported successfully!');
     } catch (err) {
       console.error(err);
-      setExportError('Cannot connect to export service.');
+      toastError(err.message || 'Cannot connect to export service.');
     } finally {
       setIsExporting(false);
     }
   };
 
   const handleArchiveDownload = async () => {
-    setArchiveError('');
-
     if (!exportAllowed) {
-      setArchiveError('Your role cannot download archive files.');
+      toastError('Your role cannot download archive files.');
       return;
     }
 
     if (archiveScope === 'active' && !activeBatch?.id) {
-      setArchiveError('Select or create an active batch first, or archive all batches.');
+      toastError('Select or create an active batch first, or archive all batches.');
       return;
     }
 
@@ -299,15 +245,7 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
       const params = new URLSearchParams();
       if (archiveBatchId) params.set('batchId', archiveBatchId);
 
-      const response = await fetch(`${API_BASE}/api/settings/archive?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        setArchiveError(data.error || 'Failed to create archive.');
-        return;
-      }
+      const response = await apiClient.get(`/api/settings/archive?${params.toString()}`, { returnResponse: true });
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -318,62 +256,53 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
+      success('Archive JSON downloaded successfully!');
     } catch (err) {
       console.error(err);
-      setArchiveError('Cannot connect to archive service.');
+      toastError(err.message || 'Cannot connect to archive service.');
     } finally {
       setIsArchiving(false);
     }
   };
 
   const handleImport = async () => {
-    setImportError('');
-    setImportMessage('');
     setImportSummary(null);
 
     if (!exportAllowed) {
-      setImportError('Your role cannot import farm files.');
+      toastError('Your role cannot import farm files.');
       return;
     }
 
     if (!importFile) {
-      setImportError('Choose a file first.');
+      toastError('Choose a file first.');
       return;
     }
 
-    const confirmed = window.confirm('Import this file into the farm database?');
+    const confirmed = await confirm({
+      title: 'Import Database File',
+      message: 'Are you sure you want to import this file into the farm database? This will overwrite or add records.',
+      confirmText: 'Import',
+      danger: true
+    });
     if (!confirmed) return;
 
     setIsImporting(true);
 
     try {
       const content = await importFile.text();
-      const response = await fetch(`${API_BASE}/api/settings/import`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          importType,
-          filename: importFile.name,
-          content
-        })
+      const data = await apiClient.post('/api/settings/import', {
+        importType,
+        filename: importFile.name,
+        content
       });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setImportError(data.error || 'Failed to import file.');
-        return;
-      }
 
       setImportSummary(data.summary || null);
       const totals = getImportTotals(data.summary);
-      setImportMessage(`Imported ${totals.created} new and ${totals.updated} updated records.`);
+      success(`Imported ${totals.created} new and ${totals.updated} updated records.`);
       setImportFile(null);
     } catch (err) {
       console.error(err);
-      setImportError('Cannot connect to import service.');
+      toastError(err.message || 'Cannot connect to import service.');
     } finally {
       setIsImporting(false);
     }
@@ -389,91 +318,54 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
 
   const handleAccountCreate = async (event) => {
     event.preventDefault();
-    setAccountError('');
-    setAccountMessage('');
 
     try {
-      const response = await fetch(`${API_BASE}/api/admin/users`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(accountForm)
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setAccountError(data.error || 'Failed to create account.');
-        return;
-      }
-
+      await apiClient.post('/api/admin/users', accountForm);
       setAccountForm(emptyAccountForm);
-      setAccountMessage('Account created.');
+      success('Account created successfully.');
       await fetchAccounts();
     } catch (err) {
       console.error(err);
-      setAccountError('Cannot create account right now.');
+      toastError(err.message || 'Cannot create account right now.');
     }
   };
 
   const updateAccount = async (accountId, patch) => {
-    setAccountError('');
-    setAccountMessage('');
-
     try {
-      const response = await fetch(`${API_BASE}/api/admin/users/${accountId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(patch)
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setAccountError(data.error || 'Failed to update account.');
-        return;
-      }
-
-      setAccountMessage('Account updated.');
+      await apiClient.patch(`/api/admin/users/${accountId}`, patch);
+      success('Account updated successfully.');
       await fetchAccounts();
     } catch (err) {
       console.error(err);
-      setAccountError('Cannot update account right now.');
+      toastError(err.message || 'Cannot update account right now.');
     }
   };
 
   const disableAccount = async (accountId) => {
-    const confirmed = window.confirm('Disable this user account?');
+    const confirmed = await confirm({
+      title: 'Disable Account',
+      message: 'Are you sure you want to disable this user account?',
+      confirmText: 'Disable',
+      danger: true
+    });
     if (!confirmed) return;
 
-    setAccountError('');
-    setAccountMessage('');
-
     try {
-      const response = await fetch(`${API_BASE}/api/admin/users/${accountId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setAccountError(data.error || 'Failed to disable account.');
-        return;
-      }
-
-      setAccountMessage(data.message || 'Account disabled.');
+      const data = await apiClient.delete(`/api/admin/users/${accountId}`);
+      success(data.message || 'Account disabled successfully.');
       await fetchAccounts();
     } catch (err) {
       console.error(err);
-      setAccountError('Cannot disable account right now.');
+      toastError(err.message || 'Cannot disable account right now.');
     }
   };
 
   const toggleZeroGravity = () => {
-    setIsZeroGravity((current) => !current);
+    setIsZeroGravity((current) => {
+      const next = !current;
+      success(next ? 'Zero gravity physics enabled!' : 'Zero gravity physics disabled.');
+      return next;
+    });
   };
 
   return (
@@ -534,8 +426,6 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
         setNewPassword={setNewPassword}
         confirmPassword={confirmPassword}
         setConfirmPassword={setConfirmPassword}
-        passwordMessage={passwordMessage}
-        passwordError={passwordError}
         isPasswordSaving={isPasswordSaving}
       />
 
@@ -548,15 +438,12 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
           isLoadingAccounts={isLoadingAccounts}
           updateAccount={updateAccount}
           disableAccount={disableAccount}
-          accountError={accountError}
-          accountMessage={accountMessage}
         />
       )}
 
       {canManageAccounts && (
         <ActivityLogs
           fetchActivityLogs={fetchActivityLogs}
-          activityError={activityError}
           isLoadingActivity={isLoadingActivity}
           activitySearch={activitySearch}
           setActivitySearch={setActivitySearch}
@@ -579,25 +466,19 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
         setDataset={setDataset}
         exportScope={exportScope}
         setExportScope={setExportScope}
-        exportError={exportError}
         exportUsesBatch={exportUsesBatch}
         exportHint={exportHint}
         effectiveBatchId={effectiveBatchId}
         handleExport={handleExport}
         isExporting={isExporting}
-        importError={importError}
-        importMessage={importMessage}
         importType={importType}
         setImportType={setImportType}
         importFile={importFile}
         setImportFile={setImportFile}
         importSummary={importSummary}
         setImportSummary={setImportSummary}
-        setImportError={setImportError}
-        setImportMessage={setImportMessage}
         handleImport={handleImport}
         isImporting={isImporting}
-        archiveError={archiveError}
         archiveScope={archiveScope}
         setArchiveScope={setArchiveScope}
         archiveBatchId={archiveBatchId}

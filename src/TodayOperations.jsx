@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { API_BASE } from './api';
+import { apiClient } from './utils/apiClient';
 import {
   BAG_WEIGHT_KG,
   calculateActualFcr,
@@ -196,34 +196,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     return initial;
   });
 
-  const [prevActiveBatchId, setPrevActiveBatchId] = useState(activeBatchId);
-  if (activeBatchId !== prevActiveBatchId) {
-    setPrevActiveBatchId(activeBatchId);
-    const initial = {
-      dungCleanup: false,
-      pressureWasher: false,
-      clean: false,
-      bedding: false,
-      equipment: false,
-      feed: false,
-      inventory: false,
-      prewarm: false
-    };
-    if (activeBatchId) {
-      const saved = localStorage.getItem(`octavioPrepChecklist:${activeBatchId}`);
-      if (saved) {
-        try {
-          setPrepChecklist({ ...initial, ...JSON.parse(saved) });
-        } catch {
-          setPrepChecklist(initial);
-        }
-      } else {
-        setPrepChecklist(initial);
-      }
-    } else {
-      setPrepChecklist(initial);
-    }
-  }
+
 
   const togglePrepItem = (key) => {
     setPrepChecklist((prev) => {
@@ -275,31 +248,14 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
       }));
 
       try {
-        const [loadingResponse, assignmentResponse, feedResponse, harvestResponse] = await Promise.all([
-          fetch(`${API_BASE}/api/batches/${requestBatchId}/loadings`, { headers }),
-          fetch(`${API_BASE}/api/batches/${requestBatchId}/employee-assignments`, { headers }),
-          fetch(`${API_BASE}/api/inventory/items?category=Feed`, { headers }),
-          fetch(`${API_BASE}/api/batches/${requestBatchId}/harvest-production-summary`, { headers })
-        ]);
-
         const [loadingData, assignmentData, feedData, harvestData] = await Promise.all([
-          loadingResponse.json(),
-          assignmentResponse.json(),
-          feedResponse.json(),
-          harvestResponse.json().catch(() => null)
+          apiClient.get(`/api/batches/${requestBatchId}/loadings`, { expectArray: true }),
+          apiClient.get(`/api/batches/${requestBatchId}/employee-assignments`, { expectArray: true }),
+          apiClient.get(`/api/inventory/items?category=Feed`, { expectArray: true }),
+          apiClient.get(`/api/batches/${requestBatchId}/harvest-production-summary`).catch(() => null)
         ]);
 
         if (!isMounted) return;
-
-        if (!loadingResponse.ok || !assignmentResponse.ok || !feedResponse.ok) {
-          setTodayRequest({
-            key: requestKey,
-            data: EMPTY_TODAY_DATA,
-            error: loadingData.error || assignmentData.error || feedData.error || 'Failed to load today operations.',
-            isLoading: false
-          });
-          return;
-        }
 
         setTodayRequest({
           key: requestKey,
@@ -307,7 +263,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
             loadings: loadingData,
             assignments: assignmentData,
             feedItems: feedData,
-            harvestProductionSummary: harvestResponse.ok ? harvestData : null
+            harvestProductionSummary: harvestData
           },
           error: '',
           isLoading: false
@@ -318,7 +274,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           setTodayRequest({
             key: requestKey,
             data: EMPTY_TODAY_DATA,
-            error: 'Cannot connect to today operations.',
+            error: err.message || 'Cannot connect to today operations.',
             isLoading: false
           });
         }

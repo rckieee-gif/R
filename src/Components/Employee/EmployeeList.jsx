@@ -4,8 +4,7 @@ export default function EmployeeList({
   handleSubmit,
   editingId,
   resetForm,
-  buildings,
-  error
+  buildings
 }) {
   return (
     <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6">
@@ -19,12 +18,6 @@ export default function EmployeeList({
           </span>
         )}
       </div>
-
-      {error && (
-        <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger">
-          {error}
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

@@ -6,24 +6,11 @@ export default function ChangePassword({
   setNewPassword,
   confirmPassword,
   setConfirmPassword,
-  passwordMessage,
-  passwordError,
   isPasswordSaving
 }) {
   return (
     <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6 font-hanken">
       <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-4">Change Password</h3>
-
-      {passwordError && (
-        <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger">
-          {passwordError}
-        </div>
-      )}
-      {passwordMessage && (
-        <div className="bg-app-success-bg text-app-success p-3 rounded-xl text-sm font-bold mb-4 border border-app-success">
-          {passwordMessage}
-        </div>
-      )}
 
       <form onSubmit={handlePasswordSubmit} className="space-y-4">
         <div>

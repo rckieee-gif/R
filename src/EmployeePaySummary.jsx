@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { API_BASE } from './api';
+import { apiClient } from './utils/apiClient';
 
 const EMPTY_SUMMARY = { totals: {}, rows: [] };
 
@@ -70,22 +70,9 @@ export default function EmployeePaySummary({ token, activeBatch, transactions = 
       }));
 
       try {
-        const response = await fetch(`${API_BASE}/api/batches/${requestBatchId}/employee-pay-summary`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await response.json();
+        const data = await apiClient.get(`/api/batches/${requestBatchId}/employee-pay-summary`);
 
         if (isCancelled) return;
-
-        if (!response.ok) {
-          setSummaryRequest({
-            batchId: requestBatchId,
-            data: EMPTY_SUMMARY,
-            error: data.error || 'Failed to load employee pay summary.',
-            isLoading: false
-          });
-          return;
-        }
 
         setSummaryRequest({
           batchId: requestBatchId,

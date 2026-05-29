@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { API_BASE } from './api';
+import { apiClient } from './utils/apiClient';
 
 export default function Login({ onLogin, onBack }) {
   const [login, setLogin] = useState('');
@@ -69,22 +69,11 @@ export default function Login({ onLogin, onBack }) {
     setError('');
 
     try {
-      const response = await fetch(`${API_BASE}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ login, email: login, password })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        onLogin(data.user, data.token);
-      } else {
-        setError(data.error || 'Login failed. Please try again.');
-      }
+      const data = await apiClient.post('/api/auth/login', { login, email: login, password });
+      onLogin(data.user, data.token);
     } catch (err) {
       console.error('Login connection error:', err);
-      setError('Cannot connect to the server. Is it running?');
+      setError(err.message || 'Cannot connect to the server. Is it running?');
     }
   };
 

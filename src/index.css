@@ -642,3 +642,51 @@ body {
   mix-blend-mode: screen; 
   transform: translateZ(40px);
 }
+
+/* ==========================================
+   TOAST & MODAL SYSTEM ANIMATIONS
+   ========================================== */
+
+@keyframes toast-slide-in {
+  from {
+    transform: translateY(1rem) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes modal-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-scale-in {
+  from {
+    transform: scale(0.95) translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-toast-in {
+  animation: toast-slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-backdrop-in {
+  animation: modal-backdrop-in 0.2s ease-out forwards;
+}
+
+.animate-modal-in {
+  animation: modal-scale-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+

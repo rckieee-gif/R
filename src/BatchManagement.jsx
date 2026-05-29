@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { API_BASE } from './api';
+import { apiClient } from './utils/apiClient';
+import { useNotification } from './Components/NotificationProvider';
 
 function toDateInput(value) {
   return value?.split('T')[0] || value || '';
@@ -59,9 +60,9 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
   const [targetFeedKg, setTargetFeedKg] = useState('');
   const [notes, setNotes] = useState('');
   const [statusField, setStatusField] = useState('ONGOING');
-  const [error, setError] = useState('');
   const [editingBatchId, setEditingBatchId] = useState(null);
   const [isLoadingLoadings, setIsLoadingLoadings] = useState(false);
+  const { success, error: toastError, confirm } = useNotification();
   const isPreviewMode = !token && Boolean(previewData);
   const visibleBatches = isPreviewMode ? previewData.batches || [] : batches;
 
@@ -86,14 +87,9 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
 
     const loadBatchSetup = async () => {
       try {
-        const headers = { Authorization: `Bearer ${token}` };
-        const [batchResponse, buildingResponse] = await Promise.all([
-          fetch(`${API_BASE}/api/batches`, { headers, signal: controller.signal }),
-          fetch(`${API_BASE}/api/buildings`, { headers, signal: controller.signal })
-        ]);
         const [batchData, buildingData] = await Promise.all([
-          batchResponse.json(),
-          buildingResponse.json()
+          apiClient.get('/api/batches', { expectArray: true, signal: controller.signal }),
+          apiClient.get('/api/buildings', { expectArray: true, signal: controller.signal })
         ]);
 
         if (controller.signal.aborted) return;
@@ -122,7 +118,6 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
     setNotes('');
     setStatusField('ONGOING');
     setLoadings(buildLoadingRows(buildings));
-    setError('');
   };
 
   const updateLoading = (index, field, value) => {
@@ -137,15 +132,7 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
     setIsLoadingLoadings(true);
 
     try {
-      const response = await fetch(`${API_BASE}/api/batches/${batchId}/loadings`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load building loadings');
-      }
-
-      const data = await response.json();
+      const data = await apiClient.get(`/api/batches/${batchId}/loadings`, { expectArray: true });
       setLoadings(data.map((row) => ({
         building: row.building,
         owner: getBuildingOwner(row.building),
@@ -163,25 +150,24 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
 
   const handleSaveBatch = async (e) => {
     e.preventDefault();
-    setError('');
 
     if (readOnly) {
-      setError('Your role can view batches but cannot create or edit them.');
+      toastError('Your role can view batches but cannot create or edit them.');
       return;
     }
 
     if (editingBatchId && !canEditOrDelete) {
-      setError('Only admin.roland can edit existing batches.');
+      toastError('Only admin.roland can edit existing batches.');
       return;
     }
 
     if (loadings.length === 0) {
-      setError('Add at least one building loading row.');
+      toastError('Add at least one building loading row.');
       return;
     }
 
     if (loadingTotal <= 0) {
-      setError('Enter chicks loaded for at least one building.');
+      toastError('Enter chicks loaded for at least one building.');
       return;
     }
 
@@ -203,26 +189,12 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
 
     try {
       const url = editingBatchId
-        ? `${API_BASE}/api/batches/${editingBatchId}`
-        : `${API_BASE}/api/batches`;
+        ? `/api/batches/${editingBatchId}`
+        : `/api/batches`;
 
-      const method = editingBatchId ? 'PATCH' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(batchPayload)
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to save batch.');
-        return;
-      }
+      const data = editingBatchId
+        ? await apiClient.patch(url, batchPayload)
+        : await apiClient.post(url, batchPayload);
 
       if (editingBatchId) {
         setBatches(batches.map((batch) => batch.id === editingBatchId ? data : batch));
@@ -230,14 +202,16 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
         if (activeBatch?.id === editingBatchId) {
           setActiveBatch(data);
         }
+        success('Batch updated successfully!');
       } else {
         setBatches([data, ...batches]);
         setActiveBatch(data);
+        success('Batch created successfully!');
       }
 
       resetForm();
-    } catch {
-      setError('Cannot connect to server.');
+    } catch (err) {
+      toastError(err.message || 'Cannot connect to server.');
     }
   };
 
@@ -258,24 +232,17 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
   const handleDeleteBatch = async (batchId) => {
     if (!canEditOrDelete) return;
 
-    const isConfirmed = window.confirm(
-      `Are you sure you want to delete batch ${batchId}? This will also remove related records if your database uses CASCADE.`
-    );
+    const isConfirmed = await confirm({
+      title: 'Delete Batch',
+      message: `Are you sure you want to delete batch ${batchId}? This will also remove related records if your database uses CASCADE.`,
+      confirmText: 'Delete',
+      danger: true
+    });
 
     if (!isConfirmed) return;
 
     try {
-      const response = await fetch(`${API_BASE}/api/batches/${batchId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to delete batch.');
-        return;
-      }
+      await apiClient.delete(`/api/batches/${batchId}`);
 
       const remainingBatches = batches.filter((batch) => batch.id !== batchId);
       setBatches(remainingBatches);
@@ -283,8 +250,9 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
       if (activeBatch?.id === batchId) {
         setActiveBatch(remainingBatches[0] || null);
       }
+      success('Batch deleted successfully!');
     } catch {
-      setError('Cannot connect to server.');
+      toastError('Cannot connect to server.');
     }
   };
 
@@ -330,12 +298,6 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
             </span>
           )}
         </div>
-
-        {error && (
-          <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger/30">
-            {error}
-          </div>
-        )}
 
         <form onSubmit={handleSaveBatch} className="space-y-4">
           <div>
@@ -502,6 +464,27 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
                 <option value="HARVESTED">HARVESTED</option>
                 <option value="CLOSED">CLOSED</option>
               </select>
+
+              {statusField === 'CLOSED' && (
+                <div className="bg-app-warning-bg border border-app-warning/20 p-4 rounded-xl text-xs space-y-2 mt-3 animate-toast-in text-app-warning">
+                  <p className="font-extrabold flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-sm">assignment_late</span>
+                    Batch Closeout Verification Checklist
+                  </p>
+                  <p className="text-app-text-secondary leading-normal">
+                    Before marking this batch as closed, verify that:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-app-text font-bold">
+                    <li>All daily production logs are entered.</li>
+                    <li>Drinker lines are flushed and barns are cleaned.</li>
+                    <li>Final harvest totals are posted to the ledger.</li>
+                    <li>Feed inventory reorder warnings are clear.</li>
+                  </ul>
+                  <p className="text-[10px] text-app-text-secondary italic">
+                    Note: Closing a batch locks the production data and archives logs.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

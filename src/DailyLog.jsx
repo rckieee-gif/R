@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { API_BASE } from './api';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { apiClient } from './utils/apiClient';
+import { useNotification } from './Components/NotificationProvider';
 import {
   BAG_WEIGHT_KG,
   calculateActualFcr,
@@ -54,8 +55,9 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
   const [averageWeightGrams, setAverageWeightGrams] = useState('');
   const [remarks, setRemarks] = useState('');
   const [editingId, setEditingId] = useState(null);
-  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { success, error: toastError, confirm } = useNotification();
+  const skipSaveRef = useRef(false);
 
   const buildingNames = useMemo(
     () => buildings.length ? buildings.map((building) => building.name) : ['A', 'B', 'C'],
@@ -199,19 +201,13 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     if (!token) return;
 
     try {
-      const response = await fetch(`${API_BASE}/api/buildings`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-
-      if (response.ok) {
-        setBuildings(data);
-        if (data.length && !data.some((building) => building.name === activeBuilding)) {
-          setActiveBuilding(data[0].name);
-        }
+      const data = await apiClient.get('/api/buildings', { expectArray: true });
+      setBuildings(data);
+      if (data.length && !data.some((building) => building.name === activeBuilding)) {
+        setActiveBuilding(data[0].name);
       }
     } catch (err) {
-      console.error('Failed to load daily log dailyLogBuildings:', err);
+      console.error('Failed to load daily log buildings:', err);
     }
   };
 
@@ -219,15 +215,9 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     if (!token) return;
 
     try {
-      const response = await fetch(`${API_BASE}/api/inventory/items?category=Feed`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-
-      if (response.ok) {
-        setFeedItems(data);
-        setFeedItemId((current) => current || (data[0]?.id ? String(data[0].id) : ''));
-      }
+      const data = await apiClient.get('/api/inventory/items?category=Feed', { expectArray: true });
+      setFeedItems(data);
+      setFeedItemId((current) => current || (data[0]?.id ? String(data[0].id) : ''));
     } catch (err) {
       console.error('Failed to load feed inventory items:', err);
     }
@@ -241,23 +231,13 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     }
 
     setIsLoading(true);
-    setError('');
 
     try {
-      const response = await fetch(`${API_BASE}/api/batches/${activeBatch.id}/employee-assignments`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to load employee assignments.');
-        return;
-      }
-
+      const data = await apiClient.get(`/api/batches/${activeBatch.id}/employee-assignments`, { expectArray: true });
       setAssignments(data);
     } catch (err) {
       console.error(err);
-      setError('Cannot connect to employee assignments.');
+      toastError(err.message || 'Cannot connect to employee assignments.');
     } finally {
       setIsLoading(false);
     }
@@ -297,43 +277,107 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     }
   }, [buildingAssignments, selectedEmployeeId]);
 
+  // --- OFFLINE DRAFT STATE MANAGEMENT ---
+  useEffect(() => {
+    if (!activeBatch?.id || editingId || skipSaveRef.current) return;
+
+    const draft = {
+      date,
+      selectedEmployeeId,
+      feedItemId,
+      feedConsumed,
+      mortality,
+      averageWeightGrams,
+      remarks,
+    };
+
+    const hasData = feedConsumed || mortality || averageWeightGrams || remarks;
+    if (hasData) {
+      localStorage.setItem(
+        `octavioDailyLogDraft:${activeBatch.id}:${activeBuilding}`,
+        JSON.stringify(draft)
+      );
+    }
+  }, [date, activeBuilding, selectedEmployeeId, feedItemId, feedConsumed, mortality, averageWeightGrams, remarks, activeBatch?.id, editingId]);
+
+  const restoreDraft = useCallback(() => {
+    if (!activeBatch?.id || editingId) return;
+
+    const saved = localStorage.getItem(`octavioDailyLogDraft:${activeBatch.id}:${activeBuilding}`);
+    if (saved) {
+      try {
+        const draft = JSON.parse(saved);
+        setDate(draft.date || todayInput());
+        setFeedConsumed(draft.feedConsumed || '');
+        setMortality(draft.mortality || '');
+        setAverageWeightGrams(draft.averageWeightGrams || '');
+        setRemarks(draft.remarks || '');
+        if (draft.feedItemId) setFeedItemId(draft.feedItemId);
+        if (draft.selectedEmployeeId) setSelectedEmployeeId(draft.selectedEmployeeId);
+      } catch (err) {
+        console.error('Failed to parse draft details:', err);
+      }
+    } else {
+      setFeedConsumed('');
+      setMortality('');
+      setAverageWeightGrams('');
+      setRemarks('');
+    }
+  }, [activeBatch?.id, activeBuilding, editingId]);
+
+  useEffect(() => {
+    restoreDraft();
+  }, [activeBuilding, restoreDraft]);
+
+  const discardDraft = () => {
+    if (!activeBatch?.id) return;
+    skipSaveRef.current = true;
+    localStorage.removeItem(`octavioDailyLogDraft:${activeBatch.id}:${activeBuilding}`);
+    setFeedConsumed('');
+    setMortality('');
+    setAverageWeightGrams('');
+    setRemarks('');
+    success('Offline draft discarded.');
+    setTimeout(() => {
+      skipSaveRef.current = false;
+    }, 0);
+  };
+
   const resetForm = () => {
     setEditingId(null);
     setFeedConsumed('');
     setMortality('');
     setAverageWeightGrams('');
     setRemarks('');
-    setError('');
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setError('');
 
     if (readOnly) {
-      setError('Your role can view daily logs but cannot add or edit entries.');
+      toastError('Your role can view daily logs but cannot add or edit entries.');
       return;
     }
 
     if (editingId && !canEditOrDelete) {
-      setError('Only admin.roland can edit existing daily logs.');
+      toastError('Only admin.roland can edit existing daily logs.');
       setEditingId(null);
       return;
     }
 
     if (!activeBatch?.id) {
-      setError('Select an active batch before saving a daily log.');
+      toastError('Select an active batch before saving a daily log.');
       return;
     }
 
     if (!selectedAssignment) {
-      setError(`Assign at least one employee to Building ${activeBuilding} in the Employees tab first.`);
+      toastError(`Assign at least one employee to Building ${activeBuilding} in the Employees tab first.`);
       return;
     }
 
     const feedQuantity = parseFloat(feedConsumed || 0);
     if (feedQuantity > 0 && !feedItemId) {
-      setError('Select which feed inventory item was consumed.');
+      toastError('Select which feed inventory item was consumed.');
       return;
     }
 
@@ -351,30 +395,21 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     };
 
     try {
-      const response = await fetch(editingId ? `${API_BASE}/api/logs/${editingId}` : `${API_BASE}/api/logs`, {
-        method: editingId ? 'PATCH' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(newLogData)
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to save daily log.');
-        return;
-      }
+      const data = editingId
+        ? await apiClient.patch(`/api/logs/${editingId}`, newLogData)
+        : await apiClient.post('/api/logs', newLogData);
 
       setLogs((current) => (
         editingId
           ? current.map((log) => log.id === editingId ? data : log)
           : [data, ...current]
       ));
+      success(editingId ? 'Daily log entry updated!' : 'Daily log entry saved!');
+      localStorage.removeItem(`octavioDailyLogDraft:${activeBatch.id}:${activeBuilding}`);
       resetForm();
     } catch (err) {
       console.error('Failed to save log:', err);
-      setError('Cannot connect to daily logs.');
+      toastError(err.message || 'Cannot connect to daily logs.');
     }
   };
 
@@ -396,25 +431,22 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
   const handleDeleteLog = async (idToDelete) => {
     if (readOnly || !canEditOrDelete) return;
 
-    const isConfirmed = window.confirm('Delete this daily log? This cannot be undone.');
+    const isConfirmed = await confirm({
+      title: 'Delete Daily Log',
+      message: 'Are you sure you want to delete this daily log? This cannot be undone.',
+      confirmText: 'Delete',
+      danger: true
+    });
     if (!isConfirmed) return;
 
     try {
-      const response = await fetch(`${API_BASE}/api/logs/${idToDelete}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json().catch(() => ({}));
-
-      if (response.ok) {
-        setLogs((current) => current.filter((log) => log.id !== idToDelete));
-        if (editingId === idToDelete) resetForm();
-      } else {
-        setError(data.error || 'Failed to delete daily log.');
-      }
+      await apiClient.delete(`/api/logs/${idToDelete}`);
+      setLogs((current) => current.filter((log) => log.id !== idToDelete));
+      if (editingId === idToDelete) resetForm();
+      success('Daily log deleted successfully!');
     } catch (err) {
       console.error('Failed to delete log:', err);
-      setError('Cannot delete daily log right now.');
+      toastError(err.message || 'Cannot delete daily log right now.');
     }
   };
 
@@ -478,7 +510,6 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
           editingId={editingId}
           date={date}
           setDate={setDate}
-          error={error}
           activeBuilding={activeBuilding}
           setActiveBuilding={setActiveBuilding}
           buildingNames={buildingNames}
@@ -507,6 +538,8 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
           remarks={remarks}
           setRemarks={setRemarks}
           resetForm={resetForm}
+          discardDraft={discardDraft}
+          activeBatchId={activeBatch?.id}
         />
       )}
 

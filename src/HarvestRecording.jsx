@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { API_BASE } from './api';
+import { apiClient } from './utils/apiClient';
+import { useNotification } from './Components/NotificationProvider';
 
 const opexCategories = [
   'Feed',
@@ -184,11 +185,10 @@ function KpiCard({ label, value, tone = 'default' }) {
 
 export default function HarvestRecording({ activeBatch, token, readOnly = false, onLedgerPosted, onBatchesChanged }) {
   const [report, setReport] = useState(null);
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
+  const { success, error: toastError, confirm } = useNotification();
 
   const summary = useMemo(() => calculateSummary(report), [report]);
   const isLocked = readOnly || report?.status === 'Posted';
@@ -203,24 +203,13 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
 
     const fetchReport = async () => {
       setIsLoading(true);
-      setError('');
-      setMessage('');
 
       try {
-        const response = await fetch(`${API_BASE}/api/batches/${activeBatch.id}/harvest-report`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await response.json();
-
-        if (!response.ok) {
-          setError(data.error || 'Failed to load harvest report.');
-          return;
-        }
-
+        const data = await apiClient.get(`/api/batches/${activeBatch.id}/harvest-report`);
         setReport(data);
       } catch (err) {
         console.error(err);
-        setError('Cannot connect to harvest recording.');
+        toastError(err.message || 'Cannot connect to harvest recording.');
       } finally {
         setIsLoading(false);
       }
@@ -260,30 +249,14 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
     if (!report || isLocked) return;
 
     setIsSaving(true);
-    setError('');
-    setMessage('');
 
     try {
-      const response = await fetch(`${API_BASE}/api/batches/${activeBatch.id}/harvest-report`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(report)
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to save harvest report.');
-        return;
-      }
-
+      const data = await apiClient.put(`/api/batches/${activeBatch.id}/harvest-report`, report);
       setReport(data);
-      setMessage('Harvest report saved.');
+      success('Harvest report saved successfully!');
     } catch (err) {
       console.error(err);
-      setError('Cannot save harvest report right now.');
+      toastError(err.message || 'Cannot save harvest report right now.');
     } finally {
       setIsSaving(false);
     }
@@ -292,32 +265,25 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
   const postSummaryToLedger = async () => {
     if (!report || isLocked) return;
 
-    const confirmed = window.confirm('Post this harvest summary to the ledger? This locks the harvest report.');
+    const confirmed = await confirm({
+      title: 'Post Harvest Summary',
+      message: 'Are you sure you want to post this harvest summary to the ledger? This will lock the harvest report.',
+      confirmText: 'Post Summary',
+      danger: false
+    });
     if (!confirmed) return;
 
     setIsPosting(true);
-    setError('');
-    setMessage('');
 
     try {
-      const response = await fetch(`${API_BASE}/api/batches/${activeBatch.id}/harvest-report/post-ledger`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to post harvest summary.');
-        return;
-      }
-
+      const data = await apiClient.post(`/api/batches/${activeBatch.id}/harvest-report/post-ledger`);
       setReport(data);
-      setMessage('Harvest summary posted to the ledger.');
+      success('Harvest summary posted to the ledger.');
       onBatchesChanged?.();
       onLedgerPosted?.();
     } catch (err) {
       console.error(err);
-      setError('Cannot post harvest summary right now.');
+      toastError(err.message || 'Cannot post harvest summary right now.');
     } finally {
       setIsPosting(false);
     }
@@ -344,6 +310,34 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
     );
   }
 
+  const exportToCSV = () => {
+    if (!report) return;
+    const headers = ['Harvest Order', 'Date', 'Birds', 'Gross Sales', 'Permit Shipping', 'Tolling Fee', 'DOC Add-on', 'Trucking', 'Expenses', 'Net Sales'];
+    const rows = summary.perHarvest.map((row, index) => [
+      `${row.harvestOrder} Harvest`,
+      report.harvestEvents[index]?.harvestDate || '--',
+      row.birds,
+      row.grossSales,
+      report.harvestEvents[index]?.permitShipping || 0,
+      report.harvestEvents[index]?.tollingFee || 0,
+      row.docAddOn,
+      row.trucking,
+      row.expenses,
+      row.netSales
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' 
+      + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+      
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `harvest_report_${activeBatch?.id}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="app-page space-y-6 font-hanken">
       <div className="mb-2 mt-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -363,6 +357,13 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
           </span>
           <button
             type="button"
+            onClick={exportToCSV}
+            className="rounded-xl bg-app-card text-app-text border border-app-border px-4 py-2 text-xs font-black uppercase tracking-wider shadow-sm transition hover:scale-105 active:scale-95 cursor-pointer"
+          >
+            Export CSV
+          </button>
+          <button
+            type="button"
             onClick={saveReport}
             disabled={isLocked || isSaving}
             className="rounded-xl bg-app-bg text-app-text border border-app-border px-4 py-2 text-xs font-black uppercase tracking-wider shadow-sm transition hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
@@ -380,14 +381,35 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-xl border border-app-danger bg-app-danger-bg p-3 text-sm font-bold text-app-danger">
-          {error}
-        </div>
-      )}
-      {message && (
-        <div className="rounded-xl border border-app-success bg-app-success-bg p-3 text-sm font-bold text-app-success">
-          {message}
+      {!isLocked && (
+        <div className="bg-app-accent/5 border border-app-accent/20 p-4.5 rounded-2xl text-xs space-y-2.5 shadow-sm animate-toast-in text-app-text-secondary">
+          <p className="font-extrabold text-app-accent flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-sm">menu_book</span>
+            Guided Harvest Workflow Checklist
+          </p>
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3 pt-1 leading-normal">
+            <div className="flex gap-2">
+              <span className="h-5 w-5 bg-app-accent/10 text-app-accent border border-app-accent/20 rounded-full flex items-center justify-center shrink-0 font-jetbrains font-bold text-[10px]">1</span>
+              <div>
+                <p className="font-extrabold text-app-text">Setup Settings</p>
+                <p className="text-[11px] mt-0.5">Enter source filename, DOC add-on, and trucking fee rates per bird.</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <span className="h-5 w-5 bg-app-accent/10 text-app-accent border border-app-accent/20 rounded-full flex items-center justify-center shrink-0 font-jetbrains font-bold text-[10px]">2</span>
+              <div>
+                <p className="font-extrabold text-app-text">Event Dates & Permits</p>
+                <p className="text-[11px] mt-0.5">Define dates for each harvest event, tolling fees, and permit records.</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <span className="h-5 w-5 bg-app-accent/10 text-app-accent border border-app-accent/20 rounded-full flex items-center justify-center shrink-0 font-jetbrains font-bold text-[10px]">3</span>
+              <div>
+                <p className="font-extrabold text-app-text">Post & Lock Summary</p>
+                <p className="text-[11px] mt-0.5">Review gross sales and net proceeds, then click "Post Summary" to link to the finance ledger.</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

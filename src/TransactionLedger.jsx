@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { apiClient } from './utils/apiClient';
 import { API_BASE } from './api';
 import QuickEntryBox from './Components/Ledger/QuickEntryBox';
 import TransactionForm from './Components/Ledger/TransactionForm';
 import TransactionTable from './Components/Ledger/TransactionTable';
+import { useNotification } from './Components/NotificationProvider';
 
 
 function groupCategories(categories) {
@@ -82,16 +84,14 @@ function mergeStakeholderNames(stakeholders, names) {
   return merged;
 }
 
-async function fetchStakeholders(headers) {
-  const response = await fetch(`${API_BASE}/api/stakeholders`, { headers });
-  if (!response.ok) {
-    throw new Error('Failed to load stakeholder data.');
-  }
-
-  return uniqueStakeholders(await response.json());
+async function fetchStakeholders() {
+  const data = await apiClient.get('/api/stakeholders', { expectArray: true });
+  return uniqueStakeholders(data);
 }
 
 export default function TransactionLedger({ transactions, setTransactions, activeBatch, token, readOnly = false, canEditOrDelete = false }) {
+  const { success, error: toastError, confirm, prompt } = useNotification();
+
   const [buildings, setBuildings] = useState(['All']);
   const [categoriesByFunding, setCategoriesByFunding] = useState({});
   const [stakeholders, setStakeholders] = useState([]);
@@ -115,7 +115,6 @@ export default function TransactionLedger({ transactions, setTransactions, activ
   const [pendingQuickEntry, setPendingQuickEntry] = useState(null);
   const [isParsingQuickEntry, setIsParsingQuickEntry] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [error, setError] = useState('');
   const [isLoadingMasters, setIsLoadingMasters] = useState(false);
   const [ledgerSearch, setLedgerSearch] = useState('');
   const [ledgerFundingFilter, setLedgerFundingFilter] = useState('all');
@@ -171,7 +170,7 @@ export default function TransactionLedger({ transactions, setTransactions, activ
   const filteredTransactions = useMemo(() => {
     const query = ledgerSearch.trim().toLowerCase();
 
-    return transactions.filter((tx) => {
+    const res = transactions.filter((tx) => {
       const txDate = getTransactionDateValue(tx.date);
 
       if (ledgerDateFrom && (!txDate || txDate < ledgerDateFrom)) return false;
@@ -183,7 +182,7 @@ export default function TransactionLedger({ transactions, setTransactions, activ
 
       if (!query) return true;
 
-      return [
+      const result = [
         tx.id,
         tx.date,
         tx.building,
@@ -198,7 +197,9 @@ export default function TransactionLedger({ transactions, setTransactions, activ
         tx.feedItemName,
         Number(tx.amount || 0).toFixed(2)
       ].some((value) => normalizeSearchValue(value).includes(query));
+      return result;
     });
+    return res;
   }, [
     transactions,
     ledgerSearch,
@@ -252,25 +253,13 @@ export default function TransactionLedger({ transactions, setTransactions, activ
 
     const fetchMasterData = async () => {
       setIsLoadingMasters(true);
-      setError('');
 
       try {
-        const headers = { Authorization: `Bearer ${token}` };
-        const [buildingResponse, categoryResponse, nextStakeholders, feedResponse] = await Promise.all([
-          fetch(`${API_BASE}/api/buildings`, { headers }),
-          fetch(`${API_BASE}/api/categories`, { headers }),
-          fetchStakeholders(headers),
-          fetch(`${API_BASE}/api/inventory/items?category=Feed`, { headers })
-        ]);
-
-        if (!buildingResponse.ok || !categoryResponse.ok || !feedResponse.ok) {
-          throw new Error('Failed to load ledger dropdown data.');
-        }
-
-        const [buildingData, categoryData, feedData] = await Promise.all([
-          buildingResponse.json(),
-          categoryResponse.json(),
-          feedResponse.json()
+        const [buildingData, categoryData, nextStakeholders, feedData] = await Promise.all([
+          apiClient.get('/api/buildings', { expectArray: true }),
+          apiClient.get('/api/categories', { expectArray: true }),
+          fetchStakeholders(),
+          apiClient.get('/api/inventory/items?category=Feed', { expectArray: true })
         ]);
 
         const nextBuildings = ['All', ...buildingData.map((item) => item.name)];
@@ -293,7 +282,7 @@ export default function TransactionLedger({ transactions, setTransactions, activ
         setPaidTo((current) => normalizeStakeholderName(current));
       } catch (err) {
         console.error(err);
-        setError('Could not load ledger dropdowns from the server.');
+        toastError('Could not load ledger dropdowns from the server.');
       } finally {
         setIsLoadingMasters(false);
       }
@@ -410,7 +399,7 @@ export default function TransactionLedger({ transactions, setTransactions, activ
     }
 
     try {
-      const nextStakeholders = await fetchStakeholders({ Authorization: `Bearer ${token}` });
+      const nextStakeholders = await fetchStakeholders();
       setStakeholders(mergeStakeholderNames(nextStakeholders, names));
     } catch (err) {
       console.warn('Failed to refresh stakeholder dropdown data:', err);
@@ -420,14 +409,18 @@ export default function TransactionLedger({ transactions, setTransactions, activ
     }
   };
 
-  const confirmApplyQuickEntry = () => {
+  const confirmApplyQuickEntry = async () => {
     if (!pendingQuickEntry?.parsed) return;
 
     const replacementRows = getQuickEntryReplacementRows(pendingQuickEntry.parsed);
     const rundown = replacementRows.length
       ? replacementRows.map((row) => `${row.label}: ${row.from} -> ${row.to}`).join('\n')
       : 'No ledger fields will change.';
-    const confirmed = window.confirm(`Send this parsed entry to the ledger form?\n\n${rundown}`);
+    
+    const confirmed = await confirm({
+      title: 'Apply Quick Entry',
+      message: `Send this parsed entry to the ledger form?\n\n${rundown}`
+    });
 
     if (!confirmed) return;
 
@@ -437,7 +430,6 @@ export default function TransactionLedger({ transactions, setTransactions, activ
   };
 
   const handleQuickEntryParse = async () => {
-    setError('');
     setQuickEntryStatus('');
     setPendingQuickEntry(null);
 
@@ -449,26 +441,12 @@ export default function TransactionLedger({ transactions, setTransactions, activ
     setIsParsingQuickEntry(true);
 
     try {
-      const response = await fetch(`${API_BASE}/api/quick-entry`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          text: quickEntryText,
-          today: date,
-          building,
-          paidBy
-        })
+      const data = await apiClient.post('/api/quick-entry', {
+        text: quickEntryText,
+        today: date,
+        building,
+        paidBy
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setQuickEntryStatus(data.error || 'Could not parse quick entry.');
-        return;
-      }
 
       setPendingQuickEntry(data);
       setQuickEntryStatus(
@@ -476,7 +454,7 @@ export default function TransactionLedger({ transactions, setTransactions, activ
       );
     } catch (err) {
       console.error('Failed to parse quick entry:', err);
-      setQuickEntryStatus('Cannot connect to quick-entry parser.');
+      setQuickEntryStatus(err.message || 'Cannot connect to quick-entry parser.');
     } finally {
       setIsParsingQuickEntry(false);
     }
@@ -496,35 +474,33 @@ export default function TransactionLedger({ transactions, setTransactions, activ
     setRemarks('');
     setQuickEntryStatus('');
     setPendingQuickEntry(null);
-    setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
 
     if (readOnly) {
-      setError('Your role can view ledger records but cannot save changes.');
+      toastError('Your role can view ledger records but cannot save changes.');
       return;
     }
 
     if (editingId && !canEditOrDelete) {
-      setError('Only admin.roland can edit existing ledger records.');
+      toastError('Only admin.roland can edit existing ledger records.');
       return;
     }
 
     if (!activeBatch?.id) {
-      setError('Please select an active batch before saving a ledger record.');
+      toastError('Please select an active batch before saving a ledger record.');
       return;
     }
 
     if (!fundingNature || !category) {
-      setError('Funding nature and category are required.');
+      toastError('Funding nature and category are required.');
       return;
     }
 
     if (isFeedLedgerRecord && (!feedItemId || Number(quantity || 0) <= 0)) {
-      setError('Feed delivery entries need a feed inventory item and quantity in sacks.');
+      toastError('Feed delivery entries need a feed inventory item and quantity in sacks.');
       return;
     }
 
@@ -548,24 +524,12 @@ export default function TransactionLedger({ transactions, setTransactions, activ
 
     try {
       const url = editingId
-        ? `${API_BASE}/api/batches/${activeBatch.id}/transactions/${editingId}`
-        : `${API_BASE}/api/batches/${activeBatch.id}/transactions`;
+        ? `/api/batches/${activeBatch.id}/transactions/${editingId}`
+        : `/api/batches/${activeBatch.id}/transactions`;
 
-      const response = await fetch(url, {
-        method: editingId ? 'PATCH' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(newTxData)
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to save transaction.');
-        return;
-      }
+      const data = editingId
+        ? await apiClient.patch(url, newTxData)
+        : await apiClient.post(url, newTxData);
 
       const savedStakeholderNames = [
         newTxData.paidBy,
@@ -576,14 +540,16 @@ export default function TransactionLedger({ transactions, setTransactions, activ
 
       if (editingId) {
         setTransactions((currentTransactions) => currentTransactions.map((tx) => tx.id === editingId ? data : tx));
+        success('Transaction updated successfully.');
       } else {
         setTransactions((currentTransactions) => [data, ...currentTransactions]);
+        success('Transaction created successfully.');
       }
       resetForm({ stakeholderNames: savedStakeholderNames });
       refreshStakeholders(savedStakeholderNames);
     } catch (err) {
       console.error('Failed to save transaction:', err);
-      setError('Cannot connect to server.');
+      toastError(err.message || 'Cannot connect to server.');
     }
   };
 
@@ -611,33 +577,56 @@ export default function TransactionLedger({ transactions, setTransactions, activ
   const handleDeleteTransaction = async (idToDelete) => {
     if (readOnly || !canEditOrDelete) return;
 
-    const reason = window.prompt('Reason for voiding this transaction?');
+    const reason = await prompt({
+      title: 'Void Transaction',
+      message: 'Reason for voiding this transaction?',
+      placeholder: 'e.g. error in entry, double entry',
+      confirmText: 'Void',
+      cancelText: 'Cancel',
+      danger: true
+    });
 
     if (!reason) return;
 
     try {
-      const response = await fetch(`${API_BASE}/api/batches/${activeBatch.id}/transactions/${idToDelete}/void`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ reason })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to void transaction.');
-        return;
-      }
+      await apiClient.post(`/api/batches/${activeBatch.id}/transactions/${idToDelete}/void`, { reason });
 
       setTransactions(transactions.filter((tx) => tx.id !== idToDelete));
       if (editingId === idToDelete) resetForm();
+      success('Transaction voided successfully.');
     } catch (err) {
       console.error('Failed to void transaction:', err);
-      setError('Cannot connect to server.');
+      toastError(err.message || 'Cannot connect to server.');
     }
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Date', 'Building', 'Type', 'Funding Nature', 'Category', 'Description', 'Paid By', 'Paid To', 'Reference', 'Remarks', 'Amount (PHP)'];
+    
+    const rows = filteredTransactions.map((tx) => [
+      new Date(tx.date).toLocaleDateString(),
+      tx.building || 'All',
+      tx.type,
+      tx.fundingNature,
+      tx.category,
+      `"${String(tx.description || '').replace(/"/g, '""')}"`,
+      `"${String(tx.paidBy || '').replace(/"/g, '""')}"`,
+      `"${String(tx.paidTo || '').replace(/"/g, '""')}"`,
+      `"${String(tx.reference || '').replace(/"/g, '""')}"`,
+      `"${String(tx.remarks || '').replace(/"/g, '""')}"`,
+      tx.amount
+    ]);
+    
+    const csvContent = 'data:text/csv;charset=utf-8,' 
+      + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+      
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `ledger_export_${activeBatch?.id || 'all'}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -652,13 +641,22 @@ export default function TransactionLedger({ transactions, setTransactions, activ
               {activeBatch?.id ? `Batch ${activeBatch.id}` : 'Select a batch before saving records.'}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="no-print px-3 py-2 rounded-xl bg-app-accent text-app-on-accent text-xs font-black shadow-sm hover:scale-105 active:scale-95 transition-transform cursor-pointer"
-          >
-            Print
-          </button>
+          <div className="flex gap-2 no-print">
+            <button
+              type="button"
+              onClick={exportToCSV}
+              className="px-3 py-2 rounded-xl bg-app-card border border-app-border text-app-text text-xs font-black shadow-sm hover:scale-105 active:scale-95 transition-transform cursor-pointer"
+            >
+              Export CSV
+            </button>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="px-3 py-2 rounded-xl bg-app-accent text-app-on-accent text-xs font-black shadow-sm hover:scale-105 active:scale-95 transition-transform cursor-pointer"
+            >
+              Print
+            </button>
+          </div>
         </div>
       </div>
 
@@ -683,12 +681,6 @@ export default function TransactionLedger({ transactions, setTransactions, activ
             <h3 className={`text-xs font-bold uppercase tracking-wider mb-4 border-b pb-2 ${editingId ? 'text-app-accent border-app-accent/30' : 'text-app-text-secondary border-app-border/40'}`}>
               {editingId ? 'Editing Record' : 'New Finance Record'}
             </h3>
-
-            {error && (
-              <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger">
-                {error}
-              </div>
-            )}
 
             {isLoadingMasters && (
               <p className="text-xs text-app-text-secondary mb-4">Loading dropdowns...</p>

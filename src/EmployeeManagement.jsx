@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { API_BASE } from './api';
+import { apiClient } from './utils/apiClient';
+import { useNotification } from './Components/NotificationProvider';
 import { calculateMortalityBuffer, applyMortalityBuffer } from './mortalityBuffer';
 import EmployeeList from './Components/Employee/EmployeeList';
 import CompensationForm from './Components/Employee/CompensationForm';
@@ -276,8 +277,8 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
   const [batchLoadings, setBatchLoadings] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
-  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { success, error: toastError, confirm } = useNotification();
 
   const activeBatchId = activeBatch?.id ?? null;
   const [prevActiveBatchId, setPrevActiveBatchId] = useState(activeBatchId);
@@ -346,37 +347,21 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
 
     const fetchEmployeeSheet = async () => {
       setIsLoading(true);
-      setError('');
 
       try {
-        const [employeeResponse, buildingResponse] = await Promise.all([
-          fetch(`${API_BASE}/api/employees`, {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          fetch(`${API_BASE}/api/buildings`, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
+        const [employeeData, buildingData] = await Promise.all([
+          apiClient.get('/api/employees', { expectArray: true }),
+          apiClient.get('/api/buildings', { expectArray: true })
         ]);
-
-        const employeeData = await employeeResponse.json();
 
         if (isCancelled) return;
 
-        if (!employeeResponse.ok) {
-          setError(employeeData.error || 'Failed to load employees.');
-          return;
-        }
-
         setEmployees(employeeData.filter(isPaySheetEmployee));
-
-        if (buildingResponse.ok) {
-          const buildingData = await buildingResponse.json();
-          if (!isCancelled) setBuildings(buildingData);
-        }
+        setBuildings(buildingData);
       } catch (err) {
         if (isCancelled) return;
         console.error(err);
-        setError('Cannot connect to the employee sheet.');
+        toastError(err.message || 'Cannot connect to the employee sheet.');
       } finally {
         if (!isCancelled) {
           setIsLoading(false);
@@ -399,17 +384,9 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
 
     const fetchCompensations = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/batches/${requestBatchId}/employee-compensations`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await response.json();
+        const data = await apiClient.get(`/api/batches/${requestBatchId}/employee-compensations`, { expectArray: true });
 
         if (isCancelled) return;
-
-        if (!response.ok) {
-          setError(data.error || 'Failed to load employee batch pay.');
-          return;
-        }
 
         setCompensationState({
           batchId: requestBatchId,
@@ -429,7 +406,7 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
       } catch (err) {
         if (isCancelled) return;
         console.error(err);
-        setError('Cannot connect to the batch pay sheet.');
+        toastError(err.message || 'Cannot connect to the batch pay sheet.');
       }
     };
 
@@ -449,13 +426,9 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
 
     const fetchLoadings = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/batches/${activeBatchId}/loadings`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await response.json();
-
+        const data = await apiClient.get(`/api/batches/${activeBatchId}/loadings`, { expectArray: true });
         if (isCancelled) return;
-        if (response.ok) setBatchLoadings(data);
+        setBatchLoadings(data);
       } catch (err) {
         if (isCancelled) return;
         console.error('Failed to load batch loadings for buffer:', err);
@@ -520,41 +493,25 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
   const resetForm = () => {
     setEditingId(null);
     setForm(emptyForm);
-    setError('');
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setError('');
 
     if (editingId && !canEditOrDelete) {
-      setError('Only admin.roland can edit employee records.');
+      toastError('Only admin.roland can edit employee records.');
       return;
     }
 
     if (!form.name.trim()) {
-      setError('Employee name is required.');
+      toastError('Employee name is required.');
       return;
     }
 
     try {
-      const response = await fetch(
-        editingId ? `${API_BASE}/api/employees/${editingId}` : `${API_BASE}/api/employees`,
-        {
-          method: editingId ? 'PATCH' : 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify(form)
-        }
-      );
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to save employee.');
-        return;
-      }
+      const data = editingId
+        ? await apiClient.patch(`/api/employees/${editingId}`, form)
+        : await apiClient.post('/api/employees', form);
 
       if (editingId) {
         setEmployees((current) => current.map((employee) => employee.id === editingId ? data : employee));
@@ -584,21 +541,22 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
         }
       }
 
+      success(editingId ? 'Employee updated successfully!' : 'Employee added successfully!');
       resetForm();
     } catch (err) {
       console.error(err);
-      setError('Cannot connect to the employee sheet.');
+      toastError(err.message || 'Cannot connect to the employee sheet.');
     }
   };
 
   const handleCompSave = async () => {
     if (!canEditOrDelete) {
-      setError('Only admin.roland can edit employee batch pay.');
+      toastError('Only admin.roland can edit employee batch pay.');
       return;
     }
 
     if (!activeBatchId) {
-      setError('Select an active batch before saving employee batch pay.');
+      toastError('Select an active batch before saving employee batch pay.');
       return;
     }
 
@@ -609,25 +567,12 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
       for (const id of employeeIdsToSave) {
         const draft = buildCompDraft(compDrafts[id]);
         const poolIds = getConnectedPoolIds(id, employeeIdsToSave, compDrafts);
-        const response = await fetch(`${API_BASE}/api/batches/${activeBatchId}/employee-compensations/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            handledBirds: draft.handledBirds,
-            ratePerBird: draft.ratePerBird,
-            corpoGroup: buildCorpoGroupValue(poolIds),
-            remarks: draft.remarks
-          })
+        const data = await apiClient.put(`/api/batches/${activeBatchId}/employee-compensations/${id}`, {
+          handledBirds: draft.handledBirds,
+          ratePerBird: draft.ratePerBird,
+          corpoGroup: buildCorpoGroupValue(poolIds),
+          remarks: draft.remarks
         });
-        const data = await response.json();
-
-        if (!response.ok) {
-          setError(data.error || 'Failed to save employee batch pay.');
-          return;
-        }
 
         savedRows.push(data);
       }
@@ -653,9 +598,10 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
           drafts: nextDrafts
         };
       });
+      success('Employee batch pay updated successfully!');
     } catch (err) {
       console.error(err);
-      setError('Cannot connect to the batch pay sheet.');
+      toastError('Cannot connect to the batch pay sheet.');
     }
   };
 
@@ -679,20 +625,16 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
   const handleArchive = async (employee) => {
     if (!canEditOrDelete) return;
 
-    const confirmed = window.confirm(`Archive ${employee.name}? Ledger history will remain intact.`);
+    const confirmed = await confirm({
+      title: 'Archive Employee',
+      message: `Archive ${employee.name}? Ledger history will remain intact.`,
+      confirmText: 'Archive',
+      danger: true
+    });
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`${API_BASE}/api/employees/${employee.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to archive employee.');
-        return;
-      }
+      await apiClient.delete(`/api/employees/${employee.id}`);
 
       setEmployees((current) => current.filter((item) => item.id !== employee.id));
       updateActiveCompensationState(({ rows, drafts }) => {
@@ -704,10 +646,11 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
           drafts: nextDrafts
         };
       });
+      success('Employee archived successfully!');
       if (editingId === employee.id) resetForm();
     } catch (err) {
       console.error(err);
-      setError('Cannot connect to the employee sheet.');
+      toastError('Cannot connect to the employee sheet.');
     }
   };
 
@@ -759,7 +702,6 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
         editingId={editingId}
         resetForm={resetForm}
         buildings={buildings}
-        error={error}
       />
 
       <CompensationForm

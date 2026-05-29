@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { BAG_WEIGHT_KG, getAgeDay } from '../broilerTargets';
-import { API_BASE } from '../api';
+import { apiClient } from '../utils/apiClient';
 
 const quickActionClass = "text-[10px] font-black py-1.5 px-2.5 rounded-full bg-app-card text-app-text border border-app-border hover:bg-app-bg hover:text-app-accent active:scale-95 transition-all cursor-pointer flex items-center space-x-1 shadow-sm";
 
@@ -449,23 +449,10 @@ export default function AntigravityAssistant({
       setIsTyping(true);
 
       try {
-        const response = await fetch(`${API_BASE}/api/flockops-chat`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            message: query,
-            context: buildFlockOpsContext()
-          })
+        const payload = await apiClient.post('/api/flockops-chat', {
+          message: query,
+          context: buildFlockOpsContext()
         });
-
-        const payload = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-          throw new Error(payload.error || 'FlockOps chat is unavailable.');
-        }
 
         addAssistantMessage(payload.reply || 'FlockOps is online, but I did not receive a usable reply. Try a shorter farm operations question.');
       } catch (error) {

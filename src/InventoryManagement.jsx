@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { API_BASE } from './api';
+import { apiClient } from './utils/apiClient';
 
 const emptyItemForm = {
   name: '',
@@ -110,33 +110,21 @@ function uniqueStakeholders(stakeholders) {
   }, []);
 }
 
-async function readInventoryData({ token, activeBatchId, signal }) {
-  const headers = { Authorization: `Bearer ${token}` };
-  const [itemResponse, movementResponse, buildingResponse, stakeholderResponse] = await Promise.all([
-    fetch(`${API_BASE}/api/inventory/items`, { headers, signal }),
-    fetch(`${API_BASE}/api/inventory/movements${activeBatchId ? `?batchId=${activeBatchId}` : ''}`, { headers, signal }),
-    fetch(`${API_BASE}/api/buildings`, { headers, signal }),
-    fetch(`${API_BASE}/api/stakeholders`, { headers, signal })
-  ]);
-
+async function readInventoryData({ activeBatchId, signal }) {
   const [itemData, movementData, buildingData, stakeholderData] = await Promise.all([
-    itemResponse.json(),
-    movementResponse.json(),
-    buildingResponse.json(),
-    stakeholderResponse.json()
+    apiClient.get('/api/inventory/items', { expectArray: true, signal }),
+    apiClient.get(`/api/inventory/movements${activeBatchId ? `?batchId=${activeBatchId}` : ''}`, { expectArray: true, signal }),
+    apiClient.get('/api/buildings', { expectArray: true, signal }).catch(() => null),
+    apiClient.get('/api/stakeholders', { expectArray: true, signal }).catch(() => null)
   ]);
-
-  if (!itemResponse.ok || !movementResponse.ok) {
-    throw new Error(itemData.error || movementData.error || 'Failed to load inventory.');
-  }
 
   return {
     items: itemData,
     movements: movementData,
-    buildings: buildingResponse.ok && Array.isArray(buildingData)
+    buildings: Array.isArray(buildingData)
       ? ['All', ...buildingData.map((building) => building.name)]
       : null,
-    stakeholders: stakeholderResponse.ok && Array.isArray(stakeholderData)
+    stakeholders: Array.isArray(stakeholderData)
       ? uniqueStakeholders(stakeholderData)
       : null
   };
@@ -313,29 +301,16 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
     }
 
     try {
-      const response = await fetch(
-        editingItemId ? `${API_BASE}/api/inventory/items/${editingItemId}` : `${API_BASE}/api/inventory/items`,
-        {
-          method: editingItemId ? 'PATCH' : 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify(itemForm)
-        }
-      );
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to save inventory item.');
-        return;
+      if (editingItemId) {
+        await apiClient.patch(`/api/inventory/items/${editingItemId}`, itemForm);
+      } else {
+        await apiClient.post('/api/inventory/items', itemForm);
       }
-
       await fetchInventory();
       resetItemForm();
     } catch (err) {
       console.error(err);
-      setError('Cannot save inventory item.');
+      setError(err.message || 'Cannot save inventory item.');
     }
   };
 
@@ -359,25 +334,12 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
     }
 
     try {
-      const response = await fetch(`${API_BASE}/api/inventory/movements`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          ...movementForm,
-          batchId: activeBatch?.id || null,
-          amount: movementAmount || undefined,
-          createLedger: movementForm.createLedger && movementForm.movementType === 'Stock In'
-        })
+      await apiClient.post('/api/inventory/movements', {
+        ...movementForm,
+        batchId: activeBatch?.id || null,
+        amount: movementAmount || undefined,
+        createLedger: movementForm.createLedger && movementForm.movementType === 'Stock In'
       });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to save inventory movement.');
-        return;
-      }
 
       setMovementForm((current) => ({
         ...emptyMovementForm,
@@ -388,7 +350,7 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
       await fetchInventory();
     } catch (err) {
       console.error(err);
-      setError('Cannot save inventory movement.');
+      setError(err.message || 'Cannot save inventory movement.');
     }
   };
 

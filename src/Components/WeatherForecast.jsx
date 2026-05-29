@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { apiClient } from '../utils/apiClient';
 
 const LATITUDE = 6.1174;
 const LONGITUDE = 125.1718;
@@ -178,9 +179,7 @@ export default function WeatherForecast() {
     setError(null);
     try {
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code,wind_speed_10m_max,relative_humidity_2m_max&timezone=Asia/Manila&forecast_days=5`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await apiClient.get(url);
 
       const days = data.daily.time.map((date, i) => ({
         date,

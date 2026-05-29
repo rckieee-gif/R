@@ -2,7 +2,6 @@ const allFilterValue = 'all';
 
 export default function ActivityLogs({
   fetchActivityLogs,
-  activityError,
   isLoadingActivity,
   activitySearch,
   setActivitySearch,
@@ -34,12 +33,6 @@ export default function ActivityLogs({
           Refresh
         </button>
       </div>
-
-      {activityError && (
-        <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger">
-          {activityError}
-        </div>
-      )}
 
       {isLoadingActivity && (
         <p className="text-xs text-app-text-secondary mb-3 font-black">Loading activity logs...</p>

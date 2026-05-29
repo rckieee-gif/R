@@ -22,27 +22,21 @@ export default function DataSync({
   setDataset,
   exportScope,
   setExportScope,
-  exportError,
   exportUsesBatch,
   exportHint,
   effectiveBatchId,
   handleExport,
   isExporting,
 
-  importError,
-  importMessage,
   importType,
   setImportType,
   importFile,
   setImportFile,
   importSummary,
   setImportSummary,
-  setImportError,
-  setImportMessage,
   handleImport,
   isImporting,
 
-  archiveError,
   archiveScope,
   setArchiveScope,
   archiveBatchId,
@@ -57,12 +51,6 @@ export default function DataSync({
     <>
       <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6 font-hanken">
         <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-4">Export Database</h3>
-
-        {exportError && (
-          <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger">
-            {exportError}
-          </div>
-        )}
 
         <div className="space-y-4">
           <div>
@@ -132,17 +120,6 @@ export default function DataSync({
       <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6 font-hanken">
         <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-4">Import Records</h3>
 
-        {importError && (
-          <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger">
-            {importError}
-          </div>
-        )}
-        {importMessage && (
-          <div className="bg-app-success-bg text-app-success p-3 rounded-xl text-sm font-bold mb-4 border border-app-success">
-            {importMessage}
-          </div>
-        )}
-
         <div className="space-y-4">
           <div>
             <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1.5">Import Type</label>
@@ -152,8 +129,6 @@ export default function DataSync({
                 setImportType(event.target.value);
                 setImportFile(null);
                 setImportSummary(null);
-                setImportError('');
-                setImportMessage('');
               }}
               disabled={!exportAllowed}
               className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
@@ -173,8 +148,6 @@ export default function DataSync({
               onChange={(event) => {
                 setImportFile(event.target.files?.[0] || null);
                 setImportSummary(null);
-                setImportError('');
-                setImportMessage('');
               }}
               className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none disabled:opacity-40 disabled:cursor-not-allowed file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-app-accent file:text-app-on-accent hover:file:opacity-90 file:cursor-pointer"
             />
@@ -220,12 +193,6 @@ export default function DataSync({
 
       <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6 font-hanken">
         <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-4">Archive System</h3>
-
-        {archiveError && (
-          <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger">
-            {archiveError}
-          </div>
-        )}
 
         <div className="space-y-4">
           <div>

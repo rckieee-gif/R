@@ -52,8 +52,9 @@ export default function TransactionForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex space-x-3">
         <div className="flex-1">
-          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Date</label>
+          <label htmlFor="tx-date" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Date</label>
           <input
+            id="tx-date"
             type="date"
             required
             value={date}
@@ -63,8 +64,9 @@ export default function TransactionForm({
         </div>
 
         <div className="w-1/3">
-          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Building</label>
+          <label htmlFor="tx-building" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Building</label>
           <select
+            id="tx-building"
             value={building}
             onChange={(e) => setBuilding(e.target.value)}
             className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
@@ -78,8 +80,9 @@ export default function TransactionForm({
 
       <div className="flex space-x-3">
         <div className="flex-1">
-          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Funding Nature</label>
+          <label htmlFor="tx-funding-nature" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Funding Nature</label>
           <select
+            id="tx-funding-nature"
             value={fundingNature}
             onChange={handleFundingChange}
             className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
@@ -94,8 +97,9 @@ export default function TransactionForm({
         </div>
 
         <div className="flex-1">
-          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Category</label>
+          <label htmlFor="tx-category" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Category</label>
           <select
+            id="tx-category"
             value={category}
             onChange={handleCategoryChange}
             className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
@@ -112,8 +116,9 @@ export default function TransactionForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Transaction Type</label>
+          <label htmlFor="tx-type" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Transaction Type</label>
           <select
+            id="tx-type"
             value={transactionType}
             onChange={(e) => setTransactionType(e.target.value)}
             className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
@@ -125,8 +130,9 @@ export default function TransactionForm({
         </div>
 
         <div>
-          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Reference</label>
+          <label htmlFor="tx-reference" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Reference</label>
           <input
+            id="tx-reference"
             type="text"
             value={reference}
             onChange={(e) => setReference(e.target.value)}
@@ -137,8 +143,9 @@ export default function TransactionForm({
       </div>
 
       <div>
-        <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Description</label>
+        <label htmlFor="tx-description" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Description</label>
         <input
+          id="tx-description"
           type="text"
           required
           value={description}
@@ -150,10 +157,11 @@ export default function TransactionForm({
 
       {isFeedLedgerRecord && (
         <div className="rounded-xl border border-app-success bg-app-success-bg p-3">
-          <label className="block text-[10px] font-black uppercase tracking-wider text-app-success mb-1">
+          <label htmlFor="tx-feed-item" className="block text-[10px] font-black uppercase tracking-wider text-app-success mb-1">
             Feed Inventory Item
           </label>
           <select
+            id="tx-feed-item"
             required
             value={feedItemId}
             onChange={(e) => setFeedItemId(e.target.value)}
@@ -177,8 +185,9 @@ export default function TransactionForm({
 
       <div className="grid grid-cols-3 gap-2 font-jetbrains">
         <div>
-          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Quantity</label>
+          <label htmlFor="tx-quantity" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Quantity</label>
           <input
+            id="tx-quantity"
             type="number"
             step="0.001"
             min="0"
@@ -190,8 +199,9 @@ export default function TransactionForm({
         </div>
 
         <div>
-          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Unit Cost</label>
+          <label htmlFor="tx-unit-cost" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Unit Cost</label>
           <input
+            id="tx-unit-cost"
             type="number"
             step="0.0001"
             min="0"
@@ -203,8 +213,9 @@ export default function TransactionForm({
         </div>
 
         <div>
-          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Amount</label>
+          <label htmlFor="tx-amount" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Amount</label>
           <input
+            id="tx-amount"
             type="number"
             step="0.01"
             min="0"
@@ -224,8 +235,9 @@ export default function TransactionForm({
 
       <div className="flex space-x-3 border-t border-app-border/40 pt-3">
         <div className="flex-1">
-          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Paid By</label>
+          <label htmlFor="tx-paid-by" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Paid By</label>
           <select
+            id="tx-paid-by"
             value={paidBy}
             onChange={(e) => setPaidBy(e.target.value)}
             className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
@@ -241,8 +253,9 @@ export default function TransactionForm({
         </div>
 
         <div className="flex-1">
-          <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Paid To</label>
+          <label htmlFor="tx-paid-to" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Paid To</label>
           <select
+            id="tx-paid-to"
             value={paidTo}
             onChange={(e) => setPaidTo(e.target.value)}
             className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
@@ -259,8 +272,9 @@ export default function TransactionForm({
       </div>
 
       <div>
-        <label className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Remarks</label>
+        <label htmlFor="tx-remarks" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Remarks</label>
         <input
+          id="tx-remarks"
           type="text"
           value={remarks}
           onChange={(e) => setRemarks(e.target.value)}

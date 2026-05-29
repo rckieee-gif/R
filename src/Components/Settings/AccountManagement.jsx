@@ -8,24 +8,11 @@ export default function AccountManagement({
   accounts,
   isLoadingAccounts,
   updateAccount,
-  disableAccount,
-  accountError,
-  accountMessage
+  disableAccount
 }) {
   return (
     <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6 font-hanken">
       <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-4">User Accounts</h3>
-
-      {accountError && (
-        <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger">
-          {accountError}
-        </div>
-      )}
-      {accountMessage && (
-        <div className="bg-app-success-bg text-app-success p-3 rounded-xl text-sm font-bold mb-4 border border-app-success">
-          {accountMessage}
-        </div>
-      )}
 
       <form onSubmit={handleAccountCreate} className="space-y-4 mb-6">
         <div className="grid grid-cols-2 gap-3">
