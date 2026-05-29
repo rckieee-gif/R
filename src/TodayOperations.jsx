@@ -101,7 +101,32 @@ function formatPercent(value, digits = 1) {
   return `${formatNumber(value, digits)}%`;
 }
 
-function AttentionCard({ label, value, detail, tone = 'neutral', onClick }) {
+function InfoButton({ term, setActiveTooltip }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        setActiveTooltip(term);
+      }}
+      className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full bg-app-accent/10 text-app-accent text-[9px] font-black hover:bg-app-accent/25 active:scale-90 transition-all cursor-pointer font-jetbrains"
+      title="Click for explanation"
+    >
+      ?
+    </button>
+  );
+}
+
+function AttentionCard({ label, value, detail, tone = 'neutral', onClick, isLoading = false, infoTerm = null, setActiveTooltip = null }) {
+  if (isLoading) {
+    return (
+      <div className="min-h-28 rounded-xl border border-app-border bg-app-card p-4 animate-pulse">
+        <div className="h-3 w-2/3 bg-app-border/40 rounded"></div>
+        <div className="h-8 w-1/3 bg-app-border/50 rounded mt-2"></div>
+        <div className="h-3.5 w-4/5 bg-app-border/30 rounded mt-3"></div>
+      </div>
+    );
+  }
   const toneClass = {
     danger: 'border-app-danger/30 bg-app-danger-bg text-app-danger hover:border-app-danger',
     warning: 'border-app-warning/30 bg-app-warning-bg text-app-warning hover:border-app-warning',
@@ -115,7 +140,12 @@ function AttentionCard({ label, value, detail, tone = 'neutral', onClick }) {
       onClick={onClick}
       className={`min-h-28 rounded-xl border p-4 text-left shadow-sm transition-all duration-200 active:scale-[0.98] ${toneClass}`}
     >
-      <p className="text-[10px] font-black uppercase tracking-wider opacity-85 font-jetbrains">{label}</p>
+      <p className="text-[10px] font-black uppercase tracking-wider opacity-85 font-inter">
+        {label}
+        {infoTerm && setActiveTooltip && (
+          <InfoButton term={infoTerm} setActiveTooltip={setActiveTooltip} />
+        )}
+      </p>
       <p className="text-3xl font-black mt-1 font-hanken">{value}</p>
       <p className="text-xs font-bold mt-2 leading-snug opacity-90 font-inter">{detail}</p>
     </button>
@@ -132,11 +162,11 @@ function WarningRow({ warning }) {
     <div className={`rounded-xl border p-3 transition-colors ${toneClass}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className={`text-[10px] font-black uppercase tracking-wider font-jetbrains ${labelClass}`}>{warning.label}</p>
+          <p className={`text-[10px] font-black uppercase tracking-wider font-inter ${labelClass}`}>{warning.label}</p>
           <p className="text-sm font-black text-app-text mt-1 font-hanken">{warning.title}</p>
           <p className="text-xs font-bold text-app-text-secondary mt-1 leading-snug font-inter">{warning.detail}</p>
         </div>
-        <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-black uppercase font-jetbrains ${labelClass} bg-app-card/85 border border-app-border`}>
+        <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-black uppercase font-inter ${labelClass} bg-app-card/85 border border-app-border`}>
           {warning.severity}
         </span>
       </div>
@@ -144,7 +174,16 @@ function WarningRow({ warning }) {
   );
 }
 
-function SummaryMetric({ label, value, detail, tone = 'neutral' }) {
+function SummaryMetric({ label, value, detail, tone = 'neutral', isLoading = false, infoTerm = null, setActiveTooltip = null }) {
+  if (isLoading) {
+    return (
+      <div className="rounded-xl border border-app-border bg-app-card p-4 shadow-sm animate-pulse">
+        <div className="h-3 w-1/2 bg-app-border/40 rounded"></div>
+        <div className="h-6 w-1/3 bg-app-border/50 rounded mt-2"></div>
+        <div className="h-3 w-3/4 bg-app-border/30 rounded mt-3"></div>
+      </div>
+    );
+  }
   const toneClass = {
     neutral: 'border-app-border bg-app-card text-app-text',
     success: 'border-app-success/30 bg-app-success-bg text-app-success',
@@ -154,7 +193,12 @@ function SummaryMetric({ label, value, detail, tone = 'neutral' }) {
 
   return (
     <div className={`rounded-xl border p-4 shadow-sm transition-colors ${toneClass}`}>
-      <p className="text-[10px] font-black uppercase tracking-wider opacity-85 font-jetbrains">{label}</p>
+      <p className="text-[10px] font-black uppercase tracking-wider opacity-85 font-inter">
+        {label}
+        {infoTerm && setActiveTooltip && (
+          <InfoButton term={infoTerm} setActiveTooltip={setActiveTooltip} />
+        )}
+      </p>
       <p className="mt-1 text-2xl font-black font-jetbrains">{value}</p>
       <p className="mt-2 text-xs font-bold leading-snug opacity-90 font-inter">{detail}</p>
     </div>
@@ -171,6 +215,57 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     error: '',
     isLoading: false
   });
+
+  const [mobileTab, setMobileTab] = useState('overview');
+  const [activeTooltip, setActiveTooltip] = useState(null);
+
+  const renderTooltipModal = () => {
+    if (!activeTooltip) return null;
+
+    const tooltips = {
+      fcr: {
+        title: 'Feed Conversion Ratio (FCR)',
+        desc: 'FCR measures how efficiently birds convert feed into live body weight. Formula: Total Feed Consumed (kg) / Total Live Bird Weight (kg). A lower FCR means higher feed efficiency and profitability.',
+      },
+      'feed-variance': {
+        title: 'Feed Variance',
+        desc: 'The percentage difference between the actual feed consumed by your batch and the standard target broiler guidelines for their age. A high positive variance indicates over-feeding, while a negative variance indicates potential under-feeding or feed waste.',
+      },
+      age: {
+        title: 'Batch Age',
+        desc: 'The current age of the broiler batch in days. Day 1 starts when the chicks are unloaded in the building. Feed targets and mortality thresholds are determined dynamically based on this age.',
+      }
+    }[activeTooltip];
+
+    if (!tooltips) return null;
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 animate-backdrop-in">
+        <div className="relative w-full max-w-sm rounded-xl border border-app-border bg-app-card p-5 shadow-xl animate-modal-in">
+          <button
+            type="button"
+            onClick={() => setActiveTooltip(null)}
+            className="absolute top-3 right-3 text-app-text-secondary hover:text-app-text transition-colors p-1"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <h4 className="text-base font-black text-app-accent font-hanken">{tooltips.title}</h4>
+          <p className="text-xs font-bold text-app-text-secondary mt-3 leading-relaxed font-inter">
+            {tooltips.desc}
+          </p>
+          <button
+            type="button"
+            onClick={() => setActiveTooltip(null)}
+            className="mt-5 w-full rounded-lg bg-app-accent py-2 text-xs font-bold text-app-on-accent shadow-sm active:scale-[0.98] transition-all duration-200 cursor-pointer font-inter"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const [prepChecklist, setPrepChecklist] = useState(() => {
     const initial = {
@@ -199,6 +294,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
   const [prevBatchChecklistId, setPrevBatchChecklistId] = useState('');
   if (activeBatchId !== prevBatchChecklistId) {
     setPrevBatchChecklistId(activeBatchId || '');
+    setMobileTab('overview');
     const initial = {
       dungCleanup: false,
       pressureWasher: false,
@@ -706,16 +802,15 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
       warning: 'border-app-warning/30 bg-app-warning-bg text-app-warning',
       danger: 'border-app-danger/30 bg-app-danger-bg text-app-danger'
     }[readinessTone];
-
-    return (
+    return (
       <div className="app-page text-app-text">
         {/* Header */}
         <div className="mb-5 mt-2">
-          <p className="text-xs font-bold uppercase tracking-wider text-app-text-secondary font-jetbrains">Operations</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-app-text-secondary font-inter">Operations</p>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-3xl font-extrabold text-app-accent tracking-tight font-hanken">Pre-Arrival Prep</h2>
-              <p className="text-sm text-app-text-secondary mt-1 font-jetbrains">
+              <p className="text-sm text-app-text-secondary mt-1 font-inter">
                 Batch {activeBatch.id} • Status: {activeBatch.status || 'ON THE WAY'}
               </p>
             </div>
@@ -726,7 +821,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-jetbrains">ETA Status</p>
+                <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-inter">ETA Status</p>
                 <p className="text-sm font-black font-jetbrains text-app-accent">
                   {countdownText}
                 </p>
@@ -735,77 +830,111 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           </div>
         </div>
 
-        {/* Hero Card / Countdown Section */}
-        <div className="relative overflow-hidden rounded-2xl border border-app-border bg-gradient-to-br from-app-card via-app-card to-app-accent/5 p-6 shadow-sm mb-6">
-          {/* Decorative background grid */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
-          
-          <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <div className="space-y-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-app-accent/10 px-2.5 py-0.5 text-xs font-semibold text-app-accent">
-                <span className="h-1.5 w-1.5 rounded-full bg-app-accent animate-pulse" />
-                Transit & Setup Mode
-              </span>
-              <h3 className="text-2xl font-black font-hanken tracking-tight">
-                {countdownText}
-              </h3>
-              <p className="text-sm text-app-text-secondary font-inter">
-                {countdownSubtext}
-              </p>
-            </div>
-
-            {/* Checklist Progress Bar */}
-            <div className="w-full md:w-80 shrink-0 space-y-2">
-              <div className="flex justify-between text-xs font-bold font-jetbrains">
-                <span className="text-app-text-secondary">PREPARATION PROGRESS</span>
-                <span className="text-app-accent">{percentComplete}% READY</span>
-              </div>
-              <div className="h-3 w-full rounded-full bg-app-bg overflow-hidden border border-app-border">
-                <div 
-                  className="h-full rounded-full bg-gradient-to-r from-app-accent to-[#50B8F9] transition-all duration-500 ease-out"
-                  style={{ width: `${percentComplete}%` }}
-                />
-              </div>
-              <p className="text-[10px] text-app-text-secondary text-right font-inter font-semibold">
-                {checkedCount} of {checklistItems.length} essential tasks complete
-              </p>
-            </div>
-          </div>
+        {/* Mobile Tabs Navigation */}
+        <div className="flex border-b border-app-border mb-4 md:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileTab('overview')}
+            className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-all duration-200 active:scale-[0.98] ${
+              mobileTab === 'overview' ? 'border-app-accent text-app-accent font-black' : 'border-transparent text-app-text-secondary'
+            }`}
+          >
+            Overview
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab('checklist')}
+            className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-all duration-200 active:scale-[0.98] ${
+              mobileTab === 'checklist' ? 'border-app-accent text-app-accent font-black' : 'border-transparent text-app-text-secondary'
+            }`}
+          >
+            Checklist
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab('actions')}
+            className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-all duration-200 active:scale-[0.98] ${
+              mobileTab === 'actions' ? 'border-app-accent text-app-accent font-black' : 'border-transparent text-app-text-secondary'
+            }`}
+          >
+            Actions
+          </button>
         </div>
 
-        {/* Expected Metrics Bento Grid */}
-        <div className="grid gap-3 md:grid-cols-4">
-          <SummaryMetric
-            label="Arrival Date"
-            value={formatDate(activeBatch.startDate)}
-            detail="Scheduled reception day"
-          />
-          <SummaryMetric
-            label="Planned Flock"
-            value={formatNumber(activeBatch.plannedFlock || activeBatch.totalChicksLoaded)}
-            detail="Target flock size"
-          />
-          <SummaryMetric
-            label="Target Feed Requirement"
-            value={activeBatch.targetFeedKg ? `${formatNumber(activeBatch.targetFeedKg)} kg` : '--'}
-            detail="Expected starter feed"
-          />
-          <div className={`rounded-xl border p-4 shadow-sm transition-colors ${readinessToneClass}`}>
-            <p className="text-[10px] font-black uppercase tracking-wider opacity-85 font-jetbrains">Readiness Status</p>
-            <p className="mt-1 text-2xl font-black font-jetbrains">{percentComplete}%</p>
-            <p className="mt-2 text-xs font-bold leading-snug opacity-90 font-inter">
-              {percentComplete === 100 
-                ? 'All systems go! Houses prepped.' 
-                : `${checklistItems.length - checkedCount} tasks remaining before chicks arrive.`}
-            </p>
+        {/* Overview Tab Content */}
+        <div className={`md:block ${mobileTab === 'overview' ? 'block' : 'hidden'}`}>
+          {/* Hero Card / Countdown Section */}
+          <div className="relative overflow-hidden rounded-2xl border border-app-border bg-gradient-to-br from-app-card via-app-card to-app-accent/5 p-6 shadow-sm mb-6">
+            {/* Decorative background grid */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
+            
+            <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div className="space-y-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-app-accent/10 px-2.5 py-0.5 text-xs font-semibold text-app-accent">
+                  <span className="h-1.5 w-1.5 rounded-full bg-app-accent animate-pulse" />
+                  Transit & Setup Mode
+                </span>
+                <h3 className="text-2xl font-black font-hanken tracking-tight">
+                  {countdownText}
+                </h3>
+                <p className="text-sm text-app-text-secondary font-inter">
+                  {countdownSubtext}
+                </p>
+              </div>
+
+              {/* Checklist Progress Bar */}
+              <div className="w-full md:w-80 shrink-0 space-y-2">
+                <div className="flex justify-between text-xs font-bold font-inter">
+                  <span className="text-app-text-secondary">PREPARATION PROGRESS</span>
+                  <span className="text-app-accent">{percentComplete}% READY</span>
+                </div>
+                <div className="h-3 w-full rounded-full bg-app-bg overflow-hidden border border-app-border">
+                  <div 
+                    className="h-full rounded-full bg-gradient-to-r from-app-accent to-[#50B8F9] transition-all duration-500 ease-out"
+                    style={{ width: `${percentComplete}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-app-text-secondary text-right font-inter font-semibold">
+                  {checkedCount} of {checklistItems.length} essential tasks complete
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Expected Metrics Bento Grid */}
+          <div className="grid gap-3 md:grid-cols-4">
+            <SummaryMetric
+              label="Arrival Date"
+              value={formatDate(activeBatch.startDate)}
+              detail="Scheduled reception day"
+            />
+            <SummaryMetric
+              label="Planned Flock"
+              value={formatNumber(activeBatch.plannedFlock || activeBatch.totalChicksLoaded)}
+              detail="Target flock size"
+            />
+            <SummaryMetric
+              label="Target Feed Requirement"
+              value={activeBatch.targetFeedKg ? `${formatNumber(activeBatch.targetFeedKg)} kg` : '--'}
+              detail="Expected starter feed"
+            />
+            <div className={`rounded-xl border p-4 shadow-sm transition-colors ${readinessToneClass}`}>
+              <p className="text-[10px] font-black uppercase tracking-wider opacity-85 font-inter">Readiness Status</p>
+              <p className="mt-1 text-2xl font-black font-jetbrains">{percentComplete}%</p>
+              <p className="mt-2 text-xs font-bold leading-snug opacity-90 font-inter">
+                {percentComplete === 100 
+                  ? 'All systems go! Houses prepped.' 
+                  : `${checklistItems.length - checkedCount} tasks remaining before chicks arrive.`}
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Interactive Checklist Cards */}
-        <section className="mt-6">
+        <section className={`mt-6 md:block ${mobileTab === 'checklist' ? 'block' : 'hidden'}`}>
           <div className="mb-3 flex items-center justify-between gap-3">
             <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent font-hanken">Pre-Arrival Checklist</h3>
-            <span className="text-[10px] font-bold text-app-text-secondary font-jetbrains">
+            <span className="text-[10px] font-bold text-app-text-secondary font-inter">
               {checkedCount}/{checklistItems.length} Completed
             </span>
           </div>
@@ -818,7 +947,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
                   key={item.key}
                   type="button"
                   onClick={() => togglePrepItem(item.key)}
-                  className={`group relative flex flex-col justify-between rounded-xl border p-5 text-left shadow-sm transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${
+                  className={`group relative flex flex-col justify-between rounded-xl border p-5 text-left shadow-sm transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${
                     isChecked
                       ? 'border-app-success bg-app-success-bg/20 text-app-text'
                       : 'border-app-border bg-app-card hover:border-app-accent text-app-text'
@@ -901,7 +1030,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
         </section>
 
         {/* Action Quick Links */}
-        <section className="mt-6">
+        <section className={`mt-6 md:block ${mobileTab === 'actions' ? 'block' : 'hidden'}`}>
           <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent mb-3 font-hanken">Quick Actions</h3>
           <div className="grid gap-3 sm:grid-cols-2">
             <button
@@ -976,11 +1105,11 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     return (
       <div className="app-page text-app-text">
         <div className="mb-5 mt-2">
-          <p className="text-xs font-bold uppercase tracking-wider text-app-text-secondary font-jetbrains">Operations</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-app-text-secondary font-inter">Operations</p>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-3xl font-extrabold text-app-accent tracking-tight font-hanken">Post Summary</h2>
-              <p className="mt-1 text-sm text-app-text-secondary font-jetbrains">
+              <p className="mt-1 text-sm text-app-text-secondary font-inter">
                 Batch {activeBatch.id} - {postSummary.status || 'Closed'} - {formatDate(postSummary.summaryDate)}
               </p>
             </div>
@@ -988,14 +1117,14 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
               <button
                 type="button"
                 onClick={() => setActiveScreen('dailyLog')}
-                className="rounded-xl bg-app-accent px-3 py-3 text-xs font-black text-app-on-accent shadow-sm active:scale-95 hover:opacity-90 transition-all cursor-pointer font-jetbrains"
+                className="rounded-xl bg-app-accent px-3 py-3 text-xs font-black text-app-on-accent shadow-sm active:scale-[0.98] hover:opacity-90 transition-all duration-200 cursor-pointer font-inter"
               >
                 Open Logs
               </button>
               <button
                 type="button"
                 onClick={() => setActiveScreen('analytics')}
-                className="rounded-xl border border-app-border bg-app-card px-3 py-3 text-xs font-black text-app-text-secondary shadow-sm active:scale-95 hover:text-app-text transition-all cursor-pointer font-jetbrains"
+                className="rounded-xl border border-app-border bg-app-card px-3 py-3 text-xs font-black text-app-text-secondary shadow-sm active:scale-[0.98] hover:text-app-text transition-all duration-200 cursor-pointer font-inter"
               >
                 Analytics
               </button>
@@ -1009,119 +1138,168 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           </div>
         )}
 
-        <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
-          <SummaryMetric
-            label="Loaded"
-            value={formatNumber(postSummary.loadedBirds)}
-            detail={`${postSummary.buildingSummaries.length} building${postSummary.buildingSummaries.length === 1 ? '' : 's'}`}
-          />
-          <SummaryMetric
-            label="Est. live"
-            value={formatNumber(postSummary.estimatedLiveBirds)}
-            detail={`${formatPercent(postSummary.survivalRate)} survival`}
-            tone={postSummary.survivalRate !== null && postSummary.survivalRate < 95 ? 'warning' : 'success'}
-          />
-          <SummaryMetric
-            label="Mortality"
-            value={formatNumber(postSummary.mortality)}
-            detail={`${formatPercent(postSummary.mortalityRate)} of loaded birds`}
-            tone={mortalityTone}
-          />
-          <SummaryMetric
-            label="Total feed"
-            value={`${formatNumber(postSummary.totalFeedBags, 2)} sx`}
-            detail={`${formatNumber(postSummary.totalFeedKg, 0)} kg consumed`}
-          />
-          <SummaryMetric
-            label="Avg weight"
-            value={postSummary.averageWeightGrams ? `${formatNumber(postSummary.averageWeightGrams / 1000, 2)} kg` : '--'}
-            detail={postSummary.latestWeightDate ? `Latest ${formatDate(postSummary.latestWeightDate)}` : 'No weight logs'}
-          />
-          <SummaryMetric
-            label="FCR"
-            value={postSummary.actualFcr === null ? '--' : formatNumber(postSummary.actualFcr, 2)}
-            detail={postSummary.targetFcr === null ? 'Needs weight logs' : `Target ${formatNumber(postSummary.targetFcr, 2)}`}
-            tone={fcrTone}
-          />
+        {/* Mobile Tabs Navigation */}
+        <div className="flex border-b border-app-border mb-4 md:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileTab('overview')}
+            className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-all duration-200 active:scale-[0.98] ${
+              mobileTab === 'overview' ? 'border-app-accent text-app-accent font-black' : 'border-transparent text-app-text-secondary'
+            }`}
+          >
+            Overview
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab('buildings')}
+            className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-all duration-200 active:scale-[0.98] ${
+              mobileTab === 'buildings' ? 'border-app-accent text-app-accent font-black' : 'border-transparent text-app-text-secondary'
+            }`}
+          >
+            Buildings
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab('checks')}
+            className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-all duration-200 active:scale-[0.98] ${
+              mobileTab === 'checks' ? 'border-app-accent text-app-accent font-black' : 'border-transparent text-app-text-secondary'
+            }`}
+          >
+            Checks
+          </button>
         </div>
 
-        <section className="mt-6">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent font-hanken">Harvest Yield</h3>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary font-jetbrains">
-              {postSummary.harvest.hasActualSales ? postSummary.harvest.status || 'Recorded' : 'Awaiting actuals'}
-            </span>
+        {/* Overview Tab Content */}
+        <div className={`space-y-6 md:block ${mobileTab === 'overview' ? 'block' : 'hidden'}`}>
+          <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+            <SummaryMetric
+              label="Loaded"
+              value={formatNumber(postSummary.loadedBirds)}
+              detail={`${postSummary.buildingSummaries.length} building${postSummary.buildingSummaries.length === 1 ? '' : 's'}`}
+              isLoading={isLoading}
+            />
+            <SummaryMetric
+              label="Est. live"
+              value={formatNumber(postSummary.estimatedLiveBirds)}
+              detail={`${formatPercent(postSummary.survivalRate)} survival`}
+              tone={postSummary.survivalRate !== null && postSummary.survivalRate < 95 ? 'warning' : 'success'}
+              isLoading={isLoading}
+            />
+            <SummaryMetric
+              label="Mortality"
+              value={formatNumber(postSummary.mortality)}
+              detail={`${formatPercent(postSummary.mortalityRate)} of loaded birds`}
+              tone={mortalityTone}
+              isLoading={isLoading}
+            />
+            <SummaryMetric
+              label="Total feed"
+              value={`${formatNumber(postSummary.totalFeedBags, 2)} sx`}
+              detail={`${formatNumber(postSummary.totalFeedKg, 0)} kg consumed`}
+              isLoading={isLoading}
+            />
+            <SummaryMetric
+              label="Avg weight"
+              value={postSummary.averageWeightGrams ? `${formatNumber(postSummary.averageWeightGrams / 1000, 2)} kg` : '--'}
+              detail={postSummary.latestWeightDate ? `Latest ${formatDate(postSummary.latestWeightDate)}` : 'No weight logs'}
+              isLoading={isLoading}
+            />
+            <SummaryMetric
+              label="FCR"
+              value={postSummary.actualFcr === null ? '--' : formatNumber(postSummary.actualFcr, 2)}
+              detail={postSummary.targetFcr === null ? 'Needs weight logs' : `Target ${formatNumber(postSummary.targetFcr, 2)}`}
+              tone={fcrTone}
+              infoTerm="fcr"
+              setActiveTooltip={setActiveTooltip}
+              isLoading={isLoading}
+            />
           </div>
 
-          <div className="grid gap-3 md:grid-cols-4">
-            <SummaryMetric
-              label="Actual sold"
-              value={postSummary.harvest.soldBirds === null ? '--' : formatNumber(postSummary.harvest.soldBirds)}
-              detail={`Est. live ${formatNumber(postSummary.estimatedLiveBirds)}`}
-              tone={postSummary.harvest.hasActualSales ? 'success' : 'neutral'}
-            />
-            <SummaryMetric
-              label="Actual kilos"
-              value={postSummary.harvest.kilos === null ? '--' : `${formatNumber(postSummary.harvest.kilos, 1)} kg`}
-              detail={postSummary.harvest.averageWeightKg ? `${formatNumber(postSummary.harvest.averageWeightKg, 2)} kg average` : 'No sold kilos recorded'}
-              tone={postSummary.harvest.hasActualSales ? 'success' : 'neutral'}
-            />
-            <SummaryMetric
-              label="Harvest yield"
-              value={formatPercent(postSummary.harvest.yieldRate)}
-              detail={postSummary.harvest.estimatedVsSoldGap === null ? 'Waiting for sold birds' : `${formatNumber(postSummary.harvest.estimatedVsSoldGap)} est. vs sold gap`}
-              tone={postSummary.harvest.hasActualSales ? 'success' : 'neutral'}
-            />
-            <SummaryMetric
-              label="Actual FCR"
-              value={postSummary.harvest.fcr === null ? '--' : formatNumber(postSummary.harvest.fcr, 2)}
-              detail={postSummary.harvest.fcr === null ? 'Needs sold kilos' : 'Feed kg divided by sold kg'}
-              tone={harvestFcrTone}
-            />
-          </div>
-
-          {harvestRows.length > 0 && (
-            <div className="mt-3 overflow-x-auto rounded-xl border border-app-border bg-app-card shadow-sm">
-              <table className="min-w-full text-left text-sm">
-                <thead className="bg-app-bg text-[10px] font-black uppercase tracking-wider text-app-text-secondary">
-                  <tr>
-                    <th className="px-4 py-3">Harvest</th>
-                    <th className="px-4 py-3 text-right">Date</th>
-                    <th className="px-4 py-3 text-right">Birds</th>
-                    <th className="px-4 py-3 text-right">Kilos</th>
-                    <th className="px-4 py-3 text-right">Avg wt</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-app-border">
-                  {harvestRows.map((row) => (
-                    <tr key={row.harvestOrder}>
-                      <td className="px-4 py-3 font-black text-app-text">
-                        {row.harvestOrder}
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold text-app-text-secondary font-jetbrains">
-                        {formatDate(row.harvestDate)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
-                        {formatNumber(row.birds)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
-                        {formatNumber(row.kilos, 1)} kg
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
-                        {row.averageWeightKg ? `${formatNumber(row.averageWeightKg, 2)} kg` : '--'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <section className="mt-6">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent font-hanken">Harvest Yield</h3>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary font-inter">
+                {postSummary.harvest.hasActualSales ? postSummary.harvest.status || 'Recorded' : 'Awaiting actuals'}
+              </span>
             </div>
-          )}
-        </section>
 
-        <section className="mt-6">
+            <div className="grid gap-3 md:grid-cols-4">
+              <SummaryMetric
+                label="Actual sold"
+                value={postSummary.harvest.soldBirds === null ? '--' : formatNumber(postSummary.harvest.soldBirds)}
+                detail={`Est. live ${formatNumber(postSummary.estimatedLiveBirds)}`}
+                tone={postSummary.harvest.hasActualSales ? 'success' : 'neutral'}
+                isLoading={isLoading}
+              />
+              <SummaryMetric
+                label="Actual kilos"
+                value={postSummary.harvest.kilos === null ? '--' : `${formatNumber(postSummary.harvest.kilos, 1)} kg`}
+                detail={postSummary.harvest.averageWeightKg ? `${formatNumber(postSummary.harvest.averageWeightKg, 2)} kg average` : 'No sold kilos recorded'}
+                tone={postSummary.harvest.hasActualSales ? 'success' : 'neutral'}
+                isLoading={isLoading}
+              />
+              <SummaryMetric
+                label="Harvest yield"
+                value={formatPercent(postSummary.harvest.yieldRate)}
+                detail={postSummary.harvest.estimatedVsSoldGap === null ? 'Waiting for sold birds' : `${formatNumber(postSummary.harvest.estimatedVsSoldGap)} est. vs sold gap`}
+                tone={postSummary.harvest.hasActualSales ? 'success' : 'neutral'}
+                isLoading={isLoading}
+              />
+              <SummaryMetric
+                label="Actual FCR"
+                value={postSummary.harvest.fcr === null ? '--' : formatNumber(postSummary.harvest.fcr, 2)}
+                detail={postSummary.harvest.fcr === null ? 'Needs sold kilos' : 'Feed kg divided by sold kg'}
+                tone={harvestFcrTone}
+                infoTerm="fcr"
+                setActiveTooltip={setActiveTooltip}
+                isLoading={isLoading}
+              />
+            </div>
+
+            {harvestRows.length > 0 && !isLoading && (
+              <div className="mt-3 overflow-x-auto rounded-xl border border-app-border bg-app-card shadow-sm">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="bg-app-bg text-[10px] font-black uppercase tracking-wider text-app-text-secondary">
+                    <tr>
+                      <th className="px-4 py-3">Harvest</th>
+                      <th className="px-4 py-3 text-right">Date</th>
+                      <th className="px-4 py-3 text-right">Birds</th>
+                      <th className="px-4 py-3 text-right">Kilos</th>
+                      <th className="px-4 py-3 text-right">Avg wt</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-app-border">
+                    {harvestRows.map((row) => (
+                      <tr key={row.harvestOrder}>
+                        <td className="px-4 py-3 font-black text-app-text">
+                          {row.harvestOrder}
+                        </td>
+                        <td className="px-4 py-3 text-right font-bold text-app-text-secondary font-inter">
+                          {formatDate(row.harvestDate)}
+                        </td>
+                        <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
+                          {formatNumber(row.birds)}
+                        </td>
+                        <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
+                          {formatNumber(row.kilos, 1)} kg
+                        </td>
+                        <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
+                          {row.averageWeightKg ? `${formatNumber(row.averageWeightKg, 2)} kg` : '--'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        </div>
+
+        {/* Building Closeout Section */}
+        <section className={`mt-6 md:block ${mobileTab === 'buildings' ? 'block' : 'hidden'}`}>
           <div className="mb-3 flex items-center justify-between gap-3">
             <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent font-hanken">Building Closeout</h3>
-            <span className="text-[10px] font-bold text-app-text-secondary font-jetbrains">
+            <span className="text-[10px] font-bold text-app-text-secondary font-inter">
               {isLoading ? 'Loading...' : `${postSummary.buildingSummaries.length} building${postSummary.buildingSummaries.length === 1 ? '' : 's'}`}
             </span>
           </div>
@@ -1136,47 +1314,62 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
                   <th className="px-4 py-3 text-right">Mortality</th>
                   <th className="px-4 py-3 text-right">Feed</th>
                   <th className="px-4 py-3 text-right">Avg wt</th>
-                  <th className="px-4 py-3 text-right">FCR</th>
+                  <th className="px-4 py-3 text-right">FCR <InfoButton term="fcr" setActiveTooltip={setActiveTooltip} /></th>
                   <th className="px-4 py-3 text-right">Last log</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-app-border">
-                {postSummary.buildingSummaries.map((summary) => (
-                  <tr key={summary.building}>
-                    <td className="px-4 py-3">
-                      <p className="font-black text-app-text">Building {summary.building}</p>
-                      <p className="text-xs font-bold text-app-text-secondary">
-                        {summary.employeeCount} employee{summary.employeeCount === 1 ? '' : 's'}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
-                      {formatNumber(summary.loadedBirds)}
-                    </td>
-                    <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
-                      {formatNumber(summary.estimatedLiveBirds)}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <p className="font-black text-app-danger font-jetbrains">{formatNumber(summary.mortality)}</p>
-                      <p className="text-xs font-bold text-app-text-secondary font-jetbrains">{formatPercent(summary.mortalityRate)}</p>
-                    </td>
-                    <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
-                      {formatNumber(summary.feedBags, 2)} sx
-                    </td>
-                    <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
-                      {summary.averageWeightGrams ? `${formatNumber(summary.averageWeightGrams / 1000, 2)} kg` : '--'}
-                    </td>
-                    <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
-                      {summary.fcr === null ? '--' : formatNumber(summary.fcr, 2)}
-                    </td>
-                    <td className="px-4 py-3 text-right font-bold text-app-text-secondary font-jetbrains">
-                      {formatDate(summary.latestLogDate)}
-                    </td>
-                  </tr>
-                ))}
+                {isLoading ? (
+                  Array.from({ length: 3 }).map((_, idx) => (
+                    <tr key={idx} className="animate-pulse">
+                      <td className="px-4 py-3"><div className="h-4 w-24 bg-app-border/40 rounded"></div></td>
+                      <td className="px-4 py-3 text-right"><div className="h-4 w-12 bg-app-border/40 rounded ml-auto"></div></td>
+                      <td className="px-4 py-3 text-right"><div className="h-4 w-12 bg-app-border/40 rounded ml-auto"></div></td>
+                      <td className="px-4 py-3 text-right"><div className="h-4 w-12 bg-app-border/40 rounded ml-auto"></div></td>
+                      <td className="px-4 py-3 text-right"><div className="h-4 w-16 bg-app-border/40 rounded ml-auto"></div></td>
+                      <td className="px-4 py-3 text-right"><div className="h-4 w-12 bg-app-border/40 rounded ml-auto"></div></td>
+                      <td className="px-4 py-3 text-right"><div className="h-4 w-12 bg-app-border/40 rounded ml-auto"></div></td>
+                      <td className="px-4 py-3 text-right"><div className="h-4 w-20 bg-app-border/40 rounded ml-auto"></div></td>
+                    </tr>
+                  ))
+                ) : (
+                  postSummary.buildingSummaries.map((summary) => (
+                    <tr key={summary.building}>
+                      <td className="px-4 py-3">
+                        <p className="font-black text-app-text">Building {summary.building}</p>
+                        <p className="text-xs font-bold text-app-text-secondary">
+                          {summary.employeeCount} employee{summary.employeeCount === 1 ? '' : 's'}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
+                        {formatNumber(summary.loadedBirds)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
+                        {formatNumber(summary.estimatedLiveBirds)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <p className="font-black text-app-danger font-jetbrains">{formatNumber(summary.mortality)}</p>
+                        <p className="text-xs font-bold text-app-text-secondary font-inter">{formatPercent(summary.mortalityRate)}</p>
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
+                        {formatNumber(summary.feedBags, 2)} sx
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
+                        {summary.averageWeightGrams ? `${formatNumber(summary.averageWeightGrams / 1000, 2)} kg` : '--'}
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
+                        {summary.fcr === null ? '--' : formatNumber(summary.fcr, 2)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-app-text-secondary font-inter">
+                        {formatDate(summary.latestLogDate)}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
 
-            {!postSummary.buildingSummaries.length && (
+            {!postSummary.buildingSummaries.length && !isLoading && (
               <div className="p-5 text-center">
                 <p className="text-sm font-bold text-app-text-secondary font-inter">No building loadings found for this batch.</p>
               </div>
@@ -1184,59 +1377,70 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           </div>
         </section>
 
-        <section className="mt-6">
+        {/* Closeout Checks Section */}
+        <section className={`mt-6 md:block ${mobileTab === 'checks' ? 'block' : 'hidden'}`}>
           <div className="mb-3 flex items-center justify-between gap-3">
             <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent font-hanken">Closeout Checks</h3>
-            <span className="text-[10px] font-bold text-app-text-secondary font-jetbrains">
-              Day {postSummary.summaryAgeDay || '--'}
+            <span className="text-[10px] font-bold text-app-text-secondary font-inter">
+              Day {postSummary.summaryAgeDay || '--'} <InfoButton term="age" setActiveTooltip={setActiveTooltip} />
             </span>
           </div>
 
           <div className="grid gap-3 md:grid-cols-4">
-            {postChecklist.map((item) => {
-              const isActionable = Boolean(item.actionScreen) && item.tone !== 'success';
-              const cardClass = `rounded-xl border p-4 shadow-sm ${
-                item.tone === 'success'
-                  ? 'border-app-success/30 bg-app-success-bg'
-                  : item.tone === 'warning'
-                    ? 'border-app-warning/30 bg-app-warning-bg'
-                    : 'border-app-border bg-app-card'
-              }`;
-              const content = (
-                <>
-                  <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-jetbrains">{item.label}</p>
-                  <p className={`mt-1 text-lg font-black font-jetbrains ${
-                    item.tone === 'success'
-                      ? 'text-app-success'
-                      : item.tone === 'warning'
-                        ? 'text-app-warning'
-                        : 'text-app-text'
-                  }`}>
-                    {item.value}
-                  </p>
-                  <p className="mt-1 text-xs font-bold leading-snug text-app-text-secondary font-inter">{item.detail}</p>
-                </>
-              );
-
-              if (isActionable) {
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => setActiveScreen(item.actionScreen)}
-                    className={`${cardClass} text-left transition-all duration-200 active:scale-[0.98] hover:border-app-accent cursor-pointer`}
-                  >
-                    {content}
-                  </button>
-                );
-              }
-
-              return (
-                <div key={item.key} className={cardClass}>
-                  {content}
+            {isLoading ? (
+              Array.from({ length: 4 }).map((_, idx) => (
+                <div key={idx} className="rounded-xl border border-app-border bg-app-card p-4 shadow-sm animate-pulse">
+                  <div className="h-3 w-1/2 bg-app-border/40 rounded"></div>
+                  <div className="h-6 w-1/3 bg-app-border/50 rounded mt-2"></div>
+                  <div className="h-3 w-3/4 bg-app-border/30 rounded mt-3"></div>
                 </div>
-              );
-            })}
+              ))
+            ) : (
+              postChecklist.map((item) => {
+                const isActionable = Boolean(item.actionScreen) && item.tone !== 'success';
+                const cardClass = `rounded-xl border p-4 shadow-sm ${
+                  item.tone === 'success'
+                    ? 'border-app-success/30 bg-app-success-bg'
+                    : item.tone === 'warning'
+                      ? 'border-app-warning/30 bg-app-warning-bg'
+                      : 'border-app-border bg-app-card'
+                }`;
+                const content = (
+                  <>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-inter">{item.label}</p>
+                    <p className={`mt-1 text-lg font-black font-jetbrains ${
+                      item.tone === 'success'
+                        ? 'text-app-success'
+                        : item.tone === 'warning'
+                          ? 'text-app-warning'
+                          : 'text-app-text'
+                    }`}>
+                      {item.value}
+                    </p>
+                    <p className="mt-1 text-xs font-bold leading-snug text-app-text-secondary font-inter">{item.detail}</p>
+                  </>
+                );
+
+                if (isActionable) {
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => setActiveScreen(item.actionScreen)}
+                      className={`${cardClass} text-left transition-all duration-200 active:scale-[0.98] hover:border-app-accent cursor-pointer`}
+                    >
+                      {content}
+                    </button>
+                  );
+                }
+
+                return (
+                  <div key={item.key} className={cardClass}>
+                    {content}
+                  </div>
+                );
+              })
+            )}
           </div>
         </section>
       </div>
@@ -1246,23 +1450,23 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
   return (
     <div className="app-page text-app-text">
       <div className="mb-5 mt-2">
-        <p className="text-xs font-bold uppercase tracking-wider text-app-text-secondary font-jetbrains">Operations</p>
+        <p className="text-xs font-bold uppercase tracking-wider text-app-text-secondary font-inter">Operations</p>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-3xl font-extrabold text-app-accent tracking-tight font-hanken">Today</h2>
-            <p className="text-sm text-app-text-secondary mt-1 font-jetbrains">
+            <p className="text-sm text-app-text-secondary mt-1 font-inter">
               Batch {activeBatch.id} - {formatDate(today)}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:min-w-72">
             <div className="rounded-xl border border-app-border bg-app-card px-3 py-2 text-right shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-jetbrains">Age</p>
+              <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-inter">Age <InfoButton term="age" setActiveTooltip={setActiveTooltip} /></p>
               <p className={`text-xl font-black font-jetbrains ${ageDay > lastTargetDay ? 'text-app-warning' : 'text-app-accent'}`}>
                 D{ageDay || '--'}
               </p>
             </div>
             <div className="rounded-xl border border-app-border bg-app-card px-3 py-2 text-right shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-jetbrains">Harvest</p>
+              <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-inter">Harvest</p>
               <p className={`text-xl font-black font-jetbrains ${daysToHarvest !== null && daysToHarvest <= HARVEST_SOON_DAYS ? 'text-app-warning' : 'text-app-text'}`}>
                 {daysToHarvest === null ? '--' : daysToHarvest < 0 ? `${Math.abs(daysToHarvest)}d late` : `${daysToHarvest}d`}
               </p>
@@ -1277,13 +1481,48 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
         </div>
       )}
 
-      <div className="grid gap-3 md:grid-cols-4">
+      {/* Mobile Tabs Navigation */}
+      <div className="flex border-b border-app-border mb-4 md:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileTab('overview')}
+          className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-all duration-200 active:scale-[0.98] ${
+            mobileTab === 'overview' ? 'border-app-accent text-app-accent font-black' : 'border-transparent text-app-text-secondary'
+          }`}
+        >
+          Overview
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab('checklist')}
+          className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-all duration-200 active:scale-[0.98] ${
+            mobileTab === 'checklist' ? 'border-app-accent text-app-accent font-black' : 'border-transparent text-app-text-secondary'
+          }`}
+        >
+          Checklist
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab('warnings')}
+          className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-all duration-200 active:scale-[0.98] relative ${
+            mobileTab === 'warnings' ? 'border-app-accent text-app-accent font-black' : 'border-transparent text-app-text-secondary'
+          }`}
+        >
+          Warnings
+          {abnormalWarnings.length > 0 && (
+            <span className="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-app-danger animate-pulse" />
+          )}
+        </button>
+      </div>
+
+      <div className={`grid gap-3 md:grid-cols-4 md:grid ${mobileTab === 'overview' ? 'grid' : 'hidden'}`}>
         <AttentionCard
           label="Buildings without log"
           value={missingLogCount}
           detail={missingLogCount ? 'Open daily logs and complete these buildings.' : 'Every loaded building has a log today.'}
           tone={missingLogCount ? 'danger' : 'success'}
           onClick={() => setActiveScreen('dailyLog')}
+          isLoading={isLoading}
         />
         <AttentionCard
           label="Feed below reorder"
@@ -1291,6 +1530,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           detail={lowFeedItems.length ? 'Review feed purchases or stock transfers.' : 'Feed items are above reorder level.'}
           tone={lowFeedItems.length ? 'warning' : 'success'}
           onClick={() => setActiveScreen('inventory')}
+          isLoading={isLoading}
         />
         <AttentionCard
           label="Abnormal warnings"
@@ -1298,6 +1538,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           detail={dangerCount ? `${dangerCount} need urgent review.` : 'No urgent abnormal value detected.'}
           tone={dangerCount ? 'danger' : abnormalWarnings.length ? 'warning' : 'success'}
           onClick={() => setActiveScreen('dailyLog')}
+          isLoading={isLoading}
         />
         <AttentionCard
           label="Unassigned buildings"
@@ -1305,86 +1546,113 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           detail={noEmployeeCount ? 'Assign employee shares before logging.' : 'Loaded buildings have employees assigned.'}
           tone={noEmployeeCount ? 'danger' : 'success'}
           onClick={() => setActiveScreen('employees')}
+          isLoading={isLoading}
         />
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <section>
+        <section className={`md:block ${mobileTab === 'checklist' ? 'block' : 'hidden'}`}>
           <div className="mb-3 flex items-center justify-between gap-3">
             <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent font-hanken">Building Checklist</h3>
-            <span className="text-[10px] font-bold text-app-text-secondary font-jetbrains">
+            <span className="text-[10px] font-bold text-app-text-secondary font-inter">
               {isLoading ? 'Loading...' : `${todayLogs.length} log${todayLogs.length === 1 ? '' : 's'} today`}
             </span>
           </div>
 
           <div className="space-y-3">
-            {buildingChecks.map((check) => {
-              const varianceIsHigh = check.variancePercent !== null && Math.abs(check.variancePercent) >= FEED_VARIANCE_WARNING_PERCENT;
-              return (
-                <div
-                  key={check.building}
-                  className={`rounded-xl border bg-app-card p-4 shadow-sm hover:border-app-accent transition-all duration-200 ${
-                    !check.hasLogToday || !check.hasAssignedEmployee
-                      ? 'border-app-danger/30'
-                      : varianceIsHigh
-                        ? 'border-app-warning/30'
-                        : 'border-app-border'
-                  }`}
-                >
+            {isLoading ? (
+              Array.from({ length: 3 }).map((_, idx) => (
+                <div key={idx} className="rounded-xl border border-app-border bg-app-card p-4 shadow-sm animate-pulse">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className={`flex h-10 w-10 items-center justify-center rounded-full text-lg font-black font-hanken ${
-                          check.hasLogToday ? 'bg-app-success-bg text-app-success' : 'bg-app-danger-bg text-app-danger'
-                        }`}>
-                          {check.building}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="font-black text-app-text">Building {check.building}</p>
-                          <p className="text-xs font-bold text-app-text-secondary font-inter">
-                            {formatNumber(check.chicksLoaded)} loaded - {check.assignedEmployees.length} employee{check.assignedEmployees.length === 1 ? '' : 's'}
+                    <div className="flex items-center gap-2">
+                      <div className="h-10 w-10 bg-app-border/40 rounded-full"></div>
+                      <div>
+                        <div className="h-4 w-24 bg-app-border/40 rounded"></div>
+                        <div className="h-3 w-32 bg-app-border/30 rounded mt-2"></div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-right">
+                      <div className="h-6 w-12 bg-app-border/40 rounded ml-auto"></div>
+                      <div className="h-6 w-12 bg-app-border/40 rounded ml-auto"></div>
+                      <div className="h-6 w-12 bg-app-border/40 rounded ml-auto"></div>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <div className="h-5 w-20 bg-app-border/30 rounded-full"></div>
+                    <div className="h-5 w-24 bg-app-border/30 rounded-full"></div>
+                    <div className="h-5 w-20 bg-app-border/30 rounded-full"></div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              buildingChecks.map((check) => {
+                const varianceIsHigh = check.variancePercent !== null && Math.abs(check.variancePercent) >= FEED_VARIANCE_WARNING_PERCENT;
+                return (
+                  <div
+                    key={check.building}
+                    className={`rounded-xl border bg-app-card p-4 shadow-sm hover:border-app-accent transition-all duration-200 ${
+                      !check.hasLogToday || !check.hasAssignedEmployee
+                        ? 'border-app-danger/30'
+                        : varianceIsHigh
+                          ? 'border-app-warning/30'
+                          : 'border-app-border'
+                    }`}
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className={`flex h-10 w-10 items-center justify-center rounded-full text-lg font-black font-hanken ${
+                            check.hasLogToday ? 'bg-app-success-bg text-app-success' : 'bg-app-danger-bg text-app-danger'
+                          }`}>
+                            {check.building}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="font-black text-app-text">Building {check.building}</p>
+                            <p className="text-xs font-bold text-app-text-secondary font-inter">
+                              {formatNumber(check.chicksLoaded)} loaded - {check.assignedEmployees.length} employee{check.assignedEmployees.length === 1 ? '' : 's'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-right">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase text-app-text-secondary font-inter">Feed Today</p>
+                          <p className="text-sm font-black text-app-text font-jetbrains">{formatNumber(check.todaysTotals.feed, 2)} sx</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold uppercase text-app-text-secondary font-inter">Mortality</p>
+                          <p className={`text-sm font-black font-jetbrains ${check.todaysTotals.mortality > 0 ? 'text-app-danger' : 'text-app-success'}`}>
+                            {formatNumber(check.todaysTotals.mortality)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold uppercase text-app-text-secondary font-inter">Variance <InfoButton term="feed-variance" setActiveTooltip={setActiveTooltip} /></p>
+                          <p className={`text-sm font-black font-jetbrains ${varianceIsHigh ? 'text-app-warning' : 'text-app-text'}`}>
+                            {check.variancePercent === null ? '--' : `${check.variancePercent > 0 ? '+' : ''}${formatNumber(check.variancePercent, 1)}%`}
                           </p>
                         </div>
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 text-right">
-                      <div>
-                        <p className="text-[10px] font-bold uppercase text-app-text-secondary font-jetbrains">Feed Today</p>
-                        <p className="text-sm font-black text-app-text font-jetbrains">{formatNumber(check.todaysTotals.feed, 2)} sx</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold uppercase text-app-text-secondary font-jetbrains">Mortality</p>
-                        <p className={`text-sm font-black font-jetbrains ${check.todaysTotals.mortality > 0 ? 'text-app-danger' : 'text-app-success'}`}>
-                          {formatNumber(check.todaysTotals.mortality)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold uppercase text-app-text-secondary font-jetbrains">Variance</p>
-                        <p className={`text-sm font-black font-jetbrains ${varianceIsHigh ? 'text-app-warning' : 'text-app-text'}`}>
-                          {check.variancePercent === null ? '--' : `${check.variancePercent > 0 ? '+' : ''}${formatNumber(check.variancePercent, 1)}%`}
-                        </p>
-                      </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-wider font-inter">
+                      <span className={`rounded-full px-2.5 py-1 ${check.hasLogToday ? 'bg-app-success-bg text-app-success' : 'bg-app-danger-bg text-app-danger'}`}>
+                        {check.hasLogToday ? 'Logged today' : 'Needs log'}
+                      </span>
+                      <span className={`rounded-full px-2.5 py-1 ${check.hasAssignedEmployee ? 'bg-app-success-bg text-app-success' : 'bg-app-danger-bg text-app-danger'}`}>
+                        {check.hasAssignedEmployee ? 'Employee assigned' : 'No employee'}
+                      </span>
+                      {check.feedTarget && (
+                        <span className="rounded-full bg-app-accent/15 px-2.5 py-1 text-app-accent">
+                          Target {formatNumber(check.feedTarget.targetBags, 2)} sx
+                        </span>
+                      )}
                     </div>
                   </div>
+                );
+              })
+            )}
 
-                  <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-wider font-jetbrains">
-                    <span className={`rounded-full px-2.5 py-1 ${check.hasLogToday ? 'bg-app-success-bg text-app-success' : 'bg-app-danger-bg text-app-danger'}`}>
-                      {check.hasLogToday ? 'Logged today' : 'Needs log'}
-                    </span>
-                    <span className={`rounded-full px-2.5 py-1 ${check.hasAssignedEmployee ? 'bg-app-success-bg text-app-success' : 'bg-app-danger-bg text-app-danger'}`}>
-                      {check.hasAssignedEmployee ? 'Employee assigned' : 'No employee'}
-                    </span>
-                    {check.feedTarget && (
-                      <span className="rounded-full bg-app-accent/15 px-2.5 py-1 text-app-accent">
-                        Target {formatNumber(check.feedTarget.targetBags, 2)} sx
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-
-            {!buildingChecks.length && (
+            {!buildingChecks.length && !isLoading && (
               <div className="rounded-xl border border-app-border bg-app-card p-4 text-center shadow-sm">
                 <p className="text-sm font-bold text-app-text-secondary font-inter">No building loadings found for this batch.</p>
               </div>
@@ -1392,33 +1660,45 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           </div>
         </section>
 
-        <section>
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent font-hanken">Warnings</h3>
-            <span className="text-[10px] font-bold text-app-text-secondary font-jetbrains">
-              {dangerCount} urgent
-            </span>
+        <section className={`md:block ${mobileTab === 'warnings' || mobileTab === 'overview' ? 'block' : 'hidden'}`}>
+          <div className={mobileTab === 'warnings' ? 'block' : 'hidden md:block'}>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent font-hanken">Warnings</h3>
+              <span className="text-[10px] font-bold text-app-text-secondary font-inter">
+                {dangerCount} urgent
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              {isLoading ? (
+                Array.from({ length: 2 }).map((_, idx) => (
+                  <div key={idx} className="rounded-xl border border-app-border bg-app-card p-4 shadow-sm animate-pulse">
+                    <div className="h-3 w-1/4 bg-app-border/40 rounded"></div>
+                    <div className="h-4 w-3/4 bg-app-border/40 rounded mt-2"></div>
+                    <div className="h-3 w-full bg-app-border/30 rounded mt-2"></div>
+                  </div>
+                ))
+              ) : (
+                abnormalWarnings.map((warning) => (
+                  <WarningRow key={warning.key} warning={warning} />
+                ))
+              )}
+
+              {!abnormalWarnings.length && !isLoading && (
+                <div className="rounded-xl border border-app-success/30 bg-app-success-bg p-4 shadow-sm text-app-success">
+                  <p className="text-sm font-black">No abnormal values today</p>
+                  <p className="mt-1 text-xs font-bold opacity-90 font-inter">
+                    Logs, feed stock, employee assignment, age, and harvest checks look clear.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="space-y-3">
-            {abnormalWarnings.map((warning) => (
-              <WarningRow key={warning.key} warning={warning} />
-            ))}
-
-            {!abnormalWarnings.length && (
-              <div className="rounded-xl border border-app-success/30 bg-app-success-bg p-4 shadow-sm text-app-success">
-                <p className="text-sm font-black">No abnormal values today</p>
-                <p className="mt-1 text-xs font-bold opacity-90 font-inter">
-                  Logs, feed stock, employee assignment, age, and harvest checks look clear.
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-6 rounded-xl border border-app-border bg-app-card p-4 shadow-sm">
+          <div className={`mt-6 rounded-xl border border-app-border bg-app-card p-4 shadow-sm ${mobileTab === 'overview' ? 'block' : 'hidden md:block'}`}>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-jetbrains">Today totals</p>
+                <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-inter">Today totals</p>
                 <p className="mt-1 text-lg font-black text-app-text font-jetbrains">
                   {formatNumber(todayTotals.feed, 2)} sx feed
                 </p>
@@ -1429,7 +1709,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
               <button
                 type="button"
                 onClick={() => setActiveScreen('dailyLog')}
-                className="rounded-xl bg-app-accent px-3 py-2 text-xs font-black text-app-on-accent shadow-sm active:scale-95 hover:opacity-90 transition-all cursor-pointer font-jetbrains"
+                className="rounded-xl bg-app-accent px-3 py-2 text-xs font-black text-app-on-accent shadow-sm active:scale-[0.98] hover:opacity-90 transition-all duration-200 cursor-pointer font-inter"
               >
                 Open Logs
               </button>
@@ -1437,19 +1717,20 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
 
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
               <div className="rounded-lg bg-app-bg p-3">
-                <p className="font-bold uppercase text-app-text-secondary font-jetbrains">Feed stock after target</p>
+                <p className="font-bold uppercase text-app-text-secondary font-inter">Feed stock after target <InfoButton term="feed-variance" setActiveTooltip={setActiveTooltip} /></p>
                 <p className={`mt-1 font-black font-jetbrains ${feedStockAfterTodayTarget !== null && feedStockAfterTodayTarget < 0 ? 'text-app-danger' : 'text-app-text'}`}>
                   {feedStockAfterTodayTarget === null ? '--' : `${formatNumber(feedStockAfterTodayTarget, 2)} sx`}
                 </p>
               </div>
               <div className="rounded-lg bg-app-bg p-3">
-                <p className="font-bold uppercase text-app-text-secondary font-jetbrains">Harvest target</p>
+                <p className="font-bold uppercase text-app-text-secondary font-inter">Harvest target</p>
                 <p className="mt-1 font-black text-app-text font-jetbrains">{formatDate(activeBatch.targetHarvestDate)}</p>
               </div>
             </div>
           </div>
         </section>
       </div>
+      {renderTooltipModal()}
     </div>
   );
 }
