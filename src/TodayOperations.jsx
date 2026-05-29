@@ -291,9 +291,9 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     return initial;
   });
 
-  const [prevBatchChecklistId, setPrevBatchChecklistId] = useState('');
+  const [prevBatchChecklistId, setPrevBatchChecklistId] = useState(activeBatchId);
   if (activeBatchId !== prevBatchChecklistId) {
-    setPrevBatchChecklistId(activeBatchId || '');
+    setPrevBatchChecklistId(activeBatchId);
     setMobileTab('overview');
     const initial = {
       dungCleanup: false,
