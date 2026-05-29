@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiClient } from './utils/apiClient';
-import { API_BASE } from './api';
 import QuickEntryBox from './Components/Ledger/QuickEntryBox';
 import TransactionForm from './Components/Ledger/TransactionForm';
 import TransactionTable from './Components/Ledger/TransactionTable';
-import { useNotification } from './Components/NotificationProvider';
+import { useNotification } from './hooks/useNotification';
 
 
 function groupCategories(categories) {
@@ -289,7 +288,7 @@ export default function TransactionLedger({ transactions, setTransactions, activ
     };
 
     fetchMasterData();
-  }, [token]);
+  }, [token, toastError]);
 
   const handleFundingChange = (e) => {
     const newNature = e.target.value;

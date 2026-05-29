@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiClient } from './utils/apiClient';
-import { useNotification } from './Components/NotificationProvider';
+import { useNotification } from './hooks/useNotification';
 import { calculateMortalityBuffer, applyMortalityBuffer } from './mortalityBuffer';
 import EmployeeList from './Components/Employee/EmployeeList';
 import CompensationForm from './Components/Employee/CompensationForm';
@@ -374,7 +374,7 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
     return () => {
       isCancelled = true;
     };
-  }, [token]);
+  }, [token, toastError]);
 
   useEffect(() => {
     if (!token || !activeBatchId) return undefined;
@@ -415,7 +415,7 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
     return () => {
       isCancelled = true;
     };
-  }, [token, activeBatchId]);
+  }, [token, activeBatchId, toastError]);
 
   useEffect(() => {
     if (!token || !activeBatchId) {

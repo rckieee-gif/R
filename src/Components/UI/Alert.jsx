@@ -1,4 +1,3 @@
-import React from 'react';
 
 /**
  * Premium reusable Alert callout component for warnings, validation summaries, and operational updates.

@@ -12,7 +12,8 @@ export default React.forwardRef(function Input({
   id,
   ...props
 }, ref) {
-  const inputId = id || React.useId();
+  const defaultId = React.useId();
+  const inputId = id || defaultId;
   const borderStyle = error
     ? 'border-app-danger focus:ring-app-danger/20 focus:border-app-danger'
     : 'border-app-border focus:ring-app-accent/20 focus:border-app-accent';

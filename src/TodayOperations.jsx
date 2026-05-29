@@ -196,7 +196,34 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     return initial;
   });
 
-
+  const [prevBatchChecklistId, setPrevBatchChecklistId] = useState('');
+  if (activeBatchId !== prevBatchChecklistId) {
+    setPrevBatchChecklistId(activeBatchId || '');
+    const initial = {
+      dungCleanup: false,
+      pressureWasher: false,
+      clean: false,
+      bedding: false,
+      equipment: false,
+      feed: false,
+      inventory: false,
+      prewarm: false
+    };
+    if (activeBatchId) {
+      const saved = localStorage.getItem(`octavioPrepChecklist:${activeBatchId}`);
+      if (saved) {
+        try {
+          setPrepChecklist({ ...initial, ...JSON.parse(saved) });
+        } catch {
+          setPrepChecklist(initial);
+        }
+      } else {
+        setPrepChecklist(initial);
+      }
+    } else {
+      setPrepChecklist(initial);
+    }
+  }
 
   const togglePrepItem = (key) => {
     setPrepChecklist((prev) => {
@@ -235,7 +262,6 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     }
 
     let isMounted = true;
-    const headers = { Authorization: `Bearer ${token}` };
     const requestKey = todayDataKey;
     const requestBatchId = activeBatchId;
 

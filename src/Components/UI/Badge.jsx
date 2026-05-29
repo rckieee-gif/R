@@ -1,4 +1,3 @@
-import React from 'react';
 
 /**
  * Premium status pill badge component.

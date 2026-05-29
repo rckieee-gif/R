@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiClient } from './utils/apiClient';
-import { useNotification } from './Components/NotificationProvider';
+import { useNotification } from './hooks/useNotification';
 
 const opexCategories = [
   'Feed',
@@ -216,7 +216,7 @@ export default function HarvestRecording({ activeBatch, token, readOnly = false,
     };
 
     fetchReport();
-  }, [activeBatch?.id, token]);
+  }, [activeBatch?.id, token, toastError]);
 
   const updateReportField = (field, value) => {
     setReport((current) => ({ ...current, [field]: value }));

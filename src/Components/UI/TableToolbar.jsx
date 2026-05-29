@@ -1,4 +1,3 @@
-import React from 'react';
 
 /**
  * Premium reusable TableToolbar component providing unified layout for search inputs and dynamic filters.

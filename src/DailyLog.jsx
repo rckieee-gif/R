@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { apiClient } from './utils/apiClient';
-import { useNotification } from './Components/NotificationProvider';
+import { useNotification } from './hooks/useNotification';
 import {
   BAG_WEIGHT_KG,
   calculateActualFcr,
@@ -300,34 +300,33 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     }
   }, [date, activeBuilding, selectedEmployeeId, feedItemId, feedConsumed, mortality, averageWeightGrams, remarks, activeBatch?.id, editingId]);
 
-  const restoreDraft = useCallback(() => {
-    if (!activeBatch?.id || editingId) return;
-
-    const saved = localStorage.getItem(`octavioDailyLogDraft:${activeBatch.id}:${activeBuilding}`);
-    if (saved) {
-      try {
-        const draft = JSON.parse(saved);
-        setDate(draft.date || todayInput());
-        setFeedConsumed(draft.feedConsumed || '');
-        setMortality(draft.mortality || '');
-        setAverageWeightGrams(draft.averageWeightGrams || '');
-        setRemarks(draft.remarks || '');
-        if (draft.feedItemId) setFeedItemId(draft.feedItemId);
-        if (draft.selectedEmployeeId) setSelectedEmployeeId(draft.selectedEmployeeId);
-      } catch (err) {
-        console.error('Failed to parse draft details:', err);
+  const [prevDraftKey, setPrevDraftKey] = useState('');
+  const currentDraftKey = `${activeBatch?.id}:${activeBuilding}:${editingId}`;
+  if (currentDraftKey !== prevDraftKey) {
+    setPrevDraftKey(currentDraftKey);
+    if (activeBatch?.id && !editingId) {
+      const saved = localStorage.getItem(`octavioDailyLogDraft:${activeBatch.id}:${activeBuilding}`);
+      if (saved) {
+        try {
+          const draft = JSON.parse(saved);
+          setDate(draft.date || todayInput());
+          setFeedConsumed(draft.feedConsumed || '');
+          setMortality(draft.mortality || '');
+          setAverageWeightGrams(draft.averageWeightGrams || '');
+          setRemarks(draft.remarks || '');
+          if (draft.feedItemId) setFeedItemId(draft.feedItemId);
+          if (draft.selectedEmployeeId) setSelectedEmployeeId(draft.selectedEmployeeId);
+        } catch (err) {
+          console.error('Failed to parse draft details:', err);
+        }
+      } else {
+        setFeedConsumed('');
+        setMortality('');
+        setAverageWeightGrams('');
+        setRemarks('');
       }
-    } else {
-      setFeedConsumed('');
-      setMortality('');
-      setAverageWeightGrams('');
-      setRemarks('');
     }
-  }, [activeBatch?.id, activeBuilding, editingId]);
-
-  useEffect(() => {
-    restoreDraft();
-  }, [activeBuilding, restoreDraft]);
+  }
 
   const discardDraft = () => {
     if (!activeBatch?.id) return;

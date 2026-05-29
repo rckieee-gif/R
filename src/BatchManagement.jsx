@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiClient } from './utils/apiClient';
-import { useNotification } from './Components/NotificationProvider';
+import { useNotification } from './hooks/useNotification';
 
 function toDateInput(value) {
   return value?.split('T')[0] || value || '';

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import Login from './login';
 import IntroPage from './IntroPage';
-import { API_BASE } from './api';
 import AntigravityAssistant from './Components/AntigravityAssistant';
 import { publicViewerUser } from './publicViewerData';
 import { apiClient, registerAuthFailureHandler } from './utils/apiClient';

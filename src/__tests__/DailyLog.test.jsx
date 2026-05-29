@@ -80,7 +80,7 @@ describe('DailyLog Component', () => {
 
   it('saves draft to localStorage on input changes and displays restore warning', async () => {
     // Mock get requests so state loads
-    const { rerender } = renderComponent();
+    renderComponent();
 
     await waitFor(() => {
       expect(screen.getByText(/Bldg A/i)).toBeInTheDocument();

@@ -18,9 +18,12 @@ async function request(path, options = {}) {
   const token = localStorage.getItem('octavioToken');
 
   const headers = {
-    'Content-Type': 'application/json',
     ...options.headers,
   };
+
+  if (options.body) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (token && !path.startsWith('http')) {
     headers['Authorization'] = `Bearer ${token}`;

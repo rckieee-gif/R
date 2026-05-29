@@ -1,14 +1,5 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-
-const NotificationContext = createContext(null);
-
-export function useNotification() {
-  const context = useContext(NotificationContext);
-  if (!context) {
-    throw new Error('useNotification must be used within a NotificationProvider');
-  }
-  return context;
-}
+import { useState, useCallback, useEffect } from 'react';
+import { NotificationContext } from '../context/NotificationContext';
 
 export default function NotificationProvider({ children }) {
   const [toasts, setToasts] = useState([]);
@@ -73,11 +64,13 @@ export default function NotificationProvider({ children }) {
     });
   }, []);
 
-  useEffect(() => {
+  const [prevModalConfig, setPrevModalConfig] = useState(modalConfig);
+  if (modalConfig !== prevModalConfig) {
+    setPrevModalConfig(modalConfig);
     if (modalConfig) {
       setPromptValue('');
     }
-  }, [modalConfig]);
+  }
 
   // Handle Escape key to close modal
   useEffect(() => {

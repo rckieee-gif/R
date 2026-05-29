@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 function formatBirds(value) {
   return Number(value || 0).toLocaleString();
@@ -59,10 +59,12 @@ export default function DailyLogForm({
 }) {
   const [step, setStep] = useState(1);
 
-  // Reset step to 1 when changing building or starting an edit
-  useEffect(() => {
+  const [prevPropsKey, setPrevPropsKey] = useState(() => `${activeBuilding}:${editingId}`);
+  const currentPropsKey = `${activeBuilding}:${editingId}`;
+  if (currentPropsKey !== prevPropsKey) {
+    setPrevPropsKey(currentPropsKey);
     setStep(1);
-  }, [activeBuilding, editingId]);
+  }
 
   const draftKey = `octavioDailyLogDraft:${activeBatchId}:${activeBuilding}`;
   const draftData = localStorage.getItem(draftKey);

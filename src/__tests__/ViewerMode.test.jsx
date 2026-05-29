@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 import InventoryManagement from '../InventoryManagement';
 import DailyLog from '../DailyLog';

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiClient } from './utils/apiClient';
-import { useNotification } from './Components/NotificationProvider';
+import { useNotification } from './hooks/useNotification';
 import ChangePassword from './Components/Settings/ChangePassword';
 import DataSync from './Components/Settings/DataSync';
 import AccountManagement from './Components/Settings/AccountManagement';
