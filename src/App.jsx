@@ -124,12 +124,7 @@ function App() {
   const [isViewerLoading, setIsViewerLoading] = useState(false);
   const [preloadedSnapshot, setPreloadedSnapshot] = useState(null);
 
-  useEffect(() => {
-    registerAuthFailureHandler(clearSession);
-    return () => {
-      registerAuthFailureHandler(null);
-    };
-  }, [clearSession]);
+
 
   useEffect(() => {
     let isMounted = true;
@@ -290,6 +285,13 @@ function App() {
     setAuthView('intro');
     setActiveScreen('today');
   }, []);
+
+  useEffect(() => {
+    registerAuthFailureHandler(clearSession);
+    return () => {
+      registerAuthFailureHandler(null);
+    };
+  }, [clearSession]);
 
   const refreshBatches = useCallback(async () => {
     if (isPublicViewer || !token) {
