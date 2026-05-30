@@ -31,25 +31,7 @@ import {
 const ZERO_GRAVITY_STORAGE_KEY = 'octavioZeroGravityEnabled';
 const LEGACY_ZERO_GRAVITY_STORAGE_KEY = 'antigravityMode';
 
-const roleRank = {
-  Viewer: 1,
-  DataEntry: 2,
-  OperationManager: 3,
-  AdminOwner: 4,
-};
-
-function normalizeRole(role) {
-  const compactRole = String(role || '').replace(/[\s_-]/g, '').toLowerCase();
-  if (compactRole === 'admin' || compactRole === 'adminowner') return 'AdminOwner';
-  if (compactRole === 'opmanager' || compactRole === 'operationmanager') return 'OperationManager';
-  if (compactRole === 'dataentry') return 'DataEntry';
-  if (compactRole === 'viewer') return 'Viewer';
-  return role;
-}
-
-function hasMinimumRole(role, minimumRole) {
-  return (roleRank[normalizeRole(role)] || 0) >= (roleRank[minimumRole] || 0);
-}
+import { hasMinimumRole } from '../shared/utils/roles';
 
 function readZeroGravityPreference() {
   const saved = localStorage.getItem(ZERO_GRAVITY_STORAGE_KEY);

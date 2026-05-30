@@ -32,24 +32,7 @@ function formatNumber(value, digits = 0) {
   });
 }
 
-const roleRank = {
-  Viewer: 1,
-  DataEntry: 2,
-  OperationManager: 3,
-  AdminOwner: 4,
-};
-
-function hasMinimumRole(role, minimumRole) {
-  const compactRole = String(role || '').replace(/[\s_-]/g, '').toLowerCase();
-  const normalizedRole =
-    compactRole === 'admin' || compactRole === 'adminowner' ? 'AdminOwner'
-      : compactRole === 'opmanager' || compactRole === 'operationmanager' ? 'OperationManager'
-        : compactRole === 'dataentry' ? 'DataEntry'
-          : compactRole === 'viewer' ? 'Viewer'
-            : role;
-
-  return (roleRank[normalizedRole] || 0) >= (roleRank[minimumRole] || 0);
-}
+import { hasMinimumRole } from '../../shared/utils/roles';
 
 function MetricCard({ label, value, subtext, icon = null, tone = 'text-dashboard-text' }) {
   const finalTone = tone === 'text-white' ? 'text-dashboard-text' : tone;

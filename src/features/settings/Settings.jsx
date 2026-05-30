@@ -6,7 +6,6 @@ import DataSync from './components/DataSync';
 import AccountManagement from './components/AccountManagement';
 import ActivityLogs from './components/ActivityLogs';
 
-const allFilterValue = 'all';
 
 const emptyAccountForm = {
   email: '',
@@ -48,10 +47,6 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
   const [archiveScope, setArchiveScope] = useState('active');
   const [accounts, setAccounts] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
-  const [activitySearch, setActivitySearch] = useState('');
-  const [activityActionFilter, setActivityActionFilter] = useState(allFilterValue);
-  const [activityEntityFilter, setActivityEntityFilter] = useState(allFilterValue);
-  const [activitySort, setActivitySort] = useState('newest');
   const [accountForm, setAccountForm] = useState(emptyAccountForm);
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
   const [isLoadingActivity, setIsLoadingActivity] = useState(false);
@@ -74,47 +69,6 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
     }
     return 'CSV files open directly in Excel and Google Sheets.';
   }, [activeBatch?.id, exportAllowed, exportScope, exportUsesBatch]);
-
-  const activityActionOptions = useMemo(() => {
-    return [...new Set(activityLogs.map((log) => log.action).filter(Boolean))].sort();
-  }, [activityLogs]);
-
-  const activityEntityOptions = useMemo(() => {
-    return [...new Set(activityLogs.map((log) => log.entityType).filter(Boolean))].sort();
-  }, [activityLogs]);
-
-  const filteredActivityLogs = useMemo(() => {
-    const search = activitySearch.trim().toLowerCase();
-
-    return activityLogs
-      .filter((log) => {
-        const matchesAction = activityActionFilter === allFilterValue || log.action === activityActionFilter;
-        const matchesEntity = activityEntityFilter === allFilterValue || log.entityType === activityEntityFilter;
-
-        if (!matchesAction || !matchesEntity) return false;
-        if (!search) return true;
-
-        const searchableText = [
-          log.action,
-          log.entityType,
-          log.entityId,
-          log.actorUsername,
-          log.actorEmail,
-          log.batchId,
-          log.createdAt
-        ]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase();
-
-        return searchableText.includes(search);
-      })
-      .sort((a, b) => {
-        const first = new Date(a.createdAt).getTime();
-        const second = new Date(b.createdAt).getTime();
-        return activitySort === 'oldest' ? first - second : second - first;
-      });
-  }, [activityActionFilter, activityEntityFilter, activityLogs, activitySearch, activitySort]);
 
   const fetchAccounts = async () => {
     if (!canManageAccounts) return;
@@ -445,17 +399,6 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
         <ActivityLogs
           fetchActivityLogs={fetchActivityLogs}
           isLoadingActivity={isLoadingActivity}
-          activitySearch={activitySearch}
-          setActivitySearch={setActivitySearch}
-          activityActionFilter={activityActionFilter}
-          setActivityActionFilter={setActivityActionFilter}
-          activityEntityFilter={activityEntityFilter}
-          setActivityEntityFilter={setActivityEntityFilter}
-          activitySort={activitySort}
-          setActivitySort={setActivitySort}
-          activityActionOptions={activityActionOptions}
-          activityEntityOptions={activityEntityOptions}
-          filteredActivityLogs={filteredActivityLogs}
           activityLogs={activityLogs}
         />
       )}

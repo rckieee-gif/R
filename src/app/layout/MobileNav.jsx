@@ -1,4 +1,5 @@
-import { useSyncStatus } from '../../offline/syncStatus';
+import BatchSelector from '../../shared/components/BatchSelector';
+import SyncStatusBadge from '../../shared/components/SyncStatusBadge';
 
 function CogIcon() {
   return (
@@ -38,7 +39,6 @@ export default function MobileNav({
   isDarkMode,
   setIsDarkMode,
 }) {
-  const { isOnline, pendingCount } = useSyncStatus();
 
   const getNavLinkClass = (screen) => {
     const isActive = currentScreen === screen;
@@ -85,20 +85,14 @@ export default function MobileNav({
       
       <div className="flex items-center gap-2 ml-3 shrink-0">
         {!isPublicViewer && (
-          <select
-            value={activeBatch?.id || ''}
+          <BatchSelector
+            activeBatch={activeBatch}
+            batches={batches}
+            isBatchListLoading={isBatchListLoading}
             onChange={handleBatchSelectorChange}
-            disabled={isBatchListLoading || batches.length === 0}
-            className="h-8 w-24 rounded border border-app-border bg-app-card px-2 text-[10px] font-bold text-app-text outline-none transition focus:ring-1 focus:ring-app-accent"
-          >
-            {isBatchListLoading && <option value="">Loading...</option>}
-            {!isBatchListLoading && batches.length === 0 && <option value="">None</option>}
-            {batches.map((batch) => (
-              <option key={batch.id} value={batch.id}>
-                {batch.id}
-              </option>
-            ))}
-          </select>
+            variant="simple"
+            className="h-8 w-24"
+          />
         )}
         {allowedScreens.includes('settings') && (
           <button
@@ -113,27 +107,7 @@ export default function MobileNav({
             <CogIcon />
           </button>
         )}
-        <div 
-          className={`h-8 px-2 inline-flex items-center gap-1.5 rounded border border-app-border bg-app-card text-[9px] font-black uppercase tracking-wider font-jetbrains shrink-0 ${
-            !isOnline 
-              ? 'text-amber-500' 
-              : pendingCount > 0 
-                ? 'text-sky-500' 
-                : 'text-emerald-500'
-          }`}
-          title={!isOnline ? `Offline (${pendingCount} pending)` : pendingCount > 0 ? `Syncing ${pendingCount} items...` : 'Online & Synced'}
-        >
-          <span 
-            className={`w-1.5 h-1.5 rounded-full ${
-              !isOnline 
-                ? 'bg-amber-400 animate-pulse' 
-                : pendingCount > 0 
-                  ? 'bg-sky-400' 
-                  : 'bg-emerald-400'
-            }`}
-          />
-          {pendingCount > 0 ? `Sync:${pendingCount}` : isOnline ? 'Online' : 'Offline'}
-        </div>
+        <SyncStatusBadge className="h-8" />
         <button
           onClick={() => setIsDarkMode(!isDarkMode)}
           className="h-8 w-8 inline-flex items-center justify-center rounded bg-app-card text-app-text-secondary border border-app-border transition"

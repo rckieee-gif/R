@@ -5,6 +5,7 @@ import TransactionForm from './components/TransactionForm';
 import TransactionTable from './components/TransactionTable';
 import { useNotification } from '../../shared/hooks/useNotification';
 import { transactionSchema } from './transactionSchemas';
+import ConfirmVoidDialog from '../../shared/components/ConfirmVoidDialog';
 
 
 function groupCategories(categories) {
@@ -90,7 +91,7 @@ async function fetchStakeholders() {
 }
 
 export default function TransactionLedger({ transactions, setTransactions, activeBatch, token, readOnly = false, canEditOrDelete = false }) {
-  const { success, error: toastError, confirm, prompt } = useNotification();
+  const { success, error: toastError, confirm } = useNotification();
 
   const [buildings, setBuildings] = useState(['All']);
   const [categoriesByFunding, setCategoriesByFunding] = useState({});
@@ -123,6 +124,8 @@ export default function TransactionLedger({ transactions, setTransactions, activ
   const [ledgerCategoryFilter, setLedgerCategoryFilter] = useState('all');
   const [ledgerDateFrom, setLedgerDateFrom] = useState('');
   const [ledgerDateTo, setLedgerDateTo] = useState('');
+  const [voidDialogOpen, setVoidDialogOpen] = useState(false);
+  const [transactionToVoid, setTransactionToVoid] = useState(null);
   const signedOutLedgerMessage = !token
     ? 'Please sign in again so the ledger can load dropdown data.'
     : '';
@@ -581,29 +584,26 @@ export default function TransactionLedger({ transactions, setTransactions, activ
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDeleteTransaction = async (idToDelete) => {
+  const handleDeleteTransaction = (idToDelete) => {
     if (readOnly || !canEditOrDelete) return;
+    setTransactionToVoid(idToDelete);
+    setVoidDialogOpen(true);
+  };
 
-    const reason = await prompt({
-      title: 'Void Transaction',
-      message: 'Reason for voiding this transaction?',
-      placeholder: 'e.g. error in entry, double entry',
-      confirmText: 'Void',
-      cancelText: 'Cancel',
-      danger: true
-    });
-
-    if (!reason) return;
-
+  const confirmVoid = async (reason) => {
+    if (!transactionToVoid) return;
     try {
-      await apiClient.post(`/api/batches/${activeBatch.id}/transactions/${idToDelete}/void`, { reason });
+      await apiClient.post(`/api/batches/${activeBatch.id}/transactions/${transactionToVoid}/void`, { reason });
 
-      setTransactions(transactions.filter((tx) => tx.id !== idToDelete));
-      if (editingId === idToDelete) resetForm();
+      setTransactions(transactions.filter((tx) => tx.id !== transactionToVoid));
+      if (editingId === transactionToVoid) resetForm();
       success('Transaction voided successfully.');
     } catch (err) {
       console.error('Failed to void transaction:', err);
       toastError(err.message || 'Cannot connect to server.');
+    } finally {
+      setVoidDialogOpen(false);
+      setTransactionToVoid(null);
     }
   };
 
@@ -911,6 +911,15 @@ export default function TransactionLedger({ transactions, setTransactions, activ
           />
         </div>
       </div>
+
+      <ConfirmVoidDialog
+        isOpen={voidDialogOpen}
+        onConfirm={confirmVoid}
+        onCancel={() => {
+          setVoidDialogOpen(false);
+          setTransactionToVoid(null);
+        }}
+      />
     </div>
   );
 }

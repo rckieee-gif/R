@@ -1,4 +1,6 @@
 import { useMemo } from 'react';
+import QuantityInput from '../../../shared/components/QuantityInput';
+import MoneyInput from '../../../shared/components/MoneyInput';
 
 const TRANSACTION_TYPES = ['Expense', 'Income', 'Adjustment', 'Reimbursement', 'Payment'];
 
@@ -183,54 +185,33 @@ export default function TransactionForm({
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-2 font-jetbrains">
-        <div>
-          <label htmlFor="tx-quantity" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Quantity</label>
-          <input
-            id="tx-quantity"
-            type="number"
-            step="0.001"
-            min="0"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            placeholder="0"
-            className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold placeholder-app-text-secondary/40 outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
-          />
-        </div>
+      <div className="grid grid-cols-3 gap-2">
+        <QuantityInput
+          id="tx-quantity"
+          label="Quantity"
+          value={quantity}
+          onChange={setQuantity}
+          unit={selectedFeedItem?.unit || 'units'}
+          step="0.001"
+        />
 
-        <div>
-          <label htmlFor="tx-unit-cost" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Unit Cost</label>
-          <input
-            id="tx-unit-cost"
-            type="number"
-            step="0.0001"
-            min="0"
-            value={unitCost}
-            onChange={(e) => setUnitCost(e.target.value)}
-            placeholder="0.00"
-            className="w-full px-3 py-2 border border-app-border rounded-xl bg-app-bg text-app-text text-sm font-bold placeholder-app-text-secondary/40 outline-none focus:ring-2 focus:ring-app-accent/20 transition-all"
-          />
-        </div>
+        <MoneyInput
+          id="tx-unit-cost"
+          label="Unit Cost"
+          value={unitCost}
+          onChange={setUnitCost}
+          min={0}
+        />
 
-        <div>
-          <label htmlFor="tx-amount" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-1">Amount</label>
-          <input
-            id="tx-amount"
-            type="number"
-            step="0.01"
-            min="0"
-            required
-            readOnly={hasCalculatedAmount}
-            value={displayedAmount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="0.00"
-            className={`w-full px-3 py-2 border border-app-border rounded-xl text-app-text text-sm font-bold outline-none focus:ring-2 focus:ring-app-accent/20 transition-all ${
-              hasCalculatedAmount
-                ? 'bg-app-bg/50 cursor-not-allowed text-app-text font-black'
-                : 'bg-app-bg placeholder-app-text-secondary/40'
-            }`}
-          />
-        </div>
+        <MoneyInput
+          id="tx-amount"
+          label="Amount"
+          value={displayedAmount}
+          onChange={setAmount}
+          required
+          readOnly={hasCalculatedAmount}
+          min={0}
+        />
       </div>
 
       <div className="flex space-x-3 border-t border-app-border/40 pt-3">

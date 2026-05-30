@@ -1,4 +1,5 @@
 import { useSyncStatus } from '../../offline/syncStatus';
+import BatchSelector from '../../shared/components/BatchSelector';
 
 function CogIcon() {
   return (
@@ -156,28 +157,14 @@ export default function Sidebar({
                   <label htmlFor="desktop-batch-selector" className="text-[9px] font-bold uppercase tracking-wider text-white/60">
                     Active Batch
                   </label>
-                  <div className="relative">
-                    <select
+                    <BatchSelector
                       id="desktop-batch-selector"
-                      value={activeBatch?.id || ''}
+                      activeBatch={activeBatch}
+                      batches={batches}
+                      isBatchListLoading={isBatchListLoading}
                       onChange={handleBatchSelectorChange}
-                      disabled={isBatchListLoading || batches.length === 0}
-                      className="w-full h-8 rounded-xl border-none bg-[#70B8F9] px-3 pr-8 text-xs font-bold text-[#0A2540] outline-none appearance-none cursor-pointer focus:ring-1 focus:ring-white/20 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {isBatchListLoading && <option value="">Loading...</option>}
-                      {!isBatchListLoading && batches.length === 0 && <option value="">None</option>}
-                      {batches.map((batch) => (
-                        <option key={batch.id} value={batch.id} className="bg-white text-app-text">
-                          {batch.id} ({batch.status || 'No status'})
-                        </option>
-                      ))}
-                    </select>
-                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-[#0A2540]">
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                      </svg>
-                    </span>
-                  </div>
+                      className="w-full h-8"
+                    />
                 </div>
               </div>
               
