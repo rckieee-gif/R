@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { apiClient } from './utils/apiClient';
+import { useNotification } from './hooks/useNotification';
 
 export default function Login({ onLogin, onBack }) {
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [shake, setShake] = useState(false);
+
+  const { error: toastError } = useNotification();
 
   const cardRef = useRef(null);
   const containerRef = useRef(null);
@@ -82,7 +85,9 @@ export default function Login({ onLogin, onBack }) {
       onLogin(data.user, data.token);
     } catch (err) {
       console.error('Login connection error:', err);
-      setError(err.message || 'Cannot connect to the server. Is it running?');
+      const errMsg = err.message || 'Cannot connect to the server. Is it running?';
+      setError(errMsg);
+      toastError(errMsg);
     }
   };
 

@@ -45,7 +45,7 @@ async function request(path, options = {}) {
 
       // Handle token expiration / unauthorized
       if (response.status === 401) {
-        if (onAuthFailureHandler) {
+        if (onAuthFailureHandler && path !== '/api/auth/login') {
           onAuthFailureHandler();
         }
         throw new Error('Your session has expired. Please sign in again.');

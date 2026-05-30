@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
 import Login from '../login';
 import { apiClient } from '../utils/apiClient';
+import NotificationProvider from '../Components/NotificationProvider';
 
 vi.mock('../utils/apiClient', () => ({
   apiClient: {
@@ -15,7 +16,11 @@ describe('Login Component', () => {
   });
 
   it('renders login form elements', () => {
-    render(<Login onLogin={vi.fn()} />);
+    render(
+      <NotificationProvider>
+        <Login onLogin={vi.fn()} />
+      </NotificationProvider>
+    );
 
     expect(screen.getByPlaceholderText(/username or email/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/password/i)).toBeInTheDocument();
@@ -32,7 +37,11 @@ describe('Login Component', () => {
       token: mockToken,
     });
 
-    render(<Login onLogin={mockOnLogin} />);
+    render(
+      <NotificationProvider>
+        <Login onLogin={mockOnLogin} />
+      </NotificationProvider>
+    );
 
     const usernameInput = screen.getByPlaceholderText(/username or email/i);
     const passwordInput = screen.getByPlaceholderText(/password/i);
@@ -56,7 +65,11 @@ describe('Login Component', () => {
     const mockErrorMessage = 'Invalid username or password';
     apiClient.post.mockRejectedValueOnce(new Error(mockErrorMessage));
 
-    render(<Login onLogin={vi.fn()} />);
+    render(
+      <NotificationProvider>
+        <Login onLogin={vi.fn()} />
+      </NotificationProvider>
+    );
 
     const usernameInput = screen.getByPlaceholderText(/username or email/i);
     const passwordInput = screen.getByPlaceholderText(/password/i);
@@ -67,7 +80,9 @@ describe('Login Component', () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText(mockErrorMessage)).toBeInTheDocument();
+      const errorElements = screen.getAllByText(mockErrorMessage);
+      expect(errorElements.length).toBeGreaterThan(0);
+      errorElements.forEach(el => expect(el).toBeInTheDocument());
     });
   });
 });
