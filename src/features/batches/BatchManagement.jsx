@@ -50,8 +50,20 @@ function buildLoadingRows(buildings) {
   }));
 }
 
-export default function BatchManagement({ activeBatch, setActiveBatch, token, readOnly = false, canEditOrDelete = false, previewData = null }) {
+export default function BatchManagement({
+  activeBatch,
+  setActiveBatch,
+  token,
+  readOnly = false,
+  canEditOrDelete = false,
+  previewData = null,
+  batchList = null,
+  isBatchListLoading = false,
+  onBatchesChanged = null
+}) {
+  const hasExternalBatchList = Array.isArray(batchList);
   const [batches, setBatches] = useState([]);
+  const [optimisticBatchList, setOptimisticBatchList] = useState(null);
   const [buildings, setBuildings] = useState([]);
   const [loadings, setLoadings] = useState([]);
   const [startDate, setStartDate] = useState('');
@@ -64,7 +76,17 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
   const [isLoadingLoadings, setIsLoadingLoadings] = useState(false);
   const { success, error: toastError, confirm } = useNotification();
   const isPreviewMode = !token && Boolean(previewData);
-  const visibleBatches = isPreviewMode ? previewData.batches || [] : batches;
+  const visibleBatches = useMemo(() => {
+    const sourceBatches = isPreviewMode
+      ? previewData.batches || []
+      : optimisticBatchList ?? (hasExternalBatchList ? batchList : batches);
+
+    if (!activeBatch?.id || sourceBatches.some((batch) => String(batch.id) === String(activeBatch.id))) {
+      return sourceBatches;
+    }
+
+    return [activeBatch, ...sourceBatches];
+  }, [activeBatch, batchList, batches, hasExternalBatchList, isPreviewMode, optimisticBatchList, previewData]);
 
   const loadingsWithShares = useMemo(
     () => calculateLoadingShares(loadings),
@@ -88,13 +110,17 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
     const loadBatchSetup = async () => {
       try {
         const [batchData, buildingData] = await Promise.all([
-          apiClient.get('/api/batches', { expectArray: true, signal: controller.signal }),
+          hasExternalBatchList
+            ? Promise.resolve(null)
+            : apiClient.get('/api/batches', { expectArray: true, signal: controller.signal }),
           apiClient.get('/api/buildings', { expectArray: true, signal: controller.signal })
         ]);
 
         if (controller.signal.aborted) return;
 
-        setBatches(batchData);
+        if (!hasExternalBatchList) {
+          setBatches(batchData);
+        }
         setBuildings(buildingData);
         setLoadings((current) => current.length ? current : buildLoadingRows(buildingData));
       } catch (err) {
@@ -107,7 +133,7 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
     return () => {
       controller.abort();
     };
-  }, [setBatches, token]);
+  }, [hasExternalBatchList, setBatches, token]);
 
   const resetForm = () => {
     setEditingBatchId(null);
@@ -118,6 +144,29 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
     setNotes('');
     setStatusField('ONGOING');
     setLoadings(buildLoadingRows(buildings));
+  };
+
+  const updateBatchList = (updater) => {
+    const currentList = hasExternalBatchList ? (optimisticBatchList ?? batchList) : batches;
+    const nextList = typeof updater === 'function' ? updater(currentList) : updater;
+
+    if (hasExternalBatchList) {
+      setOptimisticBatchList(nextList);
+    } else {
+      setBatches(nextList);
+    }
+
+    return nextList;
+  };
+
+  const refreshExternalBatchList = () => {
+    if (!onBatchesChanged) return;
+
+    Promise.resolve(onBatchesChanged()).finally(() => {
+      if (hasExternalBatchList) {
+        setOptimisticBatchList(null);
+      }
+    });
   };
 
   const updateLoading = (index, field, value) => {
@@ -197,18 +246,19 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
         : await apiClient.post(url, batchPayload);
 
       if (editingBatchId) {
-        setBatches(batches.map((batch) => batch.id === editingBatchId ? data : batch));
+        updateBatchList((current) => current.map((batch) => batch.id === editingBatchId ? data : batch));
 
         if (activeBatch?.id === editingBatchId) {
           setActiveBatch(data);
         }
         success('Batch updated successfully!');
       } else {
-        setBatches([data, ...batches]);
+        updateBatchList((current) => [data, ...current]);
         setActiveBatch(data);
         success('Batch created successfully!');
       }
 
+      refreshExternalBatchList();
       resetForm();
     } catch (err) {
       toastError(err.message || 'Cannot connect to server.');
@@ -244,12 +294,12 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
     try {
       await apiClient.delete(`/api/batches/${batchId}`);
 
-      const remainingBatches = batches.filter((batch) => batch.id !== batchId);
-      setBatches(remainingBatches);
+      const remainingBatches = updateBatchList((current) => current.filter((batch) => batch.id !== batchId));
 
       if (activeBatch?.id === batchId) {
         setActiveBatch(remainingBatches[0] || null);
       }
+      refreshExternalBatchList();
       success('Batch deleted successfully!');
     } catch {
       toastError('Cannot connect to server.');
@@ -593,7 +643,7 @@ export default function BatchManagement({ activeBatch, setActiveBatch, token, re
 
           {visibleBatches.length === 0 && (
             <p className="text-center text-app-text-secondary text-sm mt-4 font-inter">
-              No batches created yet.
+              {isBatchListLoading ? 'Loading batches...' : 'No batches created yet.'}
             </p>
           )}
         </div>

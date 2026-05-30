@@ -74,6 +74,9 @@ function BatchesRoute({ batches, ...props }) {
     <BatchManagement
       activeBatch={visibleActiveBatch}
       setActiveBatch={selectActiveBatch}
+      batchList={batchList}
+      isBatchListLoading={batches.isBatchListLoading}
+      onBatchesChanged={batches.refreshBatches}
       {...props}
     />
   );
