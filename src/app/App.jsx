@@ -7,6 +7,7 @@ import AntigravityAssistant from '../shared/components/AntigravityAssistant';
 import Sidebar from './layout/Sidebar';
 import MobileNav from './layout/MobileNav';
 import AppShell from './layout/AppShell';
+import StatusBar from '../shared/components/StatusBar';
 
 import useAuth from '../features/auth/useAuth';
 import useBatches from '../features/batches/useBatches';
@@ -310,6 +311,8 @@ function App() {
 
   return (
     <AppShell sidebar={sidebar} mobileNav={mobileNav} isDarkMode={isDarkMode}>
+      <StatusBar activeBatch={batches.visibleActiveBatch} />
+
       {/* Batch list error overlay */}
       {!auth.isPublicViewer && batches.batchListError && (
         <div className="no-print mx-4 mt-4 mb-2 rounded border border-app-warning/30 bg-app-warning-bg px-4 py-3 text-sm font-semibold text-app-warning">
