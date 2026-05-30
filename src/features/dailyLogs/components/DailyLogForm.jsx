@@ -57,14 +57,23 @@ export default function DailyLogForm({
   discardDraft,
   activeBatchId
 }) {
-  const [step, setStep] = useState(1);
-
-  const [prevPropsKey, setPrevPropsKey] = useState(() => `${activeBuilding}:${editingId}`);
   const currentPropsKey = `${activeBuilding}:${editingId}`;
-  if (currentPropsKey !== prevPropsKey) {
-    setPrevPropsKey(currentPropsKey);
-    setStep(1);
-  }
+  const [stepState, setStepState] = useState(() => ({
+    key: currentPropsKey,
+    step: 1
+  }));
+  const step = stepState.key === currentPropsKey ? stepState.step : 1;
+  const setStep = (nextStepValue) => {
+    setStepState((current) => {
+      const currentStep = current.key === currentPropsKey ? current.step : 1;
+      const nextStep = typeof nextStepValue === 'function' ? nextStepValue(currentStep) : nextStepValue;
+
+      return {
+        key: currentPropsKey,
+        step: nextStep
+      };
+    });
+  };
 
   const draftKey = `octavioDailyLogDraft:${activeBatchId}:${activeBuilding}`;
   const draftData = localStorage.getItem(draftKey);

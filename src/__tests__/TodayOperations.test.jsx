@@ -1,7 +1,11 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { http, HttpResponse } from 'msw';
 import { vi } from 'vitest';
+import App from '../app/App';
 import TodayOperations from '../features/dailyLogs/TodayOperations';
 import NotificationProvider from '../shared/components/NotificationProvider';
+import { server } from '../test/mswServer';
 
 // Mock getLastBroilerTargetDay partially
 vi.mock('../shared/utils/broilerTargets', async (importOriginal) => {
@@ -50,10 +54,31 @@ const renderComponent = (props = {}) => {
   );
 };
 
+function json(data, status = 200) {
+  return HttpResponse.json(data, { status });
+}
+
+function apiPath(path) {
+  return `*/api${path}`;
+}
+
+function mockTodayApi() {
+  server.use(
+    http.get(apiPath('/batches/:batchId/loadings'), () => json([])),
+    http.get(apiPath('/batches/:batchId/employee-assignments'), () => json([])),
+    http.get(apiPath('/inventory/items'), () => json([])),
+    http.get(apiPath('/batches/:batchId/harvest-production-summary'), () => json({
+      totals: { birds: 0 },
+      perHarvest: [],
+    }))
+  );
+}
+
 describe('TodayOperations Component Keyboard Shortcuts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    mockTodayApi();
   });
 
   it('allows switching mobile tabs via 1, 2, 3 keys in active batch mode', async () => {
@@ -173,5 +198,37 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
 
     // Verify the tooltip modal is closed
     expect(screen.queryByLabelText('Close explanation')).not.toBeInTheDocument();
+  });
+
+  it('shows a usable offline state when current batch and batch list requests fail', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    server.use(
+      http.get(apiPath('/public/current-batch'), () => HttpResponse.error()),
+      http.get(apiPath('/batches'), () => HttpResponse.error())
+    );
+    localStorage.setItem('octavioToken', 'offline-token');
+    localStorage.setItem('octavioUser', JSON.stringify({
+      id: 9,
+      username: 'offline.manager',
+      role: 'OperationManager',
+      isPrimaryOwner: false,
+    }));
+
+    try {
+      render(
+        <NotificationProvider>
+          <MemoryRouter initialEntries={['/today']}>
+            <App />
+          </MemoryRouter>
+        </NotificationProvider>
+      );
+
+      expect(await screen.findByRole('heading', { name: /^Today$/i })).toBeInTheDocument();
+      expect(await screen.findByText(/Batch data unavailable/i)).toBeInTheDocument();
+      expect(screen.getByText(/batch list loads/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Open Batches/i })).toBeInTheDocument();
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 });

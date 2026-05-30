@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../shared/utils/apiClient';
 import { useNotification } from '../../shared/hooks/useNotification';
 import ChangePassword from './components/ChangePassword';
@@ -70,7 +70,7 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
     return 'CSV files open directly in Excel and Google Sheets.';
   }, [activeBatch?.id, exportAllowed, exportScope, exportUsesBatch]);
 
-  const fetchAccounts = async () => {
+  const fetchAccounts = useCallback(async () => {
     if (!canManageAccounts) return;
 
     setIsLoadingAccounts(true);
@@ -84,16 +84,41 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
     } finally {
       setIsLoadingAccounts(false);
     }
-  };
+  }, [canManageAccounts, toastError]);
 
   useEffect(() => {
-    setTimeout(() => {
-      fetchAccounts();
-    }, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canManageAccounts, token]);
+    if (!canManageAccounts || !token) return undefined;
 
-  const fetchActivityLogs = async () => {
+    let isCancelled = false;
+
+    const fetchInitialAccounts = async () => {
+      setIsLoadingAccounts(true);
+
+      try {
+        const data = await apiClient.get('/api/admin/users', { expectArray: true });
+        if (!isCancelled) {
+          setAccounts(data);
+        }
+      } catch (err) {
+        console.error(err);
+        if (!isCancelled) {
+          toastError(err.message || 'Cannot connect to account manager.');
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingAccounts(false);
+        }
+      }
+    };
+
+    fetchInitialAccounts();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [canManageAccounts, token, toastError]);
+
+  const fetchActivityLogs = useCallback(async () => {
     if (!canManageAccounts) return;
 
     setIsLoadingActivity(true);
@@ -107,14 +132,39 @@ export default function Settings({ user, token, activeBatch, isZeroGravity, setI
     } finally {
       setIsLoadingActivity(false);
     }
-  };
+  }, [canManageAccounts, toastError]);
 
   useEffect(() => {
-    setTimeout(() => {
-      fetchActivityLogs();
-    }, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canManageAccounts, token]);
+    if (!canManageAccounts || !token) return undefined;
+
+    let isCancelled = false;
+
+    const fetchInitialActivityLogs = async () => {
+      setIsLoadingActivity(true);
+
+      try {
+        const data = await apiClient.get('/api/admin/audit-logs?limit=150', { expectArray: true });
+        if (!isCancelled) {
+          setActivityLogs(data);
+        }
+      } catch (err) {
+        console.error(err);
+        if (!isCancelled) {
+          toastError(err.message || 'Cannot connect to activity logs.');
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingActivity(false);
+        }
+      }
+    };
+
+    fetchInitialActivityLogs();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [canManageAccounts, token, toastError]);
 
   const handlePasswordSubmit = async (event) => {
     event.preventDefault();

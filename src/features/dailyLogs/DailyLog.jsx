@@ -43,22 +43,103 @@ const FEED_VARIANCE_WARNING_PERCENT = 15;
 const MORTALITY_WARNING_RATE = 0.005;
 const MORTALITY_WARNING_HEADS = 5;
 
+function getDailyLogFormKey(batchId, building, editingId) {
+  return `${batchId || 'none'}:${building || 'A'}:${editingId || 'new'}`;
+}
+
+function getEmptyDailyLogValues(fallback = {}) {
+  return {
+    date: fallback.date || todayInput(),
+    selectedEmployeeId: fallback.selectedEmployeeId || '',
+    feedItemId: fallback.feedItemId || '',
+    feedConsumed: '',
+    mortality: '',
+    averageWeightGrams: '',
+    remarks: ''
+  };
+}
+
+function readDailyLogDraft(batchId, building, fallback = {}) {
+  const emptyValues = getEmptyDailyLogValues(fallback);
+  if (!batchId) return emptyValues;
+
+  const saved = localStorage.getItem(`octavioDailyLogDraft:${batchId}:${building}`);
+  if (!saved) return emptyValues;
+
+  try {
+    const draft = JSON.parse(saved);
+    return {
+      ...emptyValues,
+      date: draft.date || emptyValues.date,
+      selectedEmployeeId: draft.selectedEmployeeId || emptyValues.selectedEmployeeId,
+      feedItemId: draft.feedItemId || emptyValues.feedItemId,
+      feedConsumed: draft.feedConsumed || '',
+      mortality: draft.mortality || '',
+      averageWeightGrams: draft.averageWeightGrams || '',
+      remarks: draft.remarks || ''
+    };
+  } catch (err) {
+    console.error('Failed to parse draft details:', err);
+    return emptyValues;
+  }
+}
+
 export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly = false, canEditOrDelete = false }) {
   const [buildings, setBuildings] = useState([]);
-  const [assignments, setAssignments] = useState([]);
-  const [date, setDate] = useState(todayInput());
+  const [assignmentsState, setAssignmentsState] = useState({
+    batchId: null,
+    rows: []
+  });
   const [activeBuilding, setActiveBuilding] = useState('A');
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [feedItems, setFeedItems] = useState([]);
-  const [feedItemId, setFeedItemId] = useState('');
-  const [feedConsumed, setFeedConsumed] = useState('');
-  const [mortality, setMortality] = useState('');
-  const [averageWeightGrams, setAverageWeightGrams] = useState('');
-  const [remarks, setRemarks] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const { success, error: toastError, confirm } = useNotification();
   const skipSaveRef = useRef(false);
+  const activeBatchId = activeBatch?.id ?? null;
+  const formKey = getDailyLogFormKey(activeBatchId, activeBuilding, editingId);
+  const [formState, setFormState] = useState(() => ({
+    key: getDailyLogFormKey(activeBatchId, 'A', null),
+    values: readDailyLogDraft(activeBatchId, 'A')
+  }));
+  const formValues = formState.key === formKey
+    ? formState.values
+    : readDailyLogDraft(activeBatchId, activeBuilding, formState.values);
+  const assignments = useMemo(
+    () => (token && activeBatchId && assignmentsState.batchId === activeBatchId ? assignmentsState.rows : []),
+    [activeBatchId, assignmentsState, token]
+  );
+
+  const setFormField = (field, value) => {
+    setFormState((current) => {
+      const currentValues = current.key === formKey
+        ? current.values
+        : readDailyLogDraft(activeBatchId, activeBuilding, current.values);
+      const nextValue = typeof value === 'function' ? value(currentValues[field]) : value;
+
+      return {
+        key: formKey,
+        values: {
+          ...currentValues,
+          [field]: nextValue
+        }
+      };
+    });
+  };
+
+  const date = formValues.date;
+  const feedItemId = formValues.feedItemId || (feedItems[0]?.id ? String(feedItems[0].id) : '');
+  const feedConsumed = formValues.feedConsumed;
+  const mortality = formValues.mortality;
+  const averageWeightGrams = formValues.averageWeightGrams;
+  const remarks = formValues.remarks;
+  const setDate = (value) => setFormField('date', value);
+  const setSelectedEmployeeId = (value) => setFormField('selectedEmployeeId', value);
+  const setFeedItemId = (value) => setFormField('feedItemId', value);
+  const setFeedConsumed = (value) => setFormField('feedConsumed', value);
+  const setMortality = (value) => setFormField('mortality', value);
+  const setAverageWeightGrams = (value) => setFormField('averageWeightGrams', value);
+  const setRemarks = (value) => setFormField('remarks', value);
 
   const buildingNames = useMemo(
     () => buildings.length ? buildings.map((building) => building.name) : ['A', 'B', 'C'],
@@ -73,6 +154,17 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     }),
     [assignments, activeBuilding]
   );
+
+  const selectedEmployeeId = useMemo(() => {
+    if (!buildingAssignments.length) return '';
+
+    const selectedId = formValues.selectedEmployeeId;
+    const selectedIsValid = buildingAssignments.some(
+      (assignment) => String(assignment.employeeId) === String(selectedId)
+    );
+
+    return selectedIsValid ? String(selectedId) : String(buildingAssignments[0].employeeId);
+  }, [buildingAssignments, formValues.selectedEmployeeId]);
 
   const selectedAssignment = useMemo(
     () => buildingAssignments.find((assignment) => String(assignment.employeeId) === String(selectedEmployeeId)) || null,
@@ -198,89 +290,77 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     return warnings;
   }, [activeBuilding, ageDay, feedStockAfterLog, feedTarget, isLoading, mortality, selectedAssignment, selectedFeedItem, targetVarianceKg]);
 
-  const fetchBuildings = async () => {
-    if (!token) return;
-
-    try {
-      const data = await apiClient.get('/api/buildings', { expectArray: true });
-      setBuildings(data);
-      if (data.length && !data.some((building) => building.name === activeBuilding)) {
-        setActiveBuilding(data[0].name);
-      }
-    } catch (err) {
-      console.error('Failed to load daily log buildings:', err);
-    }
-  };
-
-  const fetchFeedItems = async () => {
-    if (!token) return;
-
-    try {
-      const data = await apiClient.get('/api/inventory/items?category=Feed', { expectArray: true });
-      setFeedItems(data);
-      setFeedItemId((current) => current || (data[0]?.id ? String(data[0].id) : ''));
-    } catch (err) {
-      console.error('Failed to load feed inventory items:', err);
-    }
-  };
-
-  const fetchAssignments = async () => {
-    if (!token || !activeBatch?.id) {
-      setAssignments([]);
-      setSelectedEmployeeId('');
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const data = await apiClient.get(`/api/batches/${activeBatch.id}/employee-assignments`, { expectArray: true });
-      setAssignments(data);
-    } catch (err) {
-      console.error(err);
-      toastError(err.message || 'Cannot connect to employee assignments.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    setTimeout(() => {
-      fetchBuildings();
-      fetchFeedItems();
-    }, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!token) return undefined;
+
+    let isCancelled = false;
+
+    const fetchDailyLogMasters = async () => {
+      try {
+        const [buildingData, feedData] = await Promise.all([
+          apiClient.get('/api/buildings', { expectArray: true }),
+          apiClient.get('/api/inventory/items?category=Feed', { expectArray: true })
+        ]);
+
+        if (isCancelled) return;
+
+        setBuildings(buildingData);
+        setActiveBuilding((current) => (
+          buildingData.length && !buildingData.some((building) => building.name === current)
+            ? buildingData[0].name
+            : current
+        ));
+        setFeedItems(feedData);
+      } catch (err) {
+        console.error('Failed to load daily log master data:', err);
+      }
+    };
+
+    fetchDailyLogMasters();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [token]);
 
   useEffect(() => {
-    setTimeout(() => {
-      fetchAssignments();
-    }, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, activeBatch?.id]);
+    if (!token || !activeBatchId) return undefined;
 
-  useEffect(() => {
-    if (!buildingAssignments.length) {
-      setTimeout(() => {
-        setSelectedEmployeeId('');
-      }, 0);
-      return;
-    }
+    let isCancelled = false;
 
-    const currentIsValid = buildingAssignments.some(
-      (assignment) => String(assignment.employeeId) === String(selectedEmployeeId)
-    );
+    const fetchAssignments = async () => {
+      setIsLoading(true);
 
-    if (!currentIsValid) {
-      setTimeout(() => {
-        setSelectedEmployeeId(String(buildingAssignments[0].employeeId));
-      }, 0);
-    }
-  }, [buildingAssignments, selectedEmployeeId]);
+      try {
+        const data = await apiClient.get(`/api/batches/${activeBatchId}/employee-assignments`, { expectArray: true });
+        if (!isCancelled) {
+          setAssignmentsState({
+            batchId: activeBatchId,
+            rows: data
+          });
+        }
+      } catch (err) {
+        console.error(err);
+        if (!isCancelled) {
+          toastError(err.message || 'Cannot connect to employee assignments.');
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchAssignments();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [token, activeBatchId, toastError]);
 
   // --- OFFLINE DRAFT STATE MANAGEMENT ---
   useEffect(() => {
-    if (!activeBatch?.id || editingId || skipSaveRef.current) return;
+    if (!activeBatchId || editingId || skipSaveRef.current) return;
 
     const draft = {
       date,
@@ -295,48 +375,26 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     const hasData = feedConsumed || mortality || averageWeightGrams || remarks;
     if (hasData) {
       localStorage.setItem(
-        `octavioDailyLogDraft:${activeBatch.id}:${activeBuilding}`,
+        `octavioDailyLogDraft:${activeBatchId}:${activeBuilding}`,
         JSON.stringify(draft)
       );
     }
-  }, [date, activeBuilding, selectedEmployeeId, feedItemId, feedConsumed, mortality, averageWeightGrams, remarks, activeBatch?.id, editingId]);
-
-  const [prevDraftKey, setPrevDraftKey] = useState('');
-  const currentDraftKey = `${activeBatch?.id}:${activeBuilding}:${editingId}`;
-  if (currentDraftKey !== prevDraftKey) {
-    setPrevDraftKey(currentDraftKey);
-    if (activeBatch?.id && !editingId) {
-      const saved = localStorage.getItem(`octavioDailyLogDraft:${activeBatch.id}:${activeBuilding}`);
-      if (saved) {
-        try {
-          const draft = JSON.parse(saved);
-          setDate(draft.date || todayInput());
-          setFeedConsumed(draft.feedConsumed || '');
-          setMortality(draft.mortality || '');
-          setAverageWeightGrams(draft.averageWeightGrams || '');
-          setRemarks(draft.remarks || '');
-          if (draft.feedItemId) setFeedItemId(draft.feedItemId);
-          if (draft.selectedEmployeeId) setSelectedEmployeeId(draft.selectedEmployeeId);
-        } catch (err) {
-          console.error('Failed to parse draft details:', err);
-        }
-      } else {
-        setFeedConsumed('');
-        setMortality('');
-        setAverageWeightGrams('');
-        setRemarks('');
-      }
-    }
-  }
+  }, [date, activeBuilding, selectedEmployeeId, feedItemId, feedConsumed, mortality, averageWeightGrams, remarks, activeBatchId, editingId]);
 
   const discardDraft = () => {
-    if (!activeBatch?.id) return;
+    if (!activeBatchId) return;
     skipSaveRef.current = true;
-    localStorage.removeItem(`octavioDailyLogDraft:${activeBatch.id}:${activeBuilding}`);
-    setFeedConsumed('');
-    setMortality('');
-    setAverageWeightGrams('');
-    setRemarks('');
+    localStorage.removeItem(`octavioDailyLogDraft:${activeBatchId}:${activeBuilding}`);
+    setFormState({
+      key: formKey,
+      values: {
+        ...formValues,
+        feedConsumed: '',
+        mortality: '',
+        averageWeightGrams: '',
+        remarks: ''
+      }
+    });
     success('Offline draft discarded.');
     setTimeout(() => {
       skipSaveRef.current = false;
@@ -344,11 +402,18 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
   };
 
   const resetForm = () => {
+    const nextKey = getDailyLogFormKey(activeBatchId, activeBuilding, null);
     setEditingId(null);
-    setFeedConsumed('');
-    setMortality('');
-    setAverageWeightGrams('');
-    setRemarks('');
+    setFormState({
+      key: nextKey,
+      values: {
+        ...formValues,
+        feedConsumed: '',
+        mortality: '',
+        averageWeightGrams: '',
+        remarks: ''
+      }
+    });
   };
 
   const handleSubmit = async (event) => {
@@ -424,14 +489,19 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     if (!canEditOrDelete) return;
 
     setEditingId(log.id);
-    setDate(log.date);
     setActiveBuilding(log.building);
-    setSelectedEmployeeId(log.employeeId ? String(log.employeeId) : '');
-    setFeedItemId(log.feedItemId ? String(log.feedItemId) : (feedItems[0]?.id ? String(feedItems[0].id) : ''));
-    setFeedConsumed(String(log.feed || ''));
-    setMortality(String(log.mortality || ''));
-    setAverageWeightGrams(log.averageWeightGrams == null ? '' : String(log.averageWeightGrams));
-    setRemarks(log.remarks || '');
+    setFormState({
+      key: getDailyLogFormKey(activeBatchId, log.building, log.id),
+      values: {
+        date: log.date,
+        selectedEmployeeId: log.employeeId ? String(log.employeeId) : '',
+        feedItemId: log.feedItemId ? String(log.feedItemId) : (feedItems[0]?.id ? String(feedItems[0].id) : ''),
+        feedConsumed: String(log.feed || ''),
+        mortality: String(log.mortality || ''),
+        averageWeightGrams: log.averageWeightGrams == null ? '' : String(log.averageWeightGrams),
+        remarks: log.remarks || ''
+      }
+    });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

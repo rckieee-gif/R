@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../shared/utils/apiClient';
 import {
   BAG_WEIGHT_KG,
@@ -17,6 +17,16 @@ const EMPTY_TODAY_DATA = {
   assignments: [],
   feedItems: [],
   harvestProductionSummary: null
+};
+const INITIAL_PREP_CHECKLIST = {
+  dungCleanup: false,
+  pressureWasher: false,
+  clean: false,
+  bedding: false,
+  equipment: false,
+  feed: false,
+  inventory: false,
+  prewarm: false
 };
 
 function todayInput() {
@@ -75,6 +85,19 @@ function buildLogTotals(logRows) {
 
 function getBatchStatus(batch) {
   return String(batch?.status || '').trim().toUpperCase();
+}
+
+function readPrepChecklist(batchId) {
+  if (!batchId) return INITIAL_PREP_CHECKLIST;
+
+  const saved = localStorage.getItem(`octavioPrepChecklist:${batchId}`);
+  if (!saved) return INITIAL_PREP_CHECKLIST;
+
+  try {
+    return { ...INITIAL_PREP_CHECKLIST, ...JSON.parse(saved) };
+  } catch {
+    return INITIAL_PREP_CHECKLIST;
+  }
 }
 
 function isPostBatch(batch) {
@@ -231,7 +254,18 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     isLoading: false
   });
 
-  const [mobileTab, setMobileTab] = useState('overview');
+  const [mobileTabState, setMobileTabState] = useState({
+    batchId: activeBatchId,
+    tab: 'overview'
+  });
+  const mobileTab = mobileTabState.batchId === activeBatchId ? mobileTabState.tab : 'overview';
+  const setMobileTab = useCallback((nextTab) => {
+    setMobileTabState((current) => {
+      const currentTab = current.batchId === activeBatchId ? current.tab : 'overview';
+      const tab = typeof nextTab === 'function' ? nextTab(currentTab) : nextTab;
+      return { batchId: activeBatchId, tab };
+    });
+  }, [activeBatchId]);
   const [activeTooltip, setActiveTooltip] = useState(null);
 
   const renderTooltipModal = () => {
@@ -270,68 +304,29 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     );
   };
 
-  const [prepChecklist, setPrepChecklist] = useState(() => {
-    const initial = {
-      dungCleanup: false,
-      pressureWasher: false,
-      clean: false,
-      bedding: false,
-      equipment: false,
-      feed: false,
-      inventory: false,
-      prewarm: false
-    };
-    if (activeBatchId) {
-      const saved = localStorage.getItem(`octavioPrepChecklist:${activeBatchId}`);
-      if (saved) {
-        try {
-          return { ...initial, ...JSON.parse(saved) };
-        } catch {
-          // ignore
-        }
-      }
+  const [prepChecklistState, setPrepChecklistState] = useState(() => ({
+    batchId: activeBatchId,
+    items: readPrepChecklist(activeBatchId)
+  }));
+  const prepChecklist = useMemo(() => {
+    if (prepChecklistState.batchId === activeBatchId) {
+      return prepChecklistState.items;
     }
-    return initial;
-  });
 
-  const [prevBatchChecklistId, setPrevBatchChecklistId] = useState(activeBatchId);
-  if (activeBatchId !== prevBatchChecklistId) {
-    setPrevBatchChecklistId(activeBatchId);
-    setMobileTab('overview');
-    const initial = {
-      dungCleanup: false,
-      pressureWasher: false,
-      clean: false,
-      bedding: false,
-      equipment: false,
-      feed: false,
-      inventory: false,
-      prewarm: false
-    };
-    if (activeBatchId) {
-      const saved = localStorage.getItem(`octavioPrepChecklist:${activeBatchId}`);
-      if (saved) {
-        try {
-          setPrepChecklist({ ...initial, ...JSON.parse(saved) });
-        } catch {
-          setPrepChecklist(initial);
-        }
-      } else {
-        setPrepChecklist(initial);
-      }
-    } else {
-      setPrepChecklist(initial);
-    }
-  }
+    return readPrepChecklist(activeBatchId);
+  }, [activeBatchId, prepChecklistState]);
 
   const togglePrepItem = (key) => {
     if (!token) return;
-    setPrepChecklist((prev) => {
-      const next = { ...prev, [key]: !prev[key] };
+    setPrepChecklistState((current) => {
+      const currentItems = current.batchId === activeBatchId
+        ? current.items
+        : readPrepChecklist(activeBatchId);
+      const next = { ...currentItems, [key]: !currentItems[key] };
       if (activeBatchId) {
         localStorage.setItem(`octavioPrepChecklist:${activeBatchId}`, JSON.stringify(next));
       }
-      return next;
+      return { batchId: activeBatchId, items: next };
     });
   };
   const previewTodayData = previewData ? {
@@ -397,7 +392,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [activeTooltip, isOnTheWay, isPostSummaryMode]);
+  }, [activeTooltip, isOnTheWay, isPostSummaryMode, setMobileTab]);
 
   useEffect(() => {
     if (!todayDataKey) {
@@ -786,6 +781,11 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
   }, [activeBatch, activeLoadings.length, logs.length, lowFeedItems.length, postSummary]);
 
   if (!activeBatch) {
+    const emptyBatchTitle = token ? 'Batch data unavailable' : 'No current batch available';
+    const emptyBatchMessage = token
+      ? 'Today cannot check operations until the batch list loads. Try refreshing after the connection recovers or open Batches.'
+      : 'The current public batch is unavailable right now. Try again after the connection recovers.';
+
     return (
       <div className="app-page text-app-text">
         <div className="mb-5 mt-2">
@@ -794,17 +794,19 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
         </div>
 
         <div className="rounded-2xl border border-app-border bg-app-card p-5 shadow-sm">
-          <p className="text-lg font-black font-hanken">No active batch selected</p>
+          <p className="text-lg font-black font-hanken">{emptyBatchTitle}</p>
           <p className="text-sm text-app-text-secondary mt-2 font-inter">
-            Select an active batch before today&apos;s operations can be checked.
+            {emptyBatchMessage}
           </p>
-          <button
-            type="button"
-            onClick={() => setActiveScreen('batches')}
-            className="mt-4 w-full rounded-xl bg-app-accent p-3 font-bold text-app-on-accent shadow-sm active:scale-95 transition-all duration-150 cursor-pointer"
-          >
-            Open Batches
-          </button>
+          {token && (
+            <button
+              type="button"
+              onClick={() => setActiveScreen('batches')}
+              className="mt-4 w-full rounded-xl bg-app-accent p-3 font-bold text-app-on-accent shadow-sm active:scale-95 transition-all duration-150 cursor-pointer"
+            >
+              Open Batches
+            </button>
+          )}
         </div>
       </div>
     );
