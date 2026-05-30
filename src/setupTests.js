@@ -1,6 +1,7 @@
 import '@testing-library/react';
 import '@testing-library/jest-dom';
-import { vi, beforeEach } from 'vitest';
+import { vi, beforeAll, beforeEach, afterEach, afterAll } from 'vitest';
+import { server } from './test/mswServer';
 
 // Mock window.scrollTo since jsdom doesn't implement it
 window.scrollTo = vi.fn();
@@ -43,4 +44,16 @@ Object.defineProperty(window, 'sessionStorage', {
 beforeEach(() => {
   window.localStorage.clear();
   window.sessionStorage.clear();
+});
+
+beforeAll(() => {
+  server.listen({ onUnhandledRequest: 'bypass' });
+});
+
+afterEach(() => {
+  server.resetHandlers();
+});
+
+afterAll(() => {
+  server.close();
 });

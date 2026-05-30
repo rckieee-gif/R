@@ -29,44 +29,47 @@ export async function processSyncQueue(directApiClient) {
   if (isProcessing) return;
   if (!navigator.onLine) return;
 
-  const queue = await getQueue();
-  const pendingItems = queue.filter(item => item.status === 'pending');
-  if (pendingItems.length === 0) return;
-
   isProcessing = true;
-  console.log(`Processing ${pendingItems.length} items from sync queue...`);
 
-  for (const item of pendingItems) {
-    try {
-      await updateQueueStatus(item.id, 'syncing');
-      notifySyncStatus();
+  try {
+    const queue = await getQueue();
+    const pendingItems = queue.filter(item => item.status === 'pending');
+    if (pendingItems.length === 0) return;
 
-      // Perform request bypass-caching directly
-      await directApiClient.request(item.url, {
-        method: item.method,
-        body: JSON.stringify(item.payload),
-        headers: { 'X-Sync-Queue-Id': item.id } // Header to let backend know/de-duplicate
-      });
+    console.log(`Processing ${pendingItems.length} items from sync queue...`);
 
-      await removeFromQueue(item.id);
-      console.log(`Successfully synced queue item: ${item.id}`);
-    } catch (err) {
-      console.error(`Failed to sync item ${item.id}:`, err);
-      
-      const resolution = resolveConflict(item, err);
-      if (resolution.action === 'discard') {
+    for (const item of pendingItems) {
+      try {
+        await updateQueueStatus(item.id, 'syncing');
+        notifySyncStatus();
+
+        // Perform request bypass-caching directly
+        await directApiClient.request(item.url, {
+          method: item.method,
+          body: JSON.stringify(item.payload),
+          headers: { 'X-Sync-Queue-Id': item.id } // Header to let backend know/de-duplicate
+        });
+
         await removeFromQueue(item.id);
-      } else if (resolution.action === 'flag') {
-        await updateQueueStatus(item.id, 'conflict', resolution.reason);
-      } else {
-        // Retry later
-        await updateQueueStatus(item.id, 'pending', err.message);
-        break; // Stop queue processing on temporary server failures
-      }
-    } finally {
-      notifySyncStatus();
-    }
-  }
+        console.log(`Successfully synced queue item: ${item.id}`);
+      } catch (err) {
+        console.error(`Failed to sync item ${item.id}:`, err);
 
-  isProcessing = false;
+        const resolution = resolveConflict(item, err);
+        if (resolution.action === 'discard') {
+          await removeFromQueue(item.id);
+        } else if (resolution.action === 'flag') {
+          await updateQueueStatus(item.id, 'conflict', resolution.reason);
+        } else {
+          // Retry later
+          await updateQueueStatus(item.id, 'pending', err.message);
+          break; // Stop queue processing on temporary server failures
+        }
+      } finally {
+        notifySyncStatus();
+      }
+    }
+  } finally {
+    isProcessing = false;
+  }
 }

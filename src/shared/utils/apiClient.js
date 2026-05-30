@@ -204,10 +204,12 @@ export const apiClient = {
 // Automatic Sync Triggers
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
-    processSyncQueue(apiClient);
+    if (typeof indexedDB !== 'undefined') {
+      processSyncQueue(apiClient);
+    }
   });
   
-  if (navigator.onLine) {
+  if (navigator.onLine && typeof indexedDB !== 'undefined') {
     // Stagger slightly on boot
     setTimeout(() => {
       processSyncQueue(apiClient);

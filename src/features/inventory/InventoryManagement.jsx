@@ -182,6 +182,10 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
   const movementAmount = movementForm.unitCost && movementForm.quantity
     ? Number(movementForm.quantity || 0) * Number(movementForm.unitCost || 0)
     : 0;
+  const selectedMovementItem = useMemo(
+    () => visibleItems.find((item) => String(item.id) === String(movementForm.itemId)) || null,
+    [movementForm.itemId, visibleItems]
+  );
 
   const fetchInventory = useCallback(async (signal) => {
     if (!token) return;
@@ -337,6 +341,15 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
 
     if (movementForm.createLedger && movementForm.movementType === 'Stock In' && !activeBatch?.id) {
       setError('Select an active batch before adding this stock purchase to the ledger.');
+      return;
+    }
+
+    if (
+      movementForm.movementType === 'Stock Out' &&
+      selectedMovementItem &&
+      Number(movementForm.quantity || 0) > Number(selectedMovementItem.currentStock || 0)
+    ) {
+      setError(`${selectedMovementItem.name} cannot go below zero stock.`);
       return;
     }
 
