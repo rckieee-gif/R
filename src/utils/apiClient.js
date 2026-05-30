@@ -45,7 +45,19 @@ async function request(path, options = {}) {
 
       // Handle token expiration / unauthorized
       if (response.status === 401) {
-        if (onAuthFailureHandler && path !== '/api/auth/login') {
+        if (path.includes('/api/auth/login')) {
+          const contentType = response.headers.get('content-type');
+          let data = null;
+          if (contentType && contentType.includes('application/json')) {
+            data = await response.json();
+          } else {
+            data = await response.text();
+          }
+          const errorMessage = (data && data.error) || 'Invalid username or password';
+          throw new Error(errorMessage);
+        }
+
+        if (onAuthFailureHandler) {
           onAuthFailureHandler();
         }
         throw new Error('Your session has expired. Please sign in again.');
