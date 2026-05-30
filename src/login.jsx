@@ -15,9 +15,15 @@ export default function Login({ onLogin, onBack }) {
 
   useEffect(() => {
     if (error) {
-      setShake(true);
-      const timer = setTimeout(() => setShake(false), 400);
-      return () => clearTimeout(timer);
+      let resetTimer;
+      const shakeTimer = setTimeout(() => {
+        setShake(true);
+        resetTimer = setTimeout(() => setShake(false), 400);
+      }, 0);
+      return () => {
+        clearTimeout(shakeTimer);
+        clearTimeout(resetTimer);
+      };
     }
   }, [error]);
 

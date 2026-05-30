@@ -3,6 +3,7 @@ import { vi } from 'vitest';
 import InventoryManagement from '../InventoryManagement';
 import DailyLog from '../DailyLog';
 import TransactionLedger from '../TransactionLedger';
+import TodayOperations from '../TodayOperations';
 import NotificationProvider from '../Components/NotificationProvider';
 
 // Mock apiClient
@@ -79,6 +80,42 @@ describe('Public Viewer Mode Constraints', () => {
       // Form heading for creating entries should not be present
       expect(screen.queryByRole('button', { name: /save entry/i })).not.toBeInTheDocument();
       expect(screen.queryByPlaceholderText(/where did it go/i)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('TodayOperations in Viewer Mode', () => {
+    it('disables checklist clicks and hides quick actions', async () => {
+      const mockBatchOnTheWay = {
+        id: 2,
+        batchCode: 'BATCH-02',
+        startDate: '2026-06-10',
+        status: 'ON_THE_WAY',
+        targetHarvestDate: '2026-07-15',
+      };
+
+      render(
+        <NotificationProvider>
+          <TodayOperations
+            token={null}
+            activeBatch={mockBatchOnTheWay}
+            logs={[]}
+            setActiveScreen={vi.fn()}
+          />
+        </NotificationProvider>
+      );
+
+      // Verify checklist items are rendered but disabled
+      const cleanButton = screen.getByRole('button', { name: /chicken dung cleanup/i });
+      expect(cleanButton).toBeInTheDocument();
+      expect(cleanButton).toBeDisabled();
+
+      // Verify Quick Actions section and its buttons are not rendered
+      expect(screen.queryByText(/Quick Actions/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /manage batches/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /check feed stock/i })).not.toBeInTheDocument();
+
+      // Verify Actions tab button is also not rendered in mobile tabs view
+      expect(screen.queryByRole('button', { name: /^Actions$/i })).not.toBeInTheDocument();
     });
   });
 });

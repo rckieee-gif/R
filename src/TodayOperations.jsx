@@ -325,6 +325,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
   }
 
   const togglePrepItem = (key) => {
+    if (!token) return;
     setPrepChecklist((prev) => {
       const next = { ...prev, [key]: !prev[key] };
       if (activeBatchId) {
@@ -895,15 +896,17 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           >
             Checklist
           </button>
-          <button
-            type="button"
-            onClick={() => setMobileTab('actions')}
-            className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-all duration-200 active:scale-[0.98] ${
-              mobileTab === 'actions' ? 'border-app-accent text-app-accent font-black' : 'border-transparent text-app-text-secondary'
-            }`}
-          >
-            Actions
-          </button>
+          {token && (
+            <button
+              type="button"
+              onClick={() => setMobileTab('actions')}
+              className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-all duration-200 active:scale-[0.98] ${
+                mobileTab === 'actions' ? 'border-app-accent text-app-accent font-black' : 'border-transparent text-app-text-secondary'
+              }`}
+            >
+              Actions
+            </button>
+          )}
         </div>
 
         {/* Overview Tab Content */}
@@ -991,17 +994,24 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
                 <button
                   key={item.key}
                   type="button"
-                  onClick={() => togglePrepItem(item.key)}
-                  className={`group relative flex flex-col justify-between rounded-xl border p-5 text-left shadow-sm transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${
+                  onClick={() => token && togglePrepItem(item.key)}
+                  disabled={!token}
+                  className={`group relative flex flex-col justify-between rounded-xl border p-5 text-left shadow-sm transition-all duration-200 ${
+                    !token
+                      ? 'cursor-not-allowed opacity-80'
+                      : 'transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer'
+                  } ${
                     isChecked
                       ? 'border-app-success bg-app-success-bg/20 text-app-text'
-                      : 'border-app-border bg-app-card hover:border-app-accent text-app-text'
+                      : 'border-app-border bg-app-card text-app-text'
+                  } ${
+                    token && !isChecked ? 'hover:border-app-accent' : ''
                   }`}
                 >
                   <div className="w-full flex items-start justify-between gap-3">
                     <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                      isChecked ? 'bg-app-success-bg text-app-success' : 'bg-app-bg text-app-text-secondary group-hover:text-app-accent group-hover:bg-app-accent/5'
-                    } transition-colors`}>
+                      isChecked ? 'bg-app-success-bg text-app-success' : 'bg-app-bg text-app-text-secondary transition-colors'
+                    } ${token && !isChecked ? 'group-hover:text-app-accent group-hover:bg-app-accent/5' : ''}`}>
                       {item.key === 'dungCleanup' && (
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -1053,7 +1063,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
                       ) : (
-                        <svg className="h-6 w-6 text-app-text-secondary/30 group-hover:text-app-accent/60 transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <svg className={`h-6 w-6 text-app-text-secondary/30 transition-colors ${token ? 'group-hover:text-app-accent/60' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                           <circle cx="12" cy="12" r="10" />
                         </svg>
                       )}
@@ -1061,7 +1071,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
                   </div>
 
                   <div className="mt-4">
-                    <p className="font-extrabold text-sm font-hanken tracking-tight leading-tight group-hover:text-app-accent transition-colors">
+                    <p className={`font-extrabold text-sm font-hanken tracking-tight leading-tight transition-colors ${token ? 'group-hover:text-app-accent' : ''}`}>
                       {item.title}
                     </p>
                     <p className="mt-1.5 text-xs text-app-text-secondary leading-snug font-inter">
@@ -1075,8 +1085,9 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
         </section>
 
         {/* Action Quick Links */}
-        <section className={`mt-6 md:block ${mobileTab === 'actions' ? 'block' : 'hidden'}`}>
-          <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent mb-3 font-hanken">Quick Actions</h3>
+        {token && (
+          <section className={`mt-6 md:block ${mobileTab === 'actions' ? 'block' : 'hidden'}`}>
+            <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent mb-3 font-hanken">Quick Actions</h3>
           <div className="grid gap-3 sm:grid-cols-2">
             <button
               type="button"
@@ -1121,6 +1132,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
             </button>
           </div>
         </section>
+        )}
       </div>
     );
   }

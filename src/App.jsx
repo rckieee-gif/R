@@ -235,7 +235,7 @@ function App() {
   }, [activeBatchId]);
   const allowedScreens = useMemo(() => {
     if (isPublicViewer) {
-      return ['today', 'dashboard', 'batches', 'dailyLog', 'inventory', 'analytics'];
+      return ['today', 'dashboard'];
     }
 
     return [
