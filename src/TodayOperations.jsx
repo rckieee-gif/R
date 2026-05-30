@@ -205,6 +205,21 @@ function SummaryMetric({ label, value, detail, tone = 'neutral', isLoading = fal
   );
 }
 
+const TOOLTIP_DEFINITIONS = {
+  fcr: {
+    title: 'Feed Conversion Ratio (FCR)',
+    desc: 'FCR measures how efficiently birds convert feed into live body weight. Formula: Total Feed Consumed (kg) / Total Live Bird Weight (kg). A lower FCR means higher feed efficiency and profitability.',
+  },
+  'feed-variance': {
+    title: 'Feed Variance',
+    desc: 'The percentage difference between the actual feed consumed by your batch and the standard target broiler guidelines for their age. A high positive variance indicates over-feeding, while a negative variance indicates potential under-feeding or feed waste.',
+  },
+  age: {
+    title: 'Batch Age',
+    desc: 'The current age of the broiler batch in days. Day 1 starts when the chicks are unloaded in the building. Feed targets and mortality thresholds are determined dynamically based on this age.',
+  }
+};
+
 export default function TodayOperations({ token, activeBatch, logs = [], setActiveScreen, previewData = null }) {
   const activeBatchId = activeBatch?.id ?? null;
   const previewKey = previewData ? `preview:${previewData.batch?.id || activeBatchId || 'current'}` : null;
@@ -222,21 +237,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
   const renderTooltipModal = () => {
     if (!activeTooltip) return null;
 
-    const tooltips = {
-      fcr: {
-        title: 'Feed Conversion Ratio (FCR)',
-        desc: 'FCR measures how efficiently birds convert feed into live body weight. Formula: Total Feed Consumed (kg) / Total Live Bird Weight (kg). A lower FCR means higher feed efficiency and profitability.',
-      },
-      'feed-variance': {
-        title: 'Feed Variance',
-        desc: 'The percentage difference between the actual feed consumed by your batch and the standard target broiler guidelines for their age. A high positive variance indicates over-feeding, while a negative variance indicates potential under-feeding or feed waste.',
-      },
-      age: {
-        title: 'Batch Age',
-        desc: 'The current age of the broiler batch in days. Day 1 starts when the chicks are unloaded in the building. Feed targets and mortality thresholds are determined dynamically based on this age.',
-      }
-    }[activeTooltip];
-
+    const tooltips = TOOLTIP_DEFINITIONS[activeTooltip];
     if (!tooltips) return null;
 
     return (
@@ -245,7 +246,8 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           <button
             type="button"
             onClick={() => setActiveTooltip(null)}
-            className="absolute top-3 right-3 text-app-text-secondary hover:text-app-text transition-colors p-1"
+            className="absolute top-3 right-3 text-app-text-secondary hover:text-app-text transition-colors p-2 -m-2 rounded-lg focus-visible:ring-2 focus-visible:ring-app-accent"
+            aria-label="Close explanation"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -259,6 +261,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
             type="button"
             onClick={() => setActiveTooltip(null)}
             className="mt-5 w-full rounded-lg bg-app-accent py-2 text-xs font-bold text-app-on-accent shadow-sm active:scale-[0.98] transition-all duration-200 cursor-pointer font-inter"
+            aria-label="Close dialog"
           >
             Close
           </button>
@@ -347,6 +350,53 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
   const ageDay = activeBatch?.startDate ? getAgeDay(activeBatch.startDate, today) : null;
   const lastTargetDay = getLastBroilerTargetDay();
   const daysToHarvest = diffDays(activeBatch?.targetHarvestDate, today);
+
+  const status = getBatchStatus(activeBatch);
+  const daysUntilArrival = activeBatch?.startDate ? diffDays(activeBatch.startDate, today) : null;
+  const isOnTheWay = status === 'ON_THE_WAY' || status === 'ON THE WAY' || (daysUntilArrival !== null && daysUntilArrival > 0);
+  const isPostSummaryMode = isPostBatch(activeBatch);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && activeTooltip) {
+        setActiveTooltip(null);
+        return;
+      }
+
+      const target = e.target;
+      if (target && target.tagName) {
+        const tagName = target.tagName.toUpperCase();
+        if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || target.isContentEditable) {
+          return;
+        }
+      }
+
+      if (e.key === '1') {
+        setMobileTab('overview');
+      } else if (e.key === '2') {
+        if (isOnTheWay) {
+          setMobileTab('checklist');
+        } else if (isPostSummaryMode) {
+          setMobileTab('buildings');
+        } else {
+          setMobileTab('checklist');
+        }
+      } else if (e.key === '3') {
+        if (isOnTheWay) {
+          setMobileTab('actions');
+        } else if (isPostSummaryMode) {
+          setMobileTab('checks');
+        } else {
+          setMobileTab('warnings');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeTooltip, isOnTheWay, isPostSummaryMode]);
 
   useEffect(() => {
     if (!todayDataKey) {
@@ -572,7 +622,6 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
   const noEmployeeCount = buildingChecks.filter((check) => !check.hasAssignedEmployee).length;
   const dangerCount = abnormalWarnings.filter((warning) => warning.severity === 'danger').length;
   const todayTotals = buildLogTotals(todayLogs);
-  const isPostSummaryMode = isPostBatch(activeBatch);
 
   const postSummary = useMemo(() => {
     if (!activeBatch) return null;
@@ -759,10 +808,6 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
       </div>
     );
   }
-
-  const status = getBatchStatus(activeBatch);
-  const daysUntilArrival = activeBatch?.startDate ? diffDays(activeBatch.startDate, today) : null;
-  const isOnTheWay = status === 'ON_THE_WAY' || status === 'ON THE WAY' || (daysUntilArrival !== null && daysUntilArrival > 0);
 
   if (isOnTheWay) {
     const checklistItems = [
