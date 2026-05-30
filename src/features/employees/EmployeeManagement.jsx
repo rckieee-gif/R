@@ -18,6 +18,11 @@ const emptyForm = {
 
 const CORPO_GROUP_PREFIX = 'employees:';
 const EMPTY_COMPENSATION_STATE = { batchId: null, rows: [], drafts: {} };
+const DEFAULT_BUILDINGS = [
+  { id: 'A', name: 'A' },
+  { id: 'B', name: 'B' },
+  { id: 'C', name: 'C' }
+];
 
 function formatMoney(amount) {
   return `PHP ${Number(amount || 0).toLocaleString(undefined, {
@@ -351,13 +356,16 @@ export default function EmployeeManagement({ token, transactions = [], dailyLogs
       try {
         const [employeeData, buildingData] = await Promise.all([
           apiClient.get('/api/employees', { expectArray: true }),
-          apiClient.get('/api/buildings', { expectArray: true })
+          apiClient.get('/api/buildings', { expectArray: true }).catch((err) => {
+            console.warn('Falling back to default employee buildings:', err);
+            return DEFAULT_BUILDINGS;
+          })
         ]);
 
         if (isCancelled) return;
 
         setEmployees(employeeData.filter(isPaySheetEmployee));
-        setBuildings(buildingData);
+        setBuildings(buildingData.length ? buildingData : DEFAULT_BUILDINGS);
       } catch (err) {
         if (isCancelled) return;
         console.error(err);
