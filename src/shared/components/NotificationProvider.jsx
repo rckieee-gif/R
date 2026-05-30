@@ -48,6 +48,7 @@ export default function NotificationProvider({ children }) {
 
   const prompt = useCallback(({ title, message, placeholder = '', confirmText = 'Confirm', cancelText = 'Cancel', danger = false }) => {
     return new Promise((resolve) => {
+      setPromptValue('');
       setModalConfig({
         title,
         message,
@@ -63,14 +64,6 @@ export default function NotificationProvider({ children }) {
       });
     });
   }, []);
-
-  const [prevModalConfig, setPrevModalConfig] = useState(modalConfig);
-  if (modalConfig !== prevModalConfig) {
-    setPrevModalConfig(modalConfig);
-    if (modalConfig) {
-      setPromptValue('');
-    }
-  }
 
   // Handle Escape key to close modal
   useEffect(() => {

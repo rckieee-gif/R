@@ -1,0 +1,485 @@
+[2m11:52:32 PM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mThe result of getSnapshot should be cached to avoid an infinite loop
+[2m11:52:32 PM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mError[22m: Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops.
+[39m > getRootForUpdatedFiber node_modules/react-dom/cjs/react-dom-client.development.js:4624:10
+ > enqueueConcurrentRenderForLane node_modules/react-dom/cjs/react-dom-client.development.js:4588:13
+ > forceStoreRerender node_modules/react-dom/cjs/react-dom-client.development.js:8261:17
+ > updateStoreInstance node_modules/react-dom/cjs/react-dom-client.development.js:8241:38
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25989:19
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > commitHookEffectListMount node_modules/react-dom/cjs/react-dom-client.development.js:13249:28
+ > commitHookPassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:13336:10
+ > commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom-client.development.js:15484:12
+ > recursivelyTraversePassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:15439:10
+
+[2m11:52:32 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <TodayOperations> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m11:52:32 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m11:52:32 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m11:52:32 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m11:52:32 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m11:52:32 PM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m11:52:32 PM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m11:58:59 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m11:58:59 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m11:58:59 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m11:58:59 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m11:58:59 PM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mError[22m: Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops.
+[39m > getRootForUpdatedFiber node_modules/react-dom/cjs/react-dom-client.development.js:4624:10
+ > enqueueConcurrentRenderForLane node_modules/react-dom/cjs/react-dom-client.development.js:4588:13
+ > forceStoreRerender node_modules/react-dom/cjs/react-dom-client.development.js:8261:17
+ > updateStoreInstance node_modules/react-dom/cjs/react-dom-client.development.js:8241:38
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25989:19
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > commitHookEffectListMount node_modules/react-dom/cjs/react-dom-client.development.js:13249:28
+ > commitHookPassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:13336:10
+ > commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom-client.development.js:15484:12
+ > recursivelyTraversePassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:15439:10
+
+[2m11:58:59 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <TodayOperations> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m11:58:59 PM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m11:58:59 PM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m11:59:28 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m11:59:28 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m11:59:28 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m11:59:28 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m11:59:28 PM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mError[22m: Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops.
+[39m > getRootForUpdatedFiber node_modules/react-dom/cjs/react-dom-client.development.js:4624:10
+ > enqueueConcurrentRenderForLane node_modules/react-dom/cjs/react-dom-client.development.js:4588:13
+ > forceStoreRerender node_modules/react-dom/cjs/react-dom-client.development.js:8261:17
+ > updateStoreInstance node_modules/react-dom/cjs/react-dom-client.development.js:8241:38
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25989:19
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > commitHookEffectListMount node_modules/react-dom/cjs/react-dom-client.development.js:13249:28
+ > commitHookPassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:13336:10
+ > commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom-client.development.js:15484:12
+ > recursivelyTraversePassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:15439:10
+
+[2m11:59:28 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <TodayOperations> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m11:59:28 PM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m11:59:28 PM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:00:14 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:00:14 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:00:14 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:00:14 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:00:14 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mError[22m: Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops.
+[39m > getRootForUpdatedFiber node_modules/react-dom/cjs/react-dom-client.development.js:4624:10
+ > enqueueConcurrentRenderForLane node_modules/react-dom/cjs/react-dom-client.development.js:4588:13
+ > forceStoreRerender node_modules/react-dom/cjs/react-dom-client.development.js:8261:17
+ > updateStoreInstance node_modules/react-dom/cjs/react-dom-client.development.js:8241:38
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25989:19
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > commitHookEffectListMount node_modules/react-dom/cjs/react-dom-client.development.js:13249:28
+ > commitHookPassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:13336:10
+ > commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom-client.development.js:15484:12
+ > recursivelyTraversePassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:15439:10
+
+[2m12:00:14 AM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <TodayOperations> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m12:00:14 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:00:14 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:00:40 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:00:40 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:00:40 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:00:40 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:00:40 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mError[22m: Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops.
+[39m > getRootForUpdatedFiber node_modules/react-dom/cjs/react-dom-client.development.js:4624:10
+ > enqueueConcurrentRenderForLane node_modules/react-dom/cjs/react-dom-client.development.js:4588:13
+ > forceStoreRerender node_modules/react-dom/cjs/react-dom-client.development.js:8261:17
+ > updateStoreInstance node_modules/react-dom/cjs/react-dom-client.development.js:8241:38
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25989:19
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > commitHookEffectListMount node_modules/react-dom/cjs/react-dom-client.development.js:13249:28
+ > commitHookPassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:13336:10
+ > commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom-client.development.js:15484:12
+ > recursivelyTraversePassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:15439:10
+
+[2m12:00:40 AM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <TodayOperations> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m12:00:40 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:00:40 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:01:02 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:01:02 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:01:02 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:01:02 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:01:02 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mError[22m: Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops.
+[39m > getRootForUpdatedFiber node_modules/react-dom/cjs/react-dom-client.development.js:4624:10
+ > enqueueConcurrentRenderForLane node_modules/react-dom/cjs/react-dom-client.development.js:4588:13
+ > forceStoreRerender node_modules/react-dom/cjs/react-dom-client.development.js:8261:17
+ > updateStoreInstance node_modules/react-dom/cjs/react-dom-client.development.js:8241:38
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25989:19
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > commitHookEffectListMount node_modules/react-dom/cjs/react-dom-client.development.js:13249:28
+ > commitHookPassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:13336:10
+ > commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom-client.development.js:15484:12
+ > recursivelyTraversePassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:15439:10
+
+[2m12:01:02 AM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <TodayOperations> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m12:01:02 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:01:02 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:01:55 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:01:55 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:01:55 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:01:55 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:01:55 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mError[22m: Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops.
+[39m > getRootForUpdatedFiber node_modules/react-dom/cjs/react-dom-client.development.js:4624:10
+ > enqueueConcurrentRenderForLane node_modules/react-dom/cjs/react-dom-client.development.js:4588:13
+ > forceStoreRerender node_modules/react-dom/cjs/react-dom-client.development.js:8261:17
+ > updateStoreInstance node_modules/react-dom/cjs/react-dom-client.development.js:8241:38
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25989:19
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > commitHookEffectListMount node_modules/react-dom/cjs/react-dom-client.development.js:13249:28
+ > commitHookPassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:13336:10
+ > commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom-client.development.js:15484:12
+ > recursivelyTraversePassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:15439:10
+
+[2m12:01:55 AM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <TodayOperations> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m12:01:55 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:01:55 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:02:48 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:02:48 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:02:48 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:02:48 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:02:49 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mError[22m: Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops.
+[39m > getRootForUpdatedFiber node_modules/react-dom/cjs/react-dom-client.development.js:4624:10
+ > enqueueConcurrentRenderForLane node_modules/react-dom/cjs/react-dom-client.development.js:4588:13
+ > forceStoreRerender node_modules/react-dom/cjs/react-dom-client.development.js:8261:17
+ > updateStoreInstance node_modules/react-dom/cjs/react-dom-client.development.js:8241:38
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25989:19
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > commitHookEffectListMount node_modules/react-dom/cjs/react-dom-client.development.js:13249:28
+ > commitHookPassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:13336:10
+ > commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom-client.development.js:15484:12
+ > recursivelyTraversePassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:15439:10
+
+[2m12:02:49 AM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <TodayOperations> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m12:02:49 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:02:49 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:03:33 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mThe result of getSnapshot should be cached to avoid an infinite loop
+[2m12:03:33 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:03:33 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:03:33 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:03:33 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:03:33 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mError[22m: Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops.
+[39m > getRootForUpdatedFiber node_modules/react-dom/cjs/react-dom-client.development.js:4624:10
+ > enqueueConcurrentRenderForLane node_modules/react-dom/cjs/react-dom-client.development.js:4588:13
+ > forceStoreRerender node_modules/react-dom/cjs/react-dom-client.development.js:8261:17
+ > updateStoreInstance node_modules/react-dom/cjs/react-dom-client.development.js:8241:38
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25989:19
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > commitHookEffectListMount node_modules/react-dom/cjs/react-dom-client.development.js:13249:28
+ > commitHookPassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:13336:10
+ > commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom-client.development.js:15484:12
+ > recursivelyTraversePassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:15439:10
+
+[2m12:03:33 AM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <TodayOperations> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m12:03:33 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:03:33 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:18:15 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mThe result of getSnapshot should be cached to avoid an infinite loop
+[2m12:18:15 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:18:15 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:18:15 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:18:15 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:18:15 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mError[22m: Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops.
+[39m > getRootForUpdatedFiber node_modules/react-dom/cjs/react-dom-client.development.js:4624:10
+ > enqueueConcurrentRenderForLane node_modules/react-dom/cjs/react-dom-client.development.js:4588:13
+ > forceStoreRerender node_modules/react-dom/cjs/react-dom-client.development.js:8261:17
+ > updateStoreInstance node_modules/react-dom/cjs/react-dom-client.development.js:8241:38
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25989:19
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > commitHookEffectListMount node_modules/react-dom/cjs/react-dom-client.development.js:13249:28
+ > commitHookPassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:13336:10
+ > commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom-client.development.js:15484:12
+ > recursivelyTraversePassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:15439:10
+
+[2m12:18:15 AM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <TodayOperations> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m12:18:15 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:18:15 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:18:27 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mThe result of getSnapshot should be cached to avoid an infinite loop
+[2m12:18:27 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:18:27 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:18:27 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:18:27 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:18:27 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mError[22m: Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops.
+[39m > getRootForUpdatedFiber node_modules/react-dom/cjs/react-dom-client.development.js:4624:10
+ > enqueueConcurrentRenderForLane node_modules/react-dom/cjs/react-dom-client.development.js:4588:13
+ > forceStoreRerender node_modules/react-dom/cjs/react-dom-client.development.js:8261:17
+ > updateStoreInstance node_modules/react-dom/cjs/react-dom-client.development.js:8241:38
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25989:19
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > commitHookEffectListMount node_modules/react-dom/cjs/react-dom-client.development.js:13249:28
+ > commitHookPassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:13336:10
+ > commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom-client.development.js:15484:12
+ > recursivelyTraversePassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:15439:10
+
+[2m12:18:27 AM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <TodayOperations> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m12:18:27 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:18:27 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:18:36 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:18:36 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:18:36 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:18:36 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:18:36 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mError[22m: Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops.
+[39m > getRootForUpdatedFiber node_modules/react-dom/cjs/react-dom-client.development.js:4624:10
+ > enqueueConcurrentRenderForLane node_modules/react-dom/cjs/react-dom-client.development.js:4588:13
+ > forceStoreRerender node_modules/react-dom/cjs/react-dom-client.development.js:8261:17
+ > updateStoreInstance node_modules/react-dom/cjs/react-dom-client.development.js:8241:38
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25989:19
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > commitHookEffectListMount node_modules/react-dom/cjs/react-dom-client.development.js:13249:28
+ > commitHookPassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:13336:10
+ > commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom-client.development.js:15484:12
+ > recursivelyTraversePassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:15439:10
+
+[2m12:18:36 AM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <TodayOperations> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m12:18:36 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:18:36 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:20:26 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:20:26 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:20:26 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/public/current-batch[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:20:26 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/batches[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m12:20:26 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mError[22m: Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops.
+[39m > getRootForUpdatedFiber node_modules/react-dom/cjs/react-dom-client.development.js:4624:10
+ > enqueueConcurrentRenderForLane node_modules/react-dom/cjs/react-dom-client.development.js:4588:13
+ > forceStoreRerender node_modules/react-dom/cjs/react-dom-client.development.js:8261:17
+ > updateStoreInstance node_modules/react-dom/cjs/react-dom-client.development.js:8241:38
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25989:19
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > commitHookEffectListMount node_modules/react-dom/cjs/react-dom-client.development.js:13249:28
+ > commitHookPassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:13336:10
+ > commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom-client.development.js:15484:12
+ > recursivelyTraversePassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:15439:10
+
+[2m12:20:26 AM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <TodayOperations> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m12:20:26 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)
+[2m12:20:26 AM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mFailed to fetch batches: Error: Failed to load batches.
+    at fetchBatches (http://127.0.0.1:5173/src/useStore.js:193:11)

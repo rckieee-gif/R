@@ -51,14 +51,14 @@ export default class ErrorBoundary extends Component {
             </div>
 
             {/* Error Message Details */}
-            {this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <div className="mt-8 rounded-xl border border-app-border bg-app-bg/50 p-4 font-jetbrains text-xs">
                 <p className="font-bold text-app-danger flex items-center gap-1.5">
                   <span className="material-symbols-outlined text-sm">error</span>
                   {this.state.error.toString()}
                 </p>
                 
-                {this.state.errorInfo && (
+                {import.meta.env.DEV && this.state.errorInfo && (
                   <details className="mt-3 group">
                     <summary className="text-[11px] font-black uppercase tracking-wider text-app-text-secondary cursor-pointer hover:text-app-text transition-colors select-none">
                       Show technical stack trace
