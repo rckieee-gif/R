@@ -1,13 +1,22 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { apiClient } from './utils/apiClient';
 
 export default function Login({ onLogin, onBack }) {
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [shake, setShake] = useState(false);
 
   const cardRef = useRef(null);
   const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (error) {
+      setShake(true);
+      const timer = setTimeout(() => setShake(false), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const handleMouseMove = (e) => {
     const card = cardRef.current;
@@ -111,7 +120,7 @@ export default function Login({ onLogin, onBack }) {
           {/* Glassmorphism Login Card */}
           <div 
             ref={cardRef}
-            className="glass-card w-full rounded-[32px] p-8 flex flex-col items-center justify-center transition-all duration-100"
+            className={`glass-card w-full rounded-[32px] p-8 flex flex-col items-center justify-center transition-all duration-100 animate-login-card ${shake ? 'animate-login-shake' : ''}`}
             style={{
               transform: 'rotateX(0deg) rotateY(0deg)',
               boxShadow: '0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.2)'
@@ -120,7 +129,10 @@ export default function Login({ onLogin, onBack }) {
             <div className="card-content-3d w-full flex flex-col items-center">
               
               {/* Logo Section */}
-              <div className="flex flex-col items-center mb-8 text-center w-full blend-logo">
+              <div 
+                className="flex flex-col items-center mb-8 text-center w-full blend-logo animate-login-item"
+                style={{ transform: 'translateZ(40px)', animationDelay: '100ms' }}
+              >
                 <div className="w-24 h-24 mb-4 relative flex items-center justify-center rounded-full overflow-hidden bg-transparent">
                   <img 
                     alt="Octavio Poultry Logo" 
@@ -147,7 +159,7 @@ export default function Login({ onLogin, onBack }) {
               <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4 z-20 relative">
                 
                 {/* Username Input */}
-                <div className="relative">
+                <div className="relative animate-login-item" style={{ animationDelay: '200ms' }}>
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-app-text-secondary">
                     <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                       <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"></path>
@@ -166,7 +178,7 @@ export default function Login({ onLogin, onBack }) {
                 </div>
 
                 {/* Password Input */}
-                <div className="relative">
+                <div className="relative animate-login-item" style={{ animationDelay: '300ms' }}>
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-app-text-secondary">
                     <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                       <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"></path>
@@ -187,7 +199,8 @@ export default function Login({ onLogin, onBack }) {
                 {/* Submit Button */}
                 <button 
                   type="submit"
-                  className="mt-2 w-full text-app-on-accent font-extrabold py-3.5 px-4 rounded-full text-base tracking-wide btn-login-3d cursor-pointer hover:scale-[1.01] active:scale-[0.98] transition-all"
+                  className="mt-2 w-full text-app-on-accent font-extrabold py-3.5 px-4 rounded-full text-base tracking-wide btn-login-3d cursor-pointer hover:scale-[1.01] active:scale-[0.98] transition-all animate-login-item"
+                  style={{ animationDelay: '400ms' }}
                 >
                   Sign In
                 </button>

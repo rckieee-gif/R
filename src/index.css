@@ -100,7 +100,7 @@
 /* Stitch custom 3D utilities and animations (only active on desktop viewports) */
 @media (min-width: 768px) {
   .btn-3d {
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.3s ease;
     transform-style: preserve-3d;
   }
   
@@ -687,6 +687,83 @@ body {
 }
 
 .animate-modal-in {
-  animation: modal-scale-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: modal-scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes login-card-entrance {
+  from {
+    transform: perspective(1000px) rotateX(10deg) translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: perspective(1000px) rotateX(0deg) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes login-fade-slide-up {
+  from {
+    transform: translateY(15px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes login-card-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+@keyframes login-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-login-card {
+  animation: login-card-entrance 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-login-item {
+  opacity: 0;
+  animation: login-fade-slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-login-shake {
+  animation: login-card-shake 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-login-card {
+    animation: login-fade-in 0.2s ease-out forwards;
+  }
+  .animate-login-item {
+    opacity: 1;
+    animation: login-fade-in 0.2s ease-out forwards;
+  }
+  .animate-login-shake {
+    animation: none !important;
+  }
+}
+
+@keyframes assistant-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.animate-assistant-pulse {
+  animation: assistant-pulse 2s infinite ease-in-out;
+}
+
+@keyframes assistant-dot-pulse {
+  0%, 100% { transform: translateY(0) scale(0.85); opacity: 0.4; }
+  50% { transform: translateY(-3px) scale(1.1); opacity: 1; }
+}
+
+.animate-assistant-dot {
+  animation: assistant-dot-pulse 1.2s infinite ease-in-out;
 }
 

@@ -516,7 +516,7 @@ export default function AntigravityAssistant({
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={`h-14 w-14 rounded-full bg-app-accent text-app-on-accent shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 border-2 border-app-card cursor-pointer ${
-            isOpen ? 'rotate-90' : 'animate-bounce'
+            isOpen ? 'rotate-90' : 'animate-assistant-pulse'
           }`}
           title="Toggle FlockOps Assistant"
           aria-label="FlockOps Assistant"
@@ -610,9 +610,9 @@ export default function AntigravityAssistant({
 
             {isTyping && (
               <div className="flex items-center space-x-1 bg-app-card p-2.5 rounded-2xl rounded-bl-none max-w-[60px] shadow-sm border border-app-border">
-                <span className="h-1.5 w-1.5 bg-app-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                <span className="h-1.5 w-1.5 bg-app-accent rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                <span className="h-1.5 w-1.5 bg-app-accent rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                <span className="h-1.5 w-1.5 bg-app-accent rounded-full animate-assistant-dot" style={{ animationDelay: '0ms' }}></span>
+                <span className="h-1.5 w-1.5 bg-app-accent rounded-full animate-assistant-dot" style={{ animationDelay: '150ms' }}></span>
+                <span className="h-1.5 w-1.5 bg-app-accent rounded-full animate-assistant-dot" style={{ animationDelay: '300ms' }}></span>
               </div>
             )}
             <div ref={chatEndRef} />
