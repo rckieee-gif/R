@@ -47,13 +47,13 @@ export default function ConfirmVoidDialog({
                 onCancel();
                 setReason('');
               }}
-              className="flex-1 bg-app-bg text-app-text border border-app-border px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer font-hanken"
+              className="flex-1 bg-app-bg text-app-text border border-app-border px-3 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer font-hanken"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 bg-app-danger text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer font-hanken"
+              className="flex-1 bg-app-danger text-white px-3 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer font-hanken"
             >
               Void
             </button>

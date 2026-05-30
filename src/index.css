@@ -76,6 +76,10 @@
   --color-app-danger-bg: var(--app-danger-bg);
   --color-app-warning: var(--app-warning);
   --color-app-warning-bg: var(--app-warning-bg);
+  --color-app-info: var(--app-info);
+  --color-app-info-bg: var(--app-info-bg);
+  --color-app-gray: var(--app-gray);
+  --color-app-gray-bg: var(--app-gray-bg);
   --color-app-chart-target: var(--app-chart-target);
   --color-app-chart-actual: var(--app-chart-actual);
   --color-app-chart-compare: var(--app-chart-compare);
@@ -142,6 +146,10 @@
   --app-danger-bg: rgba(185, 28, 28, 0.1);
   --app-warning: #b45309;
   --app-warning-bg: rgba(180, 83, 9, 0.12);
+  --app-info: #0284c7;
+  --app-info-bg: rgba(2, 132, 199, 0.1);
+  --app-gray: #6b7280;
+  --app-gray-bg: rgba(107, 114, 128, 0.1);
   --app-chart-target: #475569;
   --app-chart-actual: #1d4ed8;
   --app-chart-compare: #0f766e;
@@ -195,6 +203,10 @@ body {
   --app-danger-bg: rgba(252, 165, 165, 0.14);
   --app-warning: #fde68a;
   --app-warning-bg: rgba(253, 230, 138, 0.14);
+  --app-info: #38bdf8;
+  --app-info-bg: rgba(56, 189, 248, 0.14);
+  --app-gray: #9ca3af;
+  --app-gray-bg: rgba(156, 163, 175, 0.14);
   --app-chart-target: #cbd5e1;
   --app-chart-actual: #93c5fd;
   --app-chart-compare: #5eead4;

@@ -1,15 +1,6 @@
 import { useSyncStatus } from '../../offline/syncStatus';
 import BatchSelector from '../../shared/components/BatchSelector';
 
-function CogIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2a2 2 0 1 1-4 0V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1A2 2 0 1 1 4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1A2 2 0 1 1 7.2 4.2l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1A2 2 0 1 1 20 7.2l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.6 1h.2a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.8.7Z" />
-    </svg>
-  );
-}
-
 function ThemeIcon({ isDarkMode }) {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -44,6 +35,45 @@ export default function Sidebar({
 }) {
   const { isOnline, pendingCount } = useSyncStatus();
 
+  const getScreenMeta = (id) => {
+    if (id === 'settings') return { label: 'Settings', icon: 'settings' };
+    const found = visibleNavItems.find(item => item.id === id);
+    if (found) return found;
+    const meta = {
+      today: { label: 'Today', icon: 'today' },
+      dailyLog: { label: 'Daily Logs', icon: 'edit_note' },
+      inventory: { label: 'Inventory', icon: 'inventory' },
+      batches: { label: 'Batches', icon: 'layers' },
+      harvest: { label: 'Harvest', icon: 'agriculture' },
+      analytics: { label: 'Analytics', icon: 'monitoring' },
+      ledger: { label: 'Ledger', icon: 'receipt_long' },
+      employees: { label: 'Employees', icon: 'group' },
+      paySummary: { label: 'Pay Summary', icon: 'payments' },
+      statement: { label: 'Statement', icon: 'description' },
+      dashboard: { label: 'Home', icon: 'home' }
+    };
+    return meta[id] || { label: id, icon: 'link' };
+  };
+
+  const groups = [
+    {
+      title: 'Daily Work',
+      items: ['today', 'dailyLog', 'inventory']
+    },
+    {
+      title: 'Farm Cycle',
+      items: ['batches', 'harvest', 'analytics']
+    },
+    {
+      title: 'Money & People',
+      items: ['ledger', 'employees', 'paySummary', 'statement']
+    },
+    {
+      title: 'System',
+      items: ['settings']
+    }
+  ];
+
   return (
     <aside 
       className={`no-print hidden md:flex flex-col h-screen sticky top-0 left-0 z-40 bg-gradient-to-b from-sidebar-grad-start to-sidebar-grad-end border-r border-white/10 text-white transition-all duration-300 flex-shrink-0 overflow-hidden ${
@@ -70,10 +100,10 @@ export default function Sidebar({
                 <div 
                   className={`w-2 h-2 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.5)] flex-shrink-0 ${
                     !isOnline 
-                      ? 'bg-amber-400 animate-pulse' 
+                      ? 'bg-app-warning animate-pulse' 
                       : pendingCount > 0 
-                        ? 'bg-sky-400 animate-pulse' 
-                        : 'bg-emerald-400'
+                        ? 'bg-app-info animate-pulse' 
+                        : 'bg-app-success'
                   }`}
                   title={!isOnline ? `Offline (${pendingCount} pending)` : pendingCount > 0 ? `Syncing ${pendingCount} items...` : 'Online & Synced'}
                 />
@@ -81,7 +111,7 @@ export default function Sidebar({
               <p className="text-[9px] font-bold text-white/60 truncate mt-0.5 uppercase tracking-widest font-jetbrains whitespace-nowrap flex items-center gap-1">
                 <span>{user?.role === 'Admin' ? 'ADMIN OWNER' : (user?.role || 'Viewer').toUpperCase()}</span>
                 {pendingCount > 0 && (
-                  <span className="px-1 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[8px] font-black leading-none uppercase animate-pulse">
+                  <span className="px-1.5 py-0.5 rounded bg-app-info/20 text-app-info text-[8px] font-black leading-none uppercase animate-pulse">
                     Sync: {pendingCount}
                   </span>
                 )}
@@ -104,41 +134,93 @@ export default function Sidebar({
       </div>
 
       {/* Navigation links */}
-      <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1.5 ag-scrollbar">
-        {visibleNavItems.map((item) => {
-          const isActive = currentScreen === item.id;
-          const showDividerAfter = ['dashboard', 'ledger', 'statement'];
-          return (
-            <div key={item.id}>
-              <button
-                onClick={() => setActiveScreen(item.id)}
-                className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 ${
-                  isNavMinimized ? 'px-4 gap-0 justify-center' : 'px-3.5 gap-3'
-                } ${
-                  isActive
-                    ? 'bg-[#70B8F9] text-[#0A2540] font-black shadow-sm'
-                    : 'bg-transparent text-white/90 hover:bg-white/10 hover:text-white'
-                }`}
-                title={item.label}
-              >
-                <span 
-                  className={`material-symbols-outlined text-[18px] transition-colors shrink-0 ${
-                    isActive ? 'text-[#0A2540]' : 'text-white/80 group-hover:text-white'
+      <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-4 ag-scrollbar">
+        {/* Standalone Home link if allowed */}
+        {allowedScreens.includes('dashboard') && (
+          <div className="space-y-1">
+            {(() => {
+              const item = getScreenMeta('dashboard');
+              const isActive = currentScreen === 'dashboard';
+              return (
+                <button
+                  onClick={() => setActiveScreen('dashboard')}
+                  className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 cursor-pointer ${
+                    isNavMinimized ? 'px-4 gap-0 justify-center' : 'px-3.5 gap-3'
+                  } ${
+                    isActive
+                      ? 'bg-[#70B8F9] text-[#0A2540] font-black shadow-sm'
+                      : 'bg-transparent text-white/90 hover:bg-white/10 hover:text-white'
                   }`}
-                  style={{ fontVariationSettings: "'FILL' 1" }}
+                  title={item.label}
                 >
-                  {item.icon}
-                </span>
-                
-                <span className={`transition-all duration-200 text-[10px] font-bold tracking-wider uppercase truncate ${
-                  isNavMinimized ? 'w-0 opacity-0 pointer-events-none' : 'w-28 opacity-100'
-                }`}>
-                  {item.label}
-                </span>
-              </button>
-              {showDividerAfter.includes(item.id) && (
+                  <span 
+                    className={`material-symbols-outlined text-[18px] transition-colors shrink-0 ${
+                      isActive ? 'text-[#0A2540]' : 'text-white/80 group-hover:text-white'
+                    }`}
+                    style={{ fontVariationSettings: "'FILL' 1" }}
+                  >
+                    {item.icon}
+                  </span>
+                  
+                  <span className={`transition-all duration-200 text-[10px] font-bold tracking-wider uppercase truncate ${
+                    isNavMinimized ? 'w-0 opacity-0 pointer-events-none' : 'w-28 opacity-100'
+                  }`}>
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })()}
+            <hr className="border-t border-white/10 my-2.5 mx-2" />
+          </div>
+        )}
+
+        {/* Grouped Sections */}
+        {groups.map((group, index) => {
+          const visibleItems = group.items.filter(id => allowedScreens.includes(id));
+          if (visibleItems.length === 0) return null;
+          return (
+            <div key={group.title} className="space-y-1.5">
+              {index > 0 && isNavMinimized && (
                 <hr className="border-t border-white/10 my-2 mx-2" />
               )}
+              {!isNavMinimized && (
+                <div className="text-[9px] font-black tracking-widest text-white/40 px-3.5 uppercase mt-3 mb-1.5 font-jetbrains">
+                  {group.title}
+                </div>
+              )}
+              {visibleItems.map(id => {
+                const item = getScreenMeta(id);
+                const isActive = currentScreen === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setActiveScreen(id)}
+                    className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 cursor-pointer ${
+                      isNavMinimized ? 'px-4 gap-0 justify-center' : 'px-3.5 gap-3'
+                    } ${
+                      isActive
+                        ? 'bg-[#70B8F9] text-[#0A2540] font-black shadow-sm'
+                        : 'bg-transparent text-white/90 hover:bg-white/10 hover:text-white'
+                    }`}
+                    title={item.label}
+                  >
+                    <span 
+                      className={`material-symbols-outlined text-[18px] transition-colors shrink-0 ${
+                        isActive ? 'text-[#0A2540]' : 'text-white/80 group-hover:text-white'
+                      }`}
+                      style={{ fontVariationSettings: "'FILL' 1" }}
+                    >
+                      {item.icon}
+                    </span>
+                    
+                    <span className={`transition-all duration-200 text-[10px] font-bold tracking-wider uppercase truncate ${
+                      isNavMinimized ? 'w-0 opacity-0 pointer-events-none' : 'w-28 opacity-100'
+                    }`}>
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           );
         })}
@@ -185,34 +267,9 @@ export default function Sidebar({
 
         {/* Utility Buttons */}
         <div className="flex flex-col gap-1.5">
-          {allowedScreens.includes('settings') && (
-            <button
-              onClick={() => setActiveScreen('settings')}
-              className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 ${
-                isNavMinimized ? 'px-4 gap-0 justify-center' : 'px-3.5 gap-3'
-              } ${
-                currentScreen === 'settings'
-                  ? 'bg-[#70B8F9] text-[#0A2540] font-black shadow-sm'
-                  : 'bg-transparent text-white/90 hover:bg-white/10 hover:text-white'
-              }`}
-              title="Settings"
-            >
-              <span className={`flex items-center justify-center h-[18px] w-[18px] shrink-0 transition-colors ${
-                currentScreen === 'settings' ? 'text-[#0A2540]' : 'text-white/80 group-hover:text-white'
-              }`}>
-                <CogIcon />
-              </span>
-              <span className={`transition-all duration-200 text-[10px] font-bold tracking-wider uppercase truncate ${
-                isNavMinimized ? 'w-0 opacity-0 pointer-events-none' : 'w-28 opacity-100'
-              }`}>
-                Settings
-              </span>
-            </button>
-          )}
-
           <button
             onClick={() => setIsDarkMode(!isDarkMode)}
-            className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 bg-transparent text-white/90 hover:bg-white/10 hover:text-white ${
+            className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 bg-transparent text-white/90 hover:bg-white/10 hover:text-white cursor-pointer ${
               isNavMinimized ? 'px-4 gap-0 justify-center' : 'px-3.5 gap-3'
             }`}
             title={isDarkMode ? "Use Light Mode" : "Use Dark Mode"}
@@ -229,7 +286,7 @@ export default function Sidebar({
 
           <button 
             onClick={handleLogout} 
-            className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 bg-transparent text-white/90 hover:bg-white/10 hover:text-white ${
+            className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 bg-transparent text-white/90 hover:bg-white/10 hover:text-white cursor-pointer ${
               isNavMinimized ? 'px-4 gap-0 justify-center' : 'px-3.5 gap-3'
             }`}
             title={isPublicViewer ? "Exit Preview" : "Logout"}

@@ -198,6 +198,23 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     [logs, activeBuilding]
   );
 
+  const buildingLoadedBirds = useMemo(() => {
+    if (selectedAssignment) return Number(selectedAssignment.buildingChicksLoaded || 0);
+    if (buildingAssignments.length > 0) return Number(buildingAssignments[0].buildingChicksLoaded || 0);
+    return 0;
+  }, [selectedAssignment, buildingAssignments]);
+
+  const buildingThreshold = useMemo(() => {
+    return Math.max(5, Math.ceil(buildingLoadedBirds * 0.005));
+  }, [buildingLoadedBirds]);
+
+  const buildingMortalityColor = useMemo(() => {
+    const val = buildingLogTotals.mortality;
+    if (val <= buildingThreshold) return 'text-app-success';
+    if (val <= buildingThreshold * 2) return 'text-app-warning';
+    return 'text-app-danger';
+  }, [buildingLogTotals.mortality, buildingThreshold]);
+
   const ageDay = useMemo(
     () => getAgeDay(activeBatch?.startDate, date),
     [activeBatch?.startDate, date]
@@ -563,7 +580,7 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
 
         <div className="bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
           <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary">Building Mortality</p>
-          <p className={`text-lg font-black mt-1 font-jetbrains ${buildingLogTotals.mortality > 0 ? 'text-app-danger' : 'text-app-success'}`}>
+          <p className={`text-lg font-black mt-1 font-jetbrains ${buildingMortalityColor}`}>
             {formatBirds(buildingLogTotals.mortality)} hd
           </p>
         </div>

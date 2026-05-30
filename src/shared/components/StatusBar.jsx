@@ -4,24 +4,24 @@ import { getAgeDay } from '../utils/broilerTargets';
 import { apiClient } from '../utils/apiClient';
 
 const WMO_CODES = {
-  0: { label: 'Clear sky', icon: 'wb_sunny', tone: 'text-amber-500' },
-  1: { label: 'Mainly clear', icon: 'wb_cloudy', tone: 'text-amber-400' },
-  2: { label: 'Partly cloudy', icon: 'wb_cloudy', tone: 'text-slate-400' },
-  3: { label: 'Overcast', icon: 'cloud', tone: 'text-slate-500' },
-  45: { label: 'Fog', icon: 'foggy', tone: 'text-slate-400' },
-  48: { label: 'Rime fog', icon: 'foggy', tone: 'text-slate-400' },
-  51: { label: 'Light drizzle', icon: 'water_drop', tone: 'text-sky-400' },
-  53: { label: 'Drizzle', icon: 'water_drop', tone: 'text-sky-400' },
-  55: { label: 'Dense drizzle', icon: 'rainy', tone: 'text-sky-500' },
-  61: { label: 'Slight rain', icon: 'rainy_light', tone: 'text-sky-400' },
-  63: { label: 'Moderate rain', icon: 'rainy', tone: 'text-sky-500' },
-  65: { label: 'Heavy rain', icon: 'rainy_heavy', tone: 'text-sky-600' },
-  80: { label: 'Light showers', icon: 'rainy_light', tone: 'text-sky-400' },
-  81: { label: 'Showers', icon: 'rainy', tone: 'text-sky-500' },
-  82: { label: 'Heavy showers', icon: 'rainy_heavy', tone: 'text-sky-600' },
-  95: { label: 'Thunderstorm', icon: 'thunderstorm', tone: 'text-rose-500' },
-  96: { label: 'T-storm + hail', icon: 'thunderstorm', tone: 'text-rose-500' },
-  99: { label: 'Severe storm', icon: 'thunderstorm', tone: 'text-rose-600' },
+  0: { label: 'Clear sky', icon: 'wb_sunny', tone: 'text-app-warning' },
+  1: { label: 'Mainly clear', icon: 'wb_cloudy', tone: 'text-app-warning' },
+  2: { label: 'Partly cloudy', icon: 'wb_cloudy', tone: 'text-app-text-secondary' },
+  3: { label: 'Overcast', icon: 'cloud', tone: 'text-app-text-secondary' },
+  45: { label: 'Fog', icon: 'foggy', tone: 'text-app-text-secondary' },
+  48: { label: 'Rime fog', icon: 'foggy', tone: 'text-app-text-secondary' },
+  51: { label: 'Light drizzle', icon: 'water_drop', tone: 'text-app-info' },
+  53: { label: 'Drizzle', icon: 'water_drop', tone: 'text-app-info' },
+  55: { label: 'Dense drizzle', icon: 'rainy', tone: 'text-app-info' },
+  61: { label: 'Slight rain', icon: 'rainy_light', tone: 'text-app-info' },
+  63: { label: 'Moderate rain', icon: 'rainy', tone: 'text-app-info' },
+  65: { label: 'Heavy rain', icon: 'rainy_heavy', tone: 'text-app-info' },
+  80: { label: 'Light showers', icon: 'rainy_light', tone: 'text-app-info' },
+  81: { label: 'Showers', icon: 'rainy', tone: 'text-app-info' },
+  82: { label: 'Heavy showers', icon: 'rainy_heavy', tone: 'text-app-info' },
+  95: { label: 'Thunderstorm', icon: 'thunderstorm', tone: 'text-app-danger' },
+  96: { label: 'T-storm + hail', icon: 'thunderstorm', tone: 'text-app-danger' },
+  99: { label: 'Severe storm', icon: 'thunderstorm', tone: 'text-app-danger' },
 };
 
 export default function StatusBar({ activeBatch }) {
@@ -29,7 +29,7 @@ export default function StatusBar({ activeBatch }) {
   const [buildings, setBuildings] = useState([]);
   const [weatherText, setWeatherText] = useState('Fetching weather…');
   const [weatherIcon, setWeatherIcon] = useState('cloud');
-  const [weatherTone, setWeatherTone] = useState('text-slate-400');
+  const [weatherTone, setWeatherTone] = useState('text-app-text-secondary');
 
   // Age Day calculation
   const activeBatchStartDate = activeBatch?.startDate;
@@ -77,7 +77,7 @@ export default function StatusBar({ activeBatch }) {
         const parsed = JSON.parse(cached);
         const todayForecast = parsed.data?.[0];
         if (todayForecast && active) {
-          const w = WMO_CODES[todayForecast.weatherCode] || { label: 'Clear', icon: 'wb_sunny', tone: 'text-amber-500' };
+          const w = WMO_CODES[todayForecast.weatherCode] || { label: 'Clear', icon: 'wb_sunny', tone: 'text-app-warning' };
           setTimeout(() => {
             setWeatherText(`${Math.round(todayForecast.tempMax)}°/${Math.round(todayForecast.tempMin)}° · ${w.label}`);
             setWeatherIcon(w.icon);
@@ -101,7 +101,7 @@ export default function StatusBar({ activeBatch }) {
         const tempMax = data.daily.temperature_2m_max[0];
         const tempMin = data.daily.temperature_2m_min[0];
         const code = data.daily.weather_code[0];
-        const w = WMO_CODES[code] || { label: 'Clear', icon: 'wb_sunny', tone: 'text-amber-500' };
+        const w = WMO_CODES[code] || { label: 'Clear', icon: 'wb_sunny', tone: 'text-app-warning' };
 
         setWeatherText(`${Math.round(tempMax)}°/${Math.round(tempMin)}° · ${w.label}`);
         setWeatherIcon(w.icon);
@@ -124,7 +124,7 @@ export default function StatusBar({ activeBatch }) {
         if (active) {
           setWeatherText('Weather forecast unavailable');
           setWeatherIcon('cloud_off');
-          setWeatherTone('text-slate-400');
+          setWeatherTone('text-app-text-secondary');
         }
       });
 
@@ -140,7 +140,7 @@ export default function StatusBar({ activeBatch }) {
       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5">
         {/* Batch Info */}
         <div className="flex items-center gap-1">
-          <span className="material-symbols-outlined text-[13px] text-app-accent leading-none">layers</span>
+          <span className="material-symbols-outlined text-[13px] text-app-text-secondary leading-none">layers</span>
           <span className="text-app-text font-black">
             {activeBatch?.id ? `Batch #${activeBatch.id}` : 'No Active Batch'}
           </span>
@@ -150,7 +150,7 @@ export default function StatusBar({ activeBatch }) {
 
         {/* Flock Age */}
         <div className="flex items-center gap-1">
-          <span className="material-symbols-outlined text-[13px] text-emerald-500 leading-none">calendar_today</span>
+          <span className="material-symbols-outlined text-[13px] text-app-text-secondary leading-none">calendar_today</span>
           <span>
             {ageDay !== null ? `Day ${ageDay}` : 'Day --'}
           </span>
@@ -160,7 +160,7 @@ export default function StatusBar({ activeBatch }) {
 
         {/* Building List */}
         <div className="flex items-center gap-1">
-          <span className="material-symbols-outlined text-[13px] text-indigo-400 leading-none">apartment</span>
+          <span className="material-symbols-outlined text-[13px] text-app-text-secondary leading-none">apartment</span>
           <span>{buildingString}</span>
         </div>
       </div>
@@ -170,7 +170,7 @@ export default function StatusBar({ activeBatch }) {
         <div className="flex items-center gap-1">
           <span 
             className={`w-1.5 h-1.5 rounded-full ${
-              isOnline ? 'bg-emerald-400 shadow-[0_0_6px_#10B981]' : 'bg-amber-400 animate-pulse shadow-[0_0_6px_#F59E0B]'
+              isOnline ? 'bg-app-success shadow-[0_0_6px_var(--app-success)]' : 'bg-app-warning animate-pulse shadow-[0_0_6px_var(--app-warning)]'
             }`}
           />
           <span className="hidden sm:inline">{isOnline ? 'Online' : 'Offline'}</span>
@@ -180,7 +180,7 @@ export default function StatusBar({ activeBatch }) {
         {pendingCount > 0 && (
           <>
             <span className="text-app-border/40 select-none">·</span>
-            <div className="flex items-center gap-1 text-sky-400 animate-pulse">
+            <div className="flex items-center gap-1 text-app-info animate-pulse">
               <span className="material-symbols-outlined text-[13px] leading-none">sync</span>
               <span>{pendingCount} pending</span>
             </div>

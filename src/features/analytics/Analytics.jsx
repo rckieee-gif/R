@@ -248,9 +248,17 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
 
         <div className="print-card bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
           <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Mortality</p>
-          <p className={`text-lg font-black mt-1 font-jetbrains ${totalMortality > 0 ? 'text-app-danger' : 'text-app-success'}`}>
-            {Number(totalMortality || 0).toLocaleString()} hd
-          </p>
+          {(() => {
+            const batchLoadedBirds = Number(activeBatch?.totalChicksLoaded || 0);
+            const batchThreshold = Math.max(5, Math.ceil(batchLoadedBirds * 0.005));
+            const mortalityColor = totalMortality <= batchThreshold ? 'text-app-success' :
+              totalMortality <= batchThreshold * 2 ? 'text-app-warning' : 'text-app-danger';
+            return (
+              <p className={`text-lg font-black mt-1 font-jetbrains ${mortalityColor}`}>
+                {Number(totalMortality || 0).toLocaleString()} hd
+              </p>
+            );
+          })()}
         </div>
       </div>
 

@@ -191,13 +191,13 @@ export default function NotificationProvider({ children }) {
               <div className="flex justify-end gap-3 mt-6">
                 <button
                   onClick={() => modalConfig.resolve(modalConfig.isPrompt ? null : false)}
-                  className="px-4.5 py-2.5 text-xs font-black uppercase tracking-wider text-app-text-secondary bg-app-bg hover:bg-app-border border border-app-border rounded-xl cursor-pointer transition-all duration-150 active:scale-95 font-jetbrains"
+                  className="px-4.5 h-11 md:h-10 flex items-center justify-center text-xs font-black uppercase tracking-wider text-app-text-secondary bg-app-bg hover:bg-app-border border border-app-border rounded-xl cursor-pointer transition-all duration-150 active:scale-95 font-jetbrains"
                 >
                   {modalConfig.cancelText}
                 </button>
                 <button
                   onClick={() => modalConfig.resolve(modalConfig.isPrompt ? promptValue : true)}
-                  className={`px-5 py-2.5 text-xs font-black uppercase tracking-wider rounded-xl cursor-pointer transition-all duration-150 active:scale-95 font-jetbrains shadow-sm ${
+                  className={`px-5 h-11 md:h-10 flex items-center justify-center text-xs font-black uppercase tracking-wider rounded-xl cursor-pointer transition-all duration-150 active:scale-95 font-jetbrains shadow-sm ${
                     modalConfig.danger
                       ? 'bg-app-danger text-app-on-accent hover:opacity-90'
                       : 'bg-app-accent text-app-on-accent hover:opacity-90'

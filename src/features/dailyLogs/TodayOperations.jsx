@@ -506,11 +506,15 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     [activeBatch?.totalChicksLoaded, ageDay]
   );
 
-  const feedStockAfterTodayTarget = useMemo(() => {
-    const totalFeedStock = feedItems.reduce((sum, item) => sum + Number(item.currentStock || 0), 0);
-    if (!dailyFeedTarget) return null;
-    return totalFeedStock - dailyFeedTarget.targetBags;
-  }, [dailyFeedTarget, feedItems]);
+  const totalFeedStock = useMemo(
+    () => feedItems.reduce((sum, item) => sum + Number(item.currentStock || 0), 0),
+    [feedItems]
+  );
+
+  const daysOfFeedRemaining = useMemo(() => {
+    if (!dailyFeedTarget || dailyFeedTarget.targetBags <= 0) return null;
+    return totalFeedStock / dailyFeedTarget.targetBags;
+  }, [dailyFeedTarget, totalFeedStock]);
 
   const abnormalWarnings = useMemo(() => {
     const warnings = [];
@@ -553,12 +557,15 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
       const threshold = Math.max(MORTALITY_WARNING_HEADS, Math.ceil(handledBirds * MORTALITY_WARNING_RATE));
 
       if (mortality > threshold) {
+        const isSevere = mortality > threshold * 2;
         warnings.push({
           key: `mortality-${log.id}`,
-          label: 'Unusual mortality',
-          severity: 'danger',
-          title: `${log.employeeName || `Building ${log.building}`} logged ${formatNumber(mortality)} mortality`,
-          detail: `Today is above the ${formatNumber(threshold)} head warning level for this share.`
+          label: isSevere ? 'Severe mortality' : 'Unusual mortality',
+          severity: isSevere ? 'danger' : 'warning',
+          title: `${log.employeeName || `Building ${log.building}`} logged ${isSevere ? 'severe ' : ''}(${formatNumber(mortality)}) mortality`,
+          detail: isSevere 
+            ? `Severe mortality is more than double the ${formatNumber(threshold)} head warning level.`
+            : `Today is above the ${formatNumber(threshold)} head warning level for this share.`
         });
       }
     });
@@ -573,14 +580,24 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
       });
     });
 
-    if (feedStockAfterTodayTarget !== null && feedStockAfterTodayTarget < 0) {
-      warnings.push({
-        key: 'feed-negative-target',
-        label: 'Feed stock risk',
-        severity: 'danger',
-        title: 'Feed stock will go negative against today target',
-        detail: `Current feed stock is short by ${formatNumber(Math.abs(feedStockAfterTodayTarget), 2)} sacks if the batch follows today's target.`
-      });
+    if (daysOfFeedRemaining !== null) {
+      if (daysOfFeedRemaining < 3) {
+        warnings.push({
+          key: 'feed-stock-critical',
+          label: 'Feed stock critical',
+          severity: 'danger',
+          title: `Critical Feed Stock: ${formatNumber(daysOfFeedRemaining, 1)} day${daysOfFeedRemaining === 1 ? '' : 's'} left`,
+          detail: `Current feed stock of ${formatNumber(totalFeedStock, 2)} sacks is short for the 3-day warning limit.`
+        });
+      } else if (daysOfFeedRemaining < 7) {
+        warnings.push({
+          key: 'feed-stock-low',
+          label: 'Feed stock low',
+          severity: 'warning',
+          title: `Low Feed Stock: ${formatNumber(daysOfFeedRemaining, 1)} day${daysOfFeedRemaining === 1 ? '' : 's'} left`,
+          detail: `Current feed stock of ${formatNumber(totalFeedStock, 2)} sacks is below the 7-day safety threshold.`
+        });
+      }
     }
 
     if (daysToHarvest !== null && daysToHarvest < 0) {
@@ -612,7 +629,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     }
 
     return warnings;
-  }, [activeBatch?.targetHarvestDate, ageDay, buildingChecks, daysToHarvest, feedStockAfterTodayTarget, lastTargetDay, lowFeedItems, todayLogs]);
+  }, [activeBatch?.targetHarvestDate, ageDay, buildingChecks, daysToHarvest, daysOfFeedRemaining, totalFeedStock, lastTargetDay, lowFeedItems, todayLogs]);
 
   const missingLogCount = buildingChecks.filter((check) => !check.hasLogToday).length;
   const noEmployeeCount = buildingChecks.filter((check) => !check.hasAssignedEmployee).length;
@@ -1680,9 +1697,18 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
                         </div>
                         <div>
                           <p className="text-[10px] font-bold uppercase text-app-text-secondary font-inter">Mortality</p>
-                          <p className={`text-sm font-black font-jetbrains ${check.todaysTotals.mortality > 0 ? 'text-app-danger' : 'text-app-success'}`}>
-                            {formatNumber(check.todaysTotals.mortality)}
-                          </p>
+                          {(() => {
+                            const buildingHandledBirds = check.assignedEmployees.reduce((sum, e) => sum + Number(e.handledBirds || 0), 0) || check.chicksLoaded;
+                            const buildingThreshold = Math.max(5, Math.ceil(buildingHandledBirds * 0.005));
+                            const mortalityVal = check.todaysTotals.mortality;
+                            const mortalityColor = mortalityVal <= buildingThreshold ? 'text-app-success' :
+                              mortalityVal <= buildingThreshold * 2 ? 'text-app-warning' : 'text-app-danger';
+                            return (
+                              <p className={`text-sm font-black font-jetbrains ${mortalityColor}`}>
+                                {formatNumber(mortalityVal)}
+                              </p>
+                            );
+                          })()}
                         </div>
                         <div>
                           <p className="text-[10px] font-bold uppercase text-app-text-secondary font-inter">Variance <InfoButton term="feed-variance" setActiveTooltip={setActiveTooltip} /></p>
@@ -1761,9 +1787,19 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
                 <p className="mt-1 text-lg font-black text-app-text font-jetbrains">
                   {formatNumber(todayTotals.feed, 2)} sx feed
                 </p>
-                <p className={`text-sm font-black font-jetbrains ${todayTotals.mortality > 0 ? 'text-app-danger' : 'text-app-success'}`}>
-                  {formatNumber(todayTotals.mortality)} mortality
-                </p>
+                {(() => {
+                  const todayTotalsHandled = todayLogs.reduce((sum, log) => sum + Number(log.handledBirds || 0), 0) || (
+                    buildingChecks.reduce((sum, check) => sum + check.chicksLoaded, 0)
+                  );
+                  const todayTotalsThreshold = Math.max(5, Math.ceil(todayTotalsHandled * 0.005));
+                  const todayMortalityColor = todayTotals.mortality <= todayTotalsThreshold ? 'text-app-success' :
+                    todayTotals.mortality <= todayTotalsThreshold * 2 ? 'text-app-warning' : 'text-app-danger';
+                  return (
+                    <p className={`text-sm font-black font-jetbrains ${todayMortalityColor}`}>
+                      {formatNumber(todayTotals.mortality)} mortality
+                    </p>
+                  );
+                })()}
               </div>
               <button
                 type="button"
@@ -1776,9 +1812,13 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
 
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
               <div className="rounded-lg bg-app-bg p-3">
-                <p className="font-bold uppercase text-app-text-secondary font-inter">Feed stock after target <InfoButton term="feed-variance" setActiveTooltip={setActiveTooltip} /></p>
-                <p className={`mt-1 font-black font-jetbrains ${feedStockAfterTodayTarget !== null && feedStockAfterTodayTarget < 0 ? 'text-app-danger' : 'text-app-text'}`}>
-                  {feedStockAfterTodayTarget === null ? '--' : `${formatNumber(feedStockAfterTodayTarget, 2)} sx`}
+                <p className="font-bold uppercase text-app-text-secondary font-inter">Days of Feed Remaining <InfoButton term="feed-variance" setActiveTooltip={setActiveTooltip} /></p>
+                <p className={`mt-1 font-black font-jetbrains ${
+                  daysOfFeedRemaining === null ? 'text-app-text-secondary' :
+                  daysOfFeedRemaining >= 7 ? 'text-app-success' :
+                  daysOfFeedRemaining >= 3 ? 'text-app-warning' : 'text-app-danger'
+                }`}>
+                  {daysOfFeedRemaining === null ? '--' : `${formatNumber(daysOfFeedRemaining, 1)} day${daysOfFeedRemaining === 1 ? '' : 's'}`}
                 </p>
               </div>
               <div className="rounded-lg bg-app-bg p-3">

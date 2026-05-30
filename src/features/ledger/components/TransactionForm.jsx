@@ -264,12 +264,12 @@ export default function TransactionForm({
         />
       </div>
 
-      <div className="flex space-x-2 mt-4 pt-2">
+      <div className="flex gap-2.5 pt-4">
         {editingId && (
           <button
             type="button"
             onClick={resetForm}
-            className="flex-1 bg-app-bg text-app-text border border-app-border px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            className="flex-1 bg-app-bg text-app-text border border-app-border px-3 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer"
           >
             Cancel
           </button>
@@ -277,7 +277,7 @@ export default function TransactionForm({
 
         <button
           type="submit"
-          className="flex-[2] bg-app-accent text-app-on-accent px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
+          className="flex-[2] bg-app-accent text-app-on-accent px-3 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
         >
           {editingId ? 'Update Record' : 'Save Record'}
         </button>

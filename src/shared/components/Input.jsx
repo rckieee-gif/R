@@ -15,8 +15,8 @@ export default React.forwardRef(function Input({
   const defaultId = React.useId();
   const inputId = id || defaultId;
   const borderStyle = error
-    ? 'border-app-danger focus:ring-app-danger/20 focus:border-app-danger'
-    : 'border-app-border focus:ring-app-accent/20 focus:border-app-accent';
+    ? 'border-app-danger focus:ring-app-danger focus:border-app-danger'
+    : 'border-app-border focus:ring-app-accent focus:border-app-accent';
 
   return (
     <div className={`w-full flex flex-col ${className}`}>
@@ -43,7 +43,7 @@ export default React.forwardRef(function Input({
           ref={ref}
           className={`w-full ${
             icon ? 'pl-11' : 'pl-4'
-          } pr-4 py-3 border rounded-xl bg-app-bg text-app-text text-sm outline-none focus:ring-4 transition-all duration-200 placeholder:text-app-text-secondary/50 font-medium ${borderStyle}`}
+          } pr-4 py-3 border rounded-xl bg-app-bg text-app-text text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-app-card transition-all duration-200 placeholder:text-app-text-secondary/50 font-medium ${borderStyle}`}
           {...props}
         />
       </div>

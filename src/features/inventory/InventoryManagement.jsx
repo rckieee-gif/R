@@ -543,7 +543,7 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
             </div>
           </div>
 
-          <button type="submit" className="w-full bg-app-accent text-app-on-accent p-3 rounded-xl font-bold shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer">
+          <button type="submit" className="w-full bg-app-accent text-app-on-accent h-11 md:h-10 flex items-center justify-center rounded-xl font-bold shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer">
             {editingItemId ? 'Update Item' : 'Save Item'}
           </button>
         </form>
@@ -737,7 +737,7 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
             </div>
           )}
 
-          <button type="submit" className="w-full bg-app-accent text-app-on-accent p-3 rounded-xl font-bold shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer">
+          <button type="submit" className="w-full bg-app-accent text-app-on-accent h-11 md:h-10 flex items-center justify-center rounded-xl font-bold shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer">
             Save Movement
           </button>
         </form>

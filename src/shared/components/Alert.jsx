@@ -20,7 +20,7 @@ export default function Alert({
   };
 
   const variants = {
-    info: 'bg-app-accent/5 border-app-accent/20 text-app-text-secondary select-none [&_.alert-icon]:text-app-accent [&_.alert-title]:text-app-text',
+    info: 'bg-app-info/5 border-app-info/20 text-app-text-secondary select-none [&_.alert-icon]:text-app-info [&_.alert-title]:text-app-text',
     success: 'bg-app-success/5 border-app-success/20 text-app-text-secondary select-none [&_.alert-icon]:text-app-success [&_.alert-title]:text-app-text',
     warning: 'bg-app-warning/5 border-app-warning/20 text-app-text-secondary select-none [&_.alert-icon]:text-app-warning [&_.alert-title]:text-app-text',
     error: 'bg-app-danger/5 border-app-danger/20 text-app-text-secondary select-none [&_.alert-icon]:text-app-danger [&_.alert-title]:text-app-text',

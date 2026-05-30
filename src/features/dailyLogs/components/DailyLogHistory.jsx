@@ -64,9 +64,17 @@ export default function DailyLogHistory({
 
               <div className="text-right">
                 <p className="text-[9px] text-app-text-secondary font-black uppercase tracking-wide">Mortality</p>
-                <p className={`text-xl font-black font-jetbrains ${log.mortality > 0 ? 'text-app-danger' : 'text-app-success'}`}>
-                  {formatBirds(log.mortality)} <span className="text-xs font-normal">hd</span>
-                </p>
+                {(() => {
+                  const logThreshold = Math.max(5, Math.ceil(Number(log.handledBirds || 0) * 0.005));
+                  const mortalityVal = Number(log.mortality || 0);
+                  const mortalityColor = mortalityVal <= logThreshold ? 'text-app-success' :
+                    mortalityVal <= logThreshold * 2 ? 'text-app-warning' : 'text-app-danger';
+                  return (
+                    <p className={`text-xl font-black font-jetbrains ${mortalityColor}`}>
+                      {formatBirds(log.mortality)} <span className="text-xs font-normal">hd</span>
+                    </p>
+                  );
+                })()}
               </div>
             </div>
 

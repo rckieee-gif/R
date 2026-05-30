@@ -442,7 +442,7 @@ export default function DailyLogForm({
             <button
               type="button"
               onClick={prevStep}
-              className="flex-1 bg-app-bg text-app-text border border-app-border px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm hover:bg-app-border active:scale-95 transition-all cursor-pointer font-jetbrains"
+              className="flex-1 bg-app-bg text-app-text border border-app-border px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-sm hover:bg-app-border active:scale-95 transition-all cursor-pointer font-jetbrains"
             >
               Back
             </button>
@@ -454,7 +454,7 @@ export default function DailyLogForm({
                   resetForm();
                   setStep(1);
                 }}
-                className="flex-1 bg-app-bg text-app-text border border-app-border px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm active:scale-95 transition-all cursor-pointer font-jetbrains"
+                className="flex-1 bg-app-bg text-app-text border border-app-border px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-sm active:scale-95 transition-all cursor-pointer font-jetbrains"
               >
                 Cancel
               </button>
@@ -465,14 +465,14 @@ export default function DailyLogForm({
             <button
               type="button"
               onClick={nextStep}
-              className="flex-[2] bg-app-accent text-app-on-accent px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer font-jetbrains"
+              className="flex-[2] bg-app-accent text-app-on-accent px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer font-jetbrains"
             >
-              Next
+              Next Step
             </button>
           ) : (
             <button
               type="submit"
-              className="flex-[2] bg-app-accent text-app-on-accent px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer font-jetbrains"
+              className="flex-[2] bg-app-accent text-app-on-accent px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer font-jetbrains"
             >
               {editingId ? 'Update Log' : 'Save Log'}
             </button>

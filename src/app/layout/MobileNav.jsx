@@ -1,14 +1,6 @@
+import { useState } from 'react';
 import BatchSelector from '../../shared/components/BatchSelector';
 import SyncStatusBadge from '../../shared/components/SyncStatusBadge';
-
-function CogIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2a2 2 0 1 1-4 0V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1A2 2 0 1 1 4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1A2 2 0 1 1 7.2 4.2l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1A2 2 0 1 1 20 7.2l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.6 1h.2a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.8.7Z" />
-    </svg>
-  );
-}
 
 function ThemeIcon({ isDarkMode }) {
   return (
@@ -29,8 +21,6 @@ export default function MobileNav({
   allowedScreens,
   currentScreen,
   setActiveScreen,
-  canManageOperations,
-  canViewFinancial,
   isPublicViewer,
   activeBatch,
   isBatchListLoading,
@@ -39,10 +29,25 @@ export default function MobileNav({
   isDarkMode,
   setIsDarkMode,
 }) {
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+
+  const moreScreens = [
+    { id: 'batches', label: 'Batches' },
+    { id: 'employees', label: 'Employees' },
+    { id: 'paySummary', label: 'Pay Summary' },
+    { id: 'ledger', label: 'Ledger' },
+    { id: 'harvest', label: 'Harvest' },
+    { id: 'analytics', label: 'Analytics' },
+    { id: 'statement', label: 'Statement' },
+    { id: 'settings', label: 'Settings' }
+  ];
+
+  const allowedMoreScreens = moreScreens.filter(item => allowedScreens.includes(item.id));
+  const isMoreActive = moreScreens.some(item => item.id === currentScreen);
 
   const getNavLinkClass = (screen) => {
     const isActive = currentScreen === screen;
-    return `px-3.5 py-1.5 rounded uppercase tracking-wider font-bold text-[10px] sm:text-xs whitespace-nowrap transition-all duration-200 ${
+    return `h-11 px-4 rounded uppercase tracking-wider font-bold text-[10px] sm:text-xs whitespace-nowrap transition-all duration-200 flex items-center justify-center ${
       isActive
         ? 'bg-app-accent text-app-on-accent shadow-sm scale-[1.02]'
         : 'bg-app-card text-app-text-secondary border border-app-border hover:bg-app-bg hover:text-app-text'
@@ -52,34 +57,66 @@ export default function MobileNav({
   return (
     <div className="no-print bg-app-card border-b border-app-border p-3 flex justify-between items-center sticky top-0 z-10 transition-colors duration-300 md:hidden">
       <div className="flex space-x-2 overflow-x-auto ag-scrollbar py-1">
-        <button onClick={() => setActiveScreen('today')} className={getNavLinkClass('today')}>Today</button>
-        <button onClick={() => setActiveScreen('dashboard')} className={getNavLinkClass('dashboard')}>Home</button>
-        {allowedScreens.includes('batches') && (
-          <button onClick={() => setActiveScreen('batches')} className={getNavLinkClass('batches')}>Batches</button>
+        {allowedScreens.includes('today') && (
+          <button onClick={() => setActiveScreen('today')} className={getNavLinkClass('today')}>Today</button>
         )}
-        {canManageOperations && (
-          <button onClick={() => setActiveScreen('employees')} className={getNavLinkClass('employees')}>Employees</button>
-        )}
-        {allowedScreens.includes('paySummary') && (
-          <button onClick={() => setActiveScreen('paySummary')} className={getNavLinkClass('paySummary')}>Pay Summary</button>
-        )}
-        {canViewFinancial && (
-          <button onClick={() => setActiveScreen('ledger')} className={getNavLinkClass('ledger')}>Ledger</button>
-        )}
-        {canViewFinancial && (
-          <button onClick={() => setActiveScreen('harvest')} className={getNavLinkClass('harvest')}>Harvest</button>
+        {allowedScreens.includes('dashboard') && (
+          <button onClick={() => setActiveScreen('dashboard')} className={getNavLinkClass('dashboard')}>Home</button>
         )}
         {allowedScreens.includes('dailyLog') && (
-          <button onClick={() => setActiveScreen('dailyLog')} className={getNavLinkClass('dailyLog')}>Daily Logs</button>
+          <button onClick={() => setActiveScreen('dailyLog')} className={getNavLinkClass('dailyLog')}>Logs</button>
         )}
         {allowedScreens.includes('inventory') && (
           <button onClick={() => setActiveScreen('inventory')} className={getNavLinkClass('inventory')}>Inventory</button>
         )}
-        {allowedScreens.includes('analytics') && (
-          <button onClick={() => setActiveScreen('analytics')} className={getNavLinkClass('analytics')}>Analytics</button>
-        )}
-        {canViewFinancial && (
-          <button onClick={() => setActiveScreen('statement')} className={getNavLinkClass('statement')}>Statement</button>
+        
+        {allowedMoreScreens.length > 0 && (
+          <div className="relative flex items-center">
+            <button
+              onClick={() => setIsMoreOpen(!isMoreOpen)}
+              className={`h-11 px-4 rounded uppercase tracking-wider font-bold text-[10px] sm:text-xs whitespace-nowrap transition-all duration-200 flex items-center justify-center gap-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-app-accent focus:ring-offset-1 focus:ring-offset-app-card ${
+                isMoreActive || isMoreOpen
+                  ? 'bg-app-accent text-app-on-accent shadow-sm scale-[1.02]'
+                  : 'bg-app-card text-app-text-secondary border border-app-border hover:bg-app-bg hover:text-app-text'
+              }`}
+            >
+              <span>More</span>
+              <span className="material-symbols-outlined text-xs leading-none shrink-0" aria-hidden="true">
+                {isMoreOpen ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}
+              </span>
+            </button>
+            
+            {isMoreOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40 bg-transparent" 
+                  onClick={() => setIsMoreOpen(false)}
+                />
+                
+                <div className="absolute left-0 top-full mt-1.5 z-50 w-44 bg-app-card border border-app-border rounded-xl shadow-2xl overflow-hidden py-1.5 animate-[fadeIn_0.15s_ease-out]">
+                  {allowedMoreScreens.map(item => {
+                    const isActive = currentScreen === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setActiveScreen(item.id);
+                          setIsMoreOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-inset focus:ring-app-accent ${
+                          isActive
+                            ? 'bg-[#70B8F9]/10 text-app-accent font-black'
+                            : 'text-app-text-secondary hover:bg-app-bg hover:text-app-text'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
         )}
       </div>
       
@@ -91,26 +128,14 @@ export default function MobileNav({
             isBatchListLoading={isBatchListLoading}
             onChange={handleBatchSelectorChange}
             variant="simple"
-            className="h-8 w-24"
+            className="h-11 w-24"
           />
         )}
-        {allowedScreens.includes('settings') && (
-          <button
-            onClick={() => setActiveScreen('settings')}
-            className={`h-8 w-8 inline-flex items-center justify-center rounded border transition ${
-              currentScreen === 'settings'
-                ? 'bg-app-accent text-app-on-accent border-app-accent'
-                : 'bg-app-card text-app-text-secondary border-app-border'
-            }`}
-            aria-label="Settings"
-          >
-            <CogIcon />
-          </button>
-        )}
-        <SyncStatusBadge className="h-8" />
+        <SyncStatusBadge className="h-11" />
         <button
           onClick={() => setIsDarkMode(!isDarkMode)}
-          className="h-8 w-8 inline-flex items-center justify-center rounded bg-app-card text-app-text-secondary border border-app-border transition"
+          className="h-11 w-11 inline-flex items-center justify-center rounded bg-app-card text-app-text-secondary border border-app-border transition cursor-pointer"
+          aria-label="Toggle theme"
         >
           <ThemeIcon isDarkMode={isDarkMode} />
         </button>

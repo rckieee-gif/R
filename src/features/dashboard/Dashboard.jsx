@@ -94,6 +94,9 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
   const totalMortality = logs.reduce((sum, log) => sum + Number(log.mortality || 0), 0);
   const liveBirds = Math.max(actualLoaded - totalMortality, 0);
   const mortalityPercent = actualLoaded > 0 ? (totalMortality / actualLoaded) * 100 : 0;
+  const batchThreshold = Math.max(5, Math.ceil(actualLoaded * 0.005));
+  const mortalityTone = totalMortality <= batchThreshold ? 'text-dashboard-success' :
+    totalMortality <= batchThreshold * 2 ? 'text-dashboard-warning' : 'text-dashboard-danger';
   const yieldVsPlanPercent = plannedFlock > 0 ? (liveBirds / plannedFlock) * 100 : null;
   const totalFeedBags = logs.reduce((sum, log) => sum + Number(log.feed || 0), 0);
   const totalFeedKg = totalFeedBags * BAG_WEIGHT_KG;
@@ -235,7 +238,7 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
               label="Mortality"
               value={formatNumber(totalMortality)}
               subtext={`${formatNumber(mortalityPercent, 2)}% rate`}
-              tone={totalMortality > 0 ? 'text-dashboard-danger' : 'text-dashboard-success'}
+              tone={mortalityTone}
               icon="medical_services"
             />
             <MetricCard
