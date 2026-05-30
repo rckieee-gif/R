@@ -1,12 +1,16 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { vi } from 'vitest';
-import TodayOperations from '../TodayOperations';
-import NotificationProvider from '../Components/NotificationProvider';
+import TodayOperations from '../features/dailyLogs/TodayOperations';
+import NotificationProvider from '../shared/components/NotificationProvider';
 
-// Mock getLastBroilerTargetDay
-vi.mock('../utils/broilerTargets', () => ({
-  getLastBroilerTargetDay: () => 35,
-}));
+// Mock getLastBroilerTargetDay partially
+vi.mock('../shared/utils/broilerTargets', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    getLastBroilerTargetDay: () => 35,
+  };
+});
 
 const mockBatchActive = {
   id: 1,

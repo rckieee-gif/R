@@ -1,13 +1,13 @@
 import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
-import InventoryManagement from '../InventoryManagement';
-import DailyLog from '../DailyLog';
-import TransactionLedger from '../TransactionLedger';
-import TodayOperations from '../TodayOperations';
-import NotificationProvider from '../Components/NotificationProvider';
+import InventoryManagement from '../features/inventory/InventoryManagement';
+import DailyLog from '../features/dailyLogs/DailyLog';
+import TransactionLedger from '../features/ledger/TransactionLedger';
+import TodayOperations from '../features/dailyLogs/TodayOperations';
+import NotificationProvider from '../shared/components/NotificationProvider';
 
 // Mock apiClient
-vi.mock('../utils/apiClient', () => ({
+vi.mock('../shared/utils/apiClient', () => ({
   apiClient: {
     get: vi.fn(),
     post: vi.fn(),

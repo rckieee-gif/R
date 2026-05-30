@@ -1,10 +1,10 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
-import TransactionLedger from '../TransactionLedger';
-import { apiClient } from '../utils/apiClient';
-import NotificationProvider from '../Components/NotificationProvider';
+import TransactionLedger from '../features/ledger/TransactionLedger';
+import { apiClient } from '../shared/utils/apiClient';
+import NotificationProvider from '../shared/components/NotificationProvider';
 
-vi.mock('../utils/apiClient', () => ({
+vi.mock('../shared/utils/apiClient', () => ({
   apiClient: {
     get: vi.fn(),
     post: vi.fn(),

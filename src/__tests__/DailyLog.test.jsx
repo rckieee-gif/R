@@ -1,11 +1,11 @@
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { vi } from 'vitest';
-import DailyLog from '../DailyLog';
-import { apiClient } from '../utils/apiClient';
-import NotificationProvider from '../Components/NotificationProvider';
+import DailyLog from '../features/dailyLogs/DailyLog';
+import { apiClient } from '../shared/utils/apiClient';
+import NotificationProvider from '../shared/components/NotificationProvider';
 
 // Mock the apiClient
-vi.mock('../utils/apiClient', () => ({
+vi.mock('../shared/utils/apiClient', () => ({
   apiClient: {
     get: vi.fn(),
     post: vi.fn(),

@@ -1,9 +1,9 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
-import InventoryManagement from '../InventoryManagement';
-import { apiClient } from '../utils/apiClient';
+import InventoryManagement from '../features/inventory/InventoryManagement';
+import { apiClient } from '../shared/utils/apiClient';
 
-vi.mock('../utils/apiClient', () => ({
+vi.mock('../shared/utils/apiClient', () => ({
   apiClient: {
     get: vi.fn(),
     post: vi.fn(),
