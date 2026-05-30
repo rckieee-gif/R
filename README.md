@@ -15,7 +15,7 @@ npm run dev
 Set the backend API URL with:
 
 ```txt
-VITE_API_BASE=https://octavio-poultry-farms.onrender.com
+VITE_API_BASE=https://octavio-farm-api.onrender.com
 ```
 
 For Render Static Site deployment:
