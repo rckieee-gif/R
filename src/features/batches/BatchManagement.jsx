@@ -103,6 +103,12 @@ export default function BatchManagement({
     [loadingsWithShares]
   );
 
+  const DEFAULT_BUILDINGS = [
+    { name: 'A' },
+    { name: 'B' },
+    { name: 'C' }
+  ];
+
   useEffect(() => {
     if (!token) return;
     const controller = new AbortController();
@@ -113,7 +119,10 @@ export default function BatchManagement({
           hasExternalBatchList
             ? Promise.resolve(null)
             : apiClient.get('/api/batches', { expectArray: true, signal: controller.signal }),
-          apiClient.get('/api/buildings', { expectArray: true, signal: controller.signal })
+          apiClient.get('/api/buildings', { expectArray: true, signal: controller.signal }).catch((err) => {
+            console.warn('Falling back to default buildings:', err);
+            return DEFAULT_BUILDINGS;
+          })
         ]);
 
         if (controller.signal.aborted) return;
@@ -134,6 +143,7 @@ export default function BatchManagement({
       controller.abort();
     };
   }, [hasExternalBatchList, setBatches, token]);
+
 
   const resetForm = () => {
     setEditingBatchId(null);

@@ -290,6 +290,12 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     return warnings;
   }, [activeBuilding, ageDay, feedStockAfterLog, feedTarget, isLoading, mortality, selectedAssignment, selectedFeedItem, targetVarianceKg]);
 
+  const DEFAULT_BUILDINGS = [
+    { name: 'A' },
+    { name: 'B' },
+    { name: 'C' }
+  ];
+
   useEffect(() => {
     if (!token) return undefined;
 
@@ -298,8 +304,14 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     const fetchDailyLogMasters = async () => {
       try {
         const [buildingData, feedData] = await Promise.all([
-          apiClient.get('/api/buildings', { expectArray: true }),
-          apiClient.get('/api/inventory/items?category=Feed', { expectArray: true })
+          apiClient.get('/api/buildings', { expectArray: true }).catch((err) => {
+            console.warn('Falling back to default buildings:', err);
+            return DEFAULT_BUILDINGS;
+          }),
+          apiClient.get('/api/inventory/items?category=Feed', { expectArray: true }).catch((err) => {
+            console.warn('Falling back to default feed items:', err);
+            return [];
+          })
         ]);
 
         if (isCancelled) return;
@@ -322,6 +334,7 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
       isCancelled = true;
     };
   }, [token]);
+
 
   useEffect(() => {
     if (!token || !activeBatchId) return undefined;
