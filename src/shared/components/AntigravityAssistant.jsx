@@ -516,8 +516,10 @@ export default function AntigravityAssistant({
       <div className="no-print fixed bottom-6 right-6 z-50">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`h-14 w-14 rounded-full bg-app-accent text-app-on-accent shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 border-2 border-app-card cursor-pointer overflow-hidden ${
-            isOpen ? 'rotate-90' : 'animate-assistant-pulse'
+          className={`h-14 w-14 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer overflow-hidden ${
+            isOpen 
+              ? 'bg-app-accent text-app-on-accent shadow-lg border-2 border-app-card rotate-90' 
+              : 'bg-transparent text-transparent border-0'
           }`}
           title="Toggle FlockOps Assistant"
           aria-label="FlockOps Assistant"
@@ -546,7 +548,7 @@ export default function AntigravityAssistant({
           <div className="absolute inset-0 pointer-events-none opacity-30 bg-app-accent/5" aria-hidden="true" />
           <div className="relative bg-app-accent text-app-on-accent p-4 flex items-center justify-between border-b border-app-border">
             <div className="flex items-center space-x-3">
-              <div className="h-9 w-9 rounded-full bg-app-on-accent/15 border border-app-on-accent/30 flex items-center justify-center overflow-hidden">
+              <div className="h-9 w-9 flex items-center justify-center overflow-hidden">
                 <EggModel />
               </div>
               <div>
