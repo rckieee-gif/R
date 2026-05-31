@@ -6,6 +6,13 @@ import { server } from './test/mswServer';
 // Mock window.scrollTo since jsdom doesn't implement it
 window.scrollTo = vi.fn();
 
+// Mock ResizeObserver for test environment
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 // Robust memory-backed Storage mock to avoid jsdom localStorage issues
 class MemoryStorage {
   constructor() {

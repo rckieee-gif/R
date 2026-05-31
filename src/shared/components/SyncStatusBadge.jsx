@@ -6,7 +6,8 @@ export default function SyncStatusBadge({ className = '' }) {
   return (
     <button
       type="button"
-      onClick={() => {
+      onClick={(e) => {
+        e.stopPropagation();
         window.dispatchEvent(new CustomEvent('open-sync-drawer'));
       }}
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[9px] font-black uppercase tracking-wider font-jetbrains shrink-0 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-app-accent focus:ring-offset-1 focus:ring-offset-app-card cursor-pointer hover:scale-[1.02] active:scale-[0.98] ${

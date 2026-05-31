@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { openDatabase, removeFromQueue, updateQueueStatus, getQueue } from './db';
 import { processSyncQueue } from './syncQueue';
 import { apiClient } from '../shared/utils/apiClient';
@@ -66,6 +66,22 @@ export default function SyncDrawer({ isOpen, onClose }) {
   const [editingItem, setEditingItem] = useState(null);
   const [editPayloadStr, setEditPayloadStr] = useState('');
   const [editError, setEditError] = useState('');
+
+  // Accidental close protection (double clicks, click propagation, mouseup mismatch)
+  const openTimeRef = useRef(0);
+  const prevIsOpenRef = useRef(isOpen);
+
+  if (isOpen && !prevIsOpenRef.current) {
+    openTimeRef.current = Date.now();
+  }
+  prevIsOpenRef.current = isOpen;
+
+  const handleBackdropClick = (e) => {
+    if (Date.now() - openTimeRef.current < 300) {
+      return;
+    }
+    onClose();
+  };
 
   const reloadQueue = useCallback(async () => {
     try {
@@ -151,7 +167,7 @@ export default function SyncDrawer({ isOpen, onClose }) {
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 transition-opacity duration-300 animate-fade-in"
-        onClick={onClose}
+        onClick={handleBackdropClick}
       />
 
       {/* Drawer Container */}

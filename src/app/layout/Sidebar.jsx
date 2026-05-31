@@ -105,7 +105,10 @@ export default function Sidebar({
                         ? 'bg-app-info animate-pulse' 
                         : 'bg-app-success'
                   }`}
-                  onClick={() => window.dispatchEvent(new CustomEvent('open-sync-drawer'))}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.dispatchEvent(new CustomEvent('open-sync-drawer'));
+                  }}
                   title={!isOnline ? `Offline (${pendingCount} pending) - Click to open Sync Queue` : pendingCount > 0 ? `Syncing ${pendingCount} items... - Click to open Sync Queue` : 'Online & Synced - Click to open Sync Queue'}
                 />
               </div>
@@ -114,7 +117,10 @@ export default function Sidebar({
                 {pendingCount > 0 && (
                   <button
                     type="button"
-                    onClick={() => window.dispatchEvent(new CustomEvent('open-sync-drawer'))}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.dispatchEvent(new CustomEvent('open-sync-drawer'));
+                    }}
                     className="px-1.5 py-0.5 rounded bg-app-info/20 text-app-info text-[8px] font-black leading-none uppercase animate-pulse cursor-pointer hover:bg-app-info/30 transition-colors border-0 text-left font-jetbrains"
                   >
                     Sync: {pendingCount}

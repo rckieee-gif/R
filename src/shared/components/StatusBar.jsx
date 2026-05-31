@@ -169,7 +169,10 @@ export default function StatusBar({ activeBatch }) {
         {/* Online / Offline Status */}
         <button
           type="button"
-          onClick={() => window.dispatchEvent(new CustomEvent('open-sync-drawer'))}
+          onClick={(e) => {
+            e.stopPropagation();
+            window.dispatchEvent(new CustomEvent('open-sync-drawer'));
+          }}
           className="flex items-center gap-1 hover:text-app-text cursor-pointer transition-colors duration-200"
           title="Open Sync Queue"
         >
@@ -186,7 +189,10 @@ export default function StatusBar({ activeBatch }) {
         {/* Sync Status / Pending Items */}
         <button
           type="button"
-          onClick={() => window.dispatchEvent(new CustomEvent('open-sync-drawer'))}
+          onClick={(e) => {
+            e.stopPropagation();
+            window.dispatchEvent(new CustomEvent('open-sync-drawer'));
+          }}
           className={`flex items-center gap-1 hover:text-app-text cursor-pointer transition-all duration-200 ${
             pendingCount > 0 ? 'text-app-info animate-pulse' : 'text-app-text-secondary'
           }`}
