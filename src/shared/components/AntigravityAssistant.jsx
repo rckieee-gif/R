@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { BAG_WEIGHT_KG, getAgeDay } from '../utils/broilerTargets';
 import { apiClient } from '../utils/apiClient';
+import EggModel from './EggModel';
 
 const quickActionClass = "text-[10px] font-black py-1.5 px-2.5 rounded-full bg-app-card text-app-text border border-app-border hover:bg-app-bg hover:text-app-accent active:scale-95 transition-all cursor-pointer flex items-center space-x-1 shadow-sm";
 
@@ -529,12 +530,7 @@ export default function AntigravityAssistant({
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           ) : (
-            <model-viewer
-              src="/Egg.glb"
-              auto-rotate
-              interaction-prompt="none"
-              style={{ width: '100%', height: '100%', pointerEvents: 'none', backgroundColor: 'transparent' }}
-            />
+            <EggModel />
           )}
         </button>
         {!isOpen && (
@@ -551,12 +547,7 @@ export default function AntigravityAssistant({
           <div className="relative bg-app-accent text-app-on-accent p-4 flex items-center justify-between border-b border-app-border">
             <div className="flex items-center space-x-3">
               <div className="h-9 w-9 rounded-full bg-app-on-accent/15 border border-app-on-accent/30 flex items-center justify-center overflow-hidden">
-                <model-viewer
-                  src="/Egg.glb"
-                  auto-rotate
-                  interaction-prompt="none"
-                  style={{ width: '100%', height: '100%', pointerEvents: 'none', backgroundColor: 'transparent' }}
-                />
+                <EggModel />
               </div>
               <div>
                 <h3 className="text-sm font-black tracking-wider uppercase">FlockOps Assistant</h3>
