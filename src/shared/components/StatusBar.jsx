@@ -167,25 +167,34 @@ export default function StatusBar({ activeBatch }) {
 
       <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
         {/* Online / Offline Status */}
-        <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('open-sync-drawer'))}
+          className="flex items-center gap-1 hover:text-app-text cursor-pointer transition-colors duration-200"
+          title="Open Sync Queue"
+        >
           <span 
             className={`w-1.5 h-1.5 rounded-full ${
               isOnline ? 'bg-app-success shadow-[0_0_6px_var(--app-success)]' : 'bg-app-warning animate-pulse shadow-[0_0_6px_var(--app-warning)]'
             }`}
           />
           <span className="hidden sm:inline">{isOnline ? 'Online' : 'Offline'}</span>
-        </div>
+        </button>
+
+        <span className="text-app-border/40 select-none">·</span>
 
         {/* Sync Status / Pending Items */}
-        {pendingCount > 0 && (
-          <>
-            <span className="text-app-border/40 select-none">·</span>
-            <div className="flex items-center gap-1 text-app-info animate-pulse">
-              <span className="material-symbols-outlined text-[13px] leading-none">sync</span>
-              <span>{pendingCount} pending</span>
-            </div>
-          </>
-        )}
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('open-sync-drawer'))}
+          className={`flex items-center gap-1 hover:text-app-text cursor-pointer transition-all duration-200 ${
+            pendingCount > 0 ? 'text-app-info animate-pulse' : 'text-app-text-secondary'
+          }`}
+          title="Open Sync Queue"
+        >
+          <span className="material-symbols-outlined text-[13px] leading-none">sync</span>
+          <span>Queue ({pendingCount})</span>
+        </button>
 
         <span className="text-app-border/40 select-none">·</span>
 

@@ -98,22 +98,27 @@ export default function Sidebar({
               <div className="flex items-center gap-1.5">
                 <h2 className="text-xs font-extrabold text-white tracking-tighter truncate uppercase font-hanken whitespace-nowrap">Octavio Farms</h2>
                 <div 
-                  className={`w-2 h-2 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.5)] flex-shrink-0 ${
+                  className={`w-2 h-2 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.5)] flex-shrink-0 cursor-pointer hover:scale-110 transition-transform ${
                     !isOnline 
                       ? 'bg-app-warning animate-pulse' 
                       : pendingCount > 0 
                         ? 'bg-app-info animate-pulse' 
                         : 'bg-app-success'
                   }`}
-                  title={!isOnline ? `Offline (${pendingCount} pending)` : pendingCount > 0 ? `Syncing ${pendingCount} items...` : 'Online & Synced'}
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-sync-drawer'))}
+                  title={!isOnline ? `Offline (${pendingCount} pending) - Click to open Sync Queue` : pendingCount > 0 ? `Syncing ${pendingCount} items... - Click to open Sync Queue` : 'Online & Synced - Click to open Sync Queue'}
                 />
               </div>
               <p className="text-[9px] font-bold text-white/60 truncate mt-0.5 uppercase tracking-widest font-jetbrains whitespace-nowrap flex items-center gap-1">
                 <span>{user?.role === 'Admin' ? 'ADMIN OWNER' : (user?.role || 'Viewer').toUpperCase()}</span>
                 {pendingCount > 0 && (
-                  <span className="px-1.5 py-0.5 rounded bg-app-info/20 text-app-info text-[8px] font-black leading-none uppercase animate-pulse">
+                  <button
+                    type="button"
+                    onClick={() => window.dispatchEvent(new CustomEvent('open-sync-drawer'))}
+                    className="px-1.5 py-0.5 rounded bg-app-info/20 text-app-info text-[8px] font-black leading-none uppercase animate-pulse cursor-pointer hover:bg-app-info/30 transition-colors border-0 text-left font-jetbrains"
+                  >
                     Sync: {pendingCount}
-                  </span>
+                  </button>
                 )}
               </p>
             </div>

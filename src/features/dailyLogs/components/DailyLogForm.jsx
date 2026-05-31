@@ -19,7 +19,8 @@ function formatDecimal(value, digits = 2) {
   });
 }
 
-const BAG_WEIGHT_KG = 50;
+const MORTALITY_WARNING_HEADS = 5;
+const MORTALITY_WARNING_RATE = 0.005;
 
 export default function DailyLogForm({
   handleSubmit,
@@ -34,10 +35,7 @@ export default function DailyLogForm({
   buildingAssignments,
   isLoading,
   selectedAssignment,
-  ageDay,
   feedTarget,
-  employeeActualToDate,
-  targetVarianceKg,
   actualFcr,
   feedItemId,
   setFeedItemId,
@@ -84,10 +82,19 @@ export default function DailyLogForm({
     if (step === 1 && !date) return;
     if (step === 2 && !selectedEmployeeId) return;
     if (step === 3) {
-      const feedQty = parseFloat(feedConsumed || 0);
-      if (feedQty > 0 && !feedItemId) return;
+      if (feedConsumed !== '') {
+        const parsedFeed = parseFloat(feedConsumed);
+        if (isNaN(parsedFeed) || parsedFeed < 0) return;
+        if (parsedFeed > 0 && !feedItemId) return;
+      }
     }
-    setStep((prev) => Math.min(prev + 1, 4));
+    if (step === 4) {
+      if (mortality !== '') {
+        const parsedMort = parseInt(mortality, 10);
+        if (isNaN(parsedMort) || parsedMort < 0) return;
+      }
+    }
+    setStep((prev) => Math.min(prev + 1, 7));
   };
 
   const prevStep = () => {
@@ -114,17 +121,17 @@ export default function DailyLogForm({
       )}
 
       {/* Wizard Stepper Header */}
-      <div className="mb-6">
+      <div className="mb-6 animate-toast-in">
         <div className="flex items-center justify-between text-xs font-bold text-app-text-secondary mb-3">
           <span className="uppercase tracking-wider font-jetbrains text-[10px]">
             {editingId ? 'Edit Entry Wizard' : 'New Entry Wizard'}
           </span>
-          <span className="font-jetbrains">Step {step} of 4</span>
+          <span className="font-jetbrains text-[10px]">Step {step} of 7</span>
         </div>
         
         {/* Stepper Progress Bar */}
         <div className="flex gap-1.5 h-1.5 rounded-full bg-app-bg overflow-hidden border border-app-border">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4, 5, 6, 7].map((i) => (
             <div
               key={i}
               className={`flex-1 h-full rounded-full transition-all duration-300 ${
@@ -135,11 +142,14 @@ export default function DailyLogForm({
         </div>
 
         {/* Step Titles */}
-        <div className="grid grid-cols-4 text-center mt-2.5 text-[9px] font-black uppercase tracking-wider text-app-text-secondary">
-          <span className={step === 1 ? 'text-app-accent' : ''}>1. Bldg & Date</span>
+        <div className="grid grid-cols-7 text-center mt-2.5 text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-app-text-secondary gap-0.5">
+          <span className={step === 1 ? 'text-app-accent' : ''}>1. Bldg</span>
           <span className={step === 2 ? 'text-app-accent' : ''}>2. Worker</span>
-          <span className={step === 3 ? 'text-app-accent' : ''}>3. Log Info</span>
-          <span className={step === 4 ? 'text-app-accent' : ''}>4. Review</span>
+          <span className={step === 3 ? 'text-app-accent' : ''}>3. Feed</span>
+          <span className={step === 4 ? 'text-app-accent' : ''}>4. Mortality</span>
+          <span className={step === 5 ? 'text-app-accent' : ''}>5. Weight</span>
+          <span className={step === 6 ? 'text-app-accent' : ''}>6. Warnings</span>
+          <span className={step === 7 ? 'text-app-accent' : ''}>7. Save</span>
         </div>
       </div>
 
@@ -236,82 +246,46 @@ export default function DailyLogForm({
           </div>
         )}
 
-        {/* STEP 3: Logs Info & Targets */}
+        {/* STEP 3: Enter Feed Used */}
         {step === 3 && (
           <div className="space-y-4 animate-toast-in">
-            {/* Target curve block */}
-            <div className="rounded-xl border border-app-border overflow-hidden bg-app-bg/30">
-              <div className="flex items-center justify-between bg-app-bg px-3 py-1.5 border-b border-app-border/40">
-                <p className="text-[9px] font-black uppercase tracking-wider text-app-text-secondary">
-                  Target Curve Information
+            <div className="flex flex-col gap-1">
+              <label htmlFor="dl-feed" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary">
+                Feed Used (Sacks)
+              </label>
+              <input
+                id="dl-feed"
+                type="number"
+                step="0.5"
+                min="0"
+                required
+                value={feedConsumed}
+                onChange={(event) => setFeedConsumed(event.target.value)}
+                placeholder="0.00"
+                className="w-full p-2.5 border border-app-border rounded-xl bg-app-bg text-app-text text-lg font-black focus:ring-2 focus:ring-app-accent/20 outline-none font-jetbrains"
+              />
+            </div>
+
+            {/* Expected Today & Difference pedagogical helper */}
+            {feedTarget && (
+              <div className="p-3 rounded-xl border border-app-border bg-app-bg/30 text-xs space-y-1.5 font-jetbrains shadow-inner">
+                <p className="text-app-text-secondary font-semibold flex items-center justify-between">
+                  <span>Expected today:</span>
+                  <span className="font-bold text-app-text">{formatDecimal(feedTarget.targetBags, 2)} sacks</span>
                 </p>
-                <span className="text-[9px] font-black text-app-accent font-jetbrains">
-                  {ageDay ? `Day ${ageDay}` : 'No age'}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 p-2.5 text-[11px]">
-                <div className="bg-app-card border border-app-border/40 p-2 rounded-lg">
-                  <p className="text-app-text-secondary font-black uppercase tracking-wider text-[8px]">Target Feed</p>
-                  <p className="font-black text-app-text mt-0.5 font-jetbrains">
-                    {feedTarget ? `${formatDecimal(feedTarget.targetBags, 2)} bags` : '--'}
+                {feedConsumed !== '' && !isNaN(parseFloat(feedConsumed)) && (
+                  <p className="text-app-text-secondary font-semibold flex items-center justify-between">
+                    <span>Difference:</span>
+                    <span className={`font-black ${
+                      parseFloat(feedConsumed) - feedTarget.targetBags > 0 ? 'text-app-danger' : 'text-app-success'
+                    }`}>
+                      {parseFloat(feedConsumed) - feedTarget.targetBags > 0 ? '+' : ''}
+                      {formatDecimal(parseFloat(feedConsumed) - feedTarget.targetBags, 2)} sacks
+                    </span>
                   </p>
-                </div>
-                <div className="bg-app-card border border-app-border/40 p-2 rounded-lg">
-                  <p className="text-app-text-secondary font-black uppercase tracking-wider text-[8px]">Actual To Date</p>
-                  <p className="font-black text-app-text mt-0.5 font-jetbrains">
-                    {formatDecimal(employeeActualToDate.feedBags, 2)} bags
-                  </p>
-                </div>
-                <div className="bg-app-card border border-app-border/40 p-2 rounded-lg">
-                  <p className="text-app-text-secondary font-black uppercase tracking-wider text-[8px]">Feed Variance</p>
-                  <p className={`font-black mt-0.5 font-jetbrains ${targetVarianceKg > 0 ? 'text-app-danger' : 'text-app-success'}`}>
-                    {targetVarianceKg === null ? '--' : `${targetVarianceKg > 0 ? '+' : ''}${formatDecimal(targetVarianceKg / BAG_WEIGHT_KG, 2)} bags`}
-                  </p>
-                </div>
-                <div className="bg-app-card border border-app-border/40 p-2 rounded-lg">
-                  <p className="text-app-text-secondary font-black uppercase tracking-wider text-[8px]">Estimated FCR</p>
-                  <p className="font-black text-app-text mt-0.5 font-jetbrains">
-                    {actualFcr ? formatDecimal(actualFcr, 2) : '--'}
-                  </p>
-                </div>
+                )}
               </div>
-            </div>
-
-            {/* Inputs */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1">
-                <label htmlFor="dl-feed" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary">
-                  Feed Used (Sacks)
-                </label>
-                <input
-                  id="dl-feed"
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  required
-                  value={feedConsumed}
-                  onChange={(event) => setFeedConsumed(event.target.value)}
-                  placeholder="0.00"
-                  className="w-full p-2.5 border border-app-border rounded-xl bg-app-bg text-app-text text-lg font-black focus:ring-2 focus:ring-app-accent/20 outline-none font-jetbrains"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label htmlFor="dl-mortality" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary">
-                  Mortality (Birds)
-                </label>
-                <input
-                  id="dl-mortality"
-                  type="number"
-                  min="0"
-                  required
-                  value={mortality}
-                  onChange={(event) => setMortality(event.target.value)}
-                  placeholder="0"
-                  className="w-full p-2.5 border border-app-danger/30 rounded-xl bg-app-bg text-app-danger text-lg font-black focus:ring-2 focus:ring-app-danger/20 outline-none font-jetbrains"
-                />
-              </div>
-            </div>
+            )}
 
             <div className="flex flex-col gap-1.5">
               <label htmlFor="dl-feed-item" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary">
@@ -339,7 +313,47 @@ export default function DailyLogForm({
                 </p>
               )}
             </div>
+          </div>
+        )}
 
+        {/* STEP 4: Enter Mortality */}
+        {step === 4 && (
+          <div className="space-y-4 animate-toast-in">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="dl-mortality" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary">
+                Mortality (Birds)
+              </label>
+              <input
+                id="dl-mortality"
+                type="number"
+                min="0"
+                required
+                value={mortality}
+                onChange={(event) => setMortality(event.target.value)}
+                placeholder="0"
+                className="w-full p-2.5 border border-app-danger/30 rounded-xl bg-app-bg text-app-danger text-lg font-black focus:ring-2 focus:ring-app-danger/20 outline-none font-jetbrains"
+              />
+            </div>
+
+            {/* Normal warning level pedagogical helper */}
+            {(() => {
+              const handledBirds = Number(selectedAssignment?.handledBirds || 0);
+              const mortalityThreshold = Math.max(MORTALITY_WARNING_HEADS, Math.ceil(handledBirds * MORTALITY_WARNING_RATE));
+              return (
+                <div className="p-3 rounded-xl border border-app-border bg-app-bg/30 text-xs font-jetbrains shadow-inner">
+                  <p className="text-app-text-secondary font-semibold flex items-center justify-between">
+                    <span>Normal warning level:</span>
+                    <span className="font-bold text-app-text">{mortalityThreshold} heads</span>
+                  </p>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* STEP 5: Enter Average Weight & Remarks */}
+        {step === 5 && (
+          <div className="space-y-4 animate-toast-in">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
                 <label htmlFor="dl-weight" className="block text-[10px] font-black uppercase tracking-wider text-app-text-secondary">
@@ -371,78 +385,102 @@ export default function DailyLogForm({
                 />
               </div>
             </div>
+
+            {/* Estimated FCR live preview */}
+            {averageWeightGrams && actualFcr && (
+              <div className="p-3 rounded-xl border border-app-border bg-app-bg/30 text-xs font-jetbrains shadow-inner">
+                <p className="text-app-text-secondary font-semibold flex items-center justify-between">
+                  <span>Estimated FCR:</span>
+                  <span className="font-bold text-app-text">{formatDecimal(actualFcr, 2)}</span>
+                </p>
+              </div>
+            )}
           </div>
         )}
 
-        {/* STEP 4: Summary & Warnings Review */}
-        {step === 4 && (
+        {/* STEP 6: Review Warnings */}
+        {step === 6 && (
           <div className="space-y-4 animate-toast-in">
-            <div className="rounded-xl border border-app-border bg-app-bg/50 p-4 space-y-3.5 text-xs">
-              <h4 className="font-extrabold text-app-text text-[13px] border-b border-app-border/40 pb-2">
-                Verify Log Details
-              </h4>
-              
-              <div className="grid grid-cols-2 gap-y-2 gap-x-4">
-                <div>
-                  <p className="text-[10px] font-black text-app-text-secondary uppercase">Date & Building</p>
-                  <p className="font-black text-app-text mt-0.5 font-jetbrains">{date} &bull; Bldg {activeBuilding}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-app-text-secondary uppercase">Employee</p>
-                  <p className="font-black text-app-text mt-0.5">{selectedAssignment?.employeeName || 'None'}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-app-text-secondary uppercase">Feed Consumed</p>
-                  <p className="font-black text-app-text mt-0.5 font-jetbrains">
-                    {feedConsumed || '0'} bags {selectedFeedItem ? `(${selectedFeedItem.name})` : ''}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-app-text-secondary uppercase">Mortality</p>
-                  <p className="font-black text-app-danger mt-0.5 font-jetbrains">{mortality || '0'} birds</p>
-                </div>
-                {averageWeightGrams && (
-                  <div>
-                    <p className="text-[10px] font-black text-app-text-secondary uppercase">Avg Weight</p>
-                    <p className="font-black text-app-accent mt-0.5 font-jetbrains">{averageWeightGrams} g</p>
-                  </div>
-                )}
-                {remarks && (
-                  <div className="col-span-2">
-                    <p className="text-[10px] font-black text-app-text-secondary uppercase">Remarks</p>
-                    <p className="font-bold text-app-text mt-0.5 italic">"{remarks}"</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Abnormal Value Warnings */}
-            {abnormalWarnings.length > 0 && (
-              <div className="rounded-xl border border-app-warning bg-app-warning-bg p-3">
-                <p className="text-[10px] font-black uppercase tracking-wider text-app-warning flex items-center gap-1.5">
+            {abnormalWarnings.length > 0 ? (
+              <div className="rounded-xl border border-app-warning bg-app-warning-bg p-3.5">
+                <p className="text-[10px] font-black uppercase tracking-wider text-app-warning flex items-center gap-1.5 font-jetbrains">
                   <span className="material-symbols-outlined text-sm">warning</span>
                   Abnormal Warnings Detected
                 </p>
-                <div className="mt-2 space-y-1.5">
+                <div className="mt-2.5 space-y-2">
                   {abnormalWarnings.map((warning) => (
-                    <div key={warning.label} className="text-[11px] text-app-text-secondary">
+                    <div key={warning.label} className="text-xs text-app-text-secondary">
                       <span className="font-extrabold text-app-text">{warning.label}: </span>
                       {warning.detail}
                     </div>
                   ))}
                 </div>
               </div>
+            ) : (
+              <div className="rounded-xl border border-app-success bg-app-success-bg p-4 flex flex-col items-center text-center gap-2">
+                <span className="material-symbols-outlined text-app-success text-3xl font-bold">check_circle</span>
+                <div>
+                  <h4 className="text-xs font-black text-app-success uppercase tracking-wider font-jetbrains">All Clear</h4>
+                  <p className="text-[11px] text-app-text-secondary mt-1">
+                    No abnormal warnings detected for feed variance, mortality threshold, or inventory stock levels.
+                  </p>
+                </div>
+              </div>
             )}
           </div>
         )}
 
+        {/* STEP 7: Save Log */}
+        {step === 7 && (
+          <div className="space-y-4 animate-toast-in">
+            <div className="rounded-xl border border-app-border bg-app-bg/50 p-4 space-y-3.5 text-xs">
+              <h4 className="font-extrabold text-app-text text-[13px] border-b border-app-border/40 pb-2">
+                Verify Log Details
+              </h4>
+              
+              <div className="grid grid-cols-2 gap-y-2.5 gap-x-4">
+                <div>
+                  <p className="text-[10px] font-black text-app-text-secondary uppercase tracking-wider font-jetbrains">Date & Building</p>
+                  <p className="font-black text-app-text mt-0.5 font-jetbrains">{date} &bull; Bldg {activeBuilding}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-app-text-secondary uppercase tracking-wider font-jetbrains">Employee</p>
+                  <p className="font-black text-app-text mt-0.5">{selectedAssignment?.employeeName || 'None'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-app-text-secondary uppercase tracking-wider font-jetbrains">Feed Consumed</p>
+                  <p className="font-black text-app-text mt-0.5 font-jetbrains">
+                    {feedConsumed || '0'} bags {selectedFeedItem ? `(${selectedFeedItem.name})` : ''}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-app-text-secondary uppercase tracking-wider font-jetbrains">Mortality</p>
+                  <p className="font-black text-app-danger mt-0.5 font-jetbrains">{mortality || '0'} birds</p>
+                </div>
+                {averageWeightGrams && (
+                  <div>
+                    <p className="text-[10px] font-black text-app-text-secondary uppercase tracking-wider font-jetbrains">Avg Weight</p>
+                    <p className="font-black text-app-accent mt-0.5 font-jetbrains">{averageWeightGrams} g</p>
+                  </div>
+                )}
+                {remarks && (
+                  <div className="col-span-2">
+                    <p className="text-[10px] font-black text-app-text-secondary uppercase tracking-wider font-jetbrains">Remarks</p>
+                    <p className="font-bold text-app-text mt-0.5 italic">"{remarks}"</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Navigation Buttons */}
-        <div className="flex gap-2.5 pt-3 border-t border-app-border/40">
+        <div className="flex gap-2.5 pt-3 border-t border-app-border/40 font-jetbrains">
           {step > 1 ? (
             <button
               type="button"
               onClick={prevStep}
-              className="flex-1 bg-app-bg text-app-text border border-app-border px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-sm hover:bg-app-border active:scale-95 transition-all cursor-pointer font-jetbrains"
+              className="flex-1 bg-app-bg text-app-text border border-app-border px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-sm hover:bg-app-border active:scale-95 transition-all cursor-pointer"
             >
               Back
             </button>
@@ -454,25 +492,25 @@ export default function DailyLogForm({
                   resetForm();
                   setStep(1);
                 }}
-                className="flex-1 bg-app-bg text-app-text border border-app-border px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-sm active:scale-95 transition-all cursor-pointer font-jetbrains"
+                className="flex-1 bg-app-bg text-app-text border border-app-border px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-sm active:scale-95 transition-all cursor-pointer"
               >
                 Cancel
               </button>
             )
           )}
 
-          {step < 4 ? (
+          {step < 7 ? (
             <button
               type="button"
               onClick={nextStep}
-              className="flex-[2] bg-app-accent text-app-on-accent px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer font-jetbrains"
+              className="flex-[2] bg-app-accent text-app-on-accent px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer"
             >
               Next Step
             </button>
           ) : (
             <button
               type="submit"
-              className="flex-[2] bg-app-accent text-app-on-accent px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer font-jetbrains"
+              className="flex-[2] bg-app-accent text-app-on-accent px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer"
             >
               {editingId ? 'Update Log' : 'Save Log'}
             </button>

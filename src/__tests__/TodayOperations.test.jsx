@@ -86,7 +86,7 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
 
     const overviewTab = screen.getByRole('button', { name: /^Overview$/i });
     const checklistTab = screen.getByRole('button', { name: /^Checklist$/i });
-    const warningsTab = screen.getByRole('button', { name: /Warnings/i });
+    const warningsTab = screen.getByRole('button', { name: /^Warnings$/i });
 
     // Default tab is 'overview'
     expect(overviewTab).toHaveClass('border-app-accent');

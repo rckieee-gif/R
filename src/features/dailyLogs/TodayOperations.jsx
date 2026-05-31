@@ -100,6 +100,17 @@ function readPrepChecklist(batchId) {
   }
 }
 
+function readFarmChecklist(batchId, date) {
+  if (!batchId) return {};
+  const saved = localStorage.getItem(`farmChecklist:${batchId}:${date}`);
+  if (!saved) return {};
+  try {
+    return JSON.parse(saved);
+  } catch {
+    return {};
+  }
+}
+
 function isPostBatch(batch) {
   const status = getBatchStatus(batch);
   return Boolean(batch?.actualHarvestEndDate) || ['HARVESTED', 'CLOSED', 'POSTED'].includes(status);
@@ -343,6 +354,27 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
   const error = !token && previewTodayData ? '' : (isCurrentTodayData ? todayRequest.error : '');
   const isLoading = Boolean(token && isCurrentTodayData && todayRequest.isLoading);
   const today = todayInput();
+  const [lastBatchIdAndDate, setLastBatchIdAndDate] = useState(`${activeBatchId}:${today}`);
+  const [manualCheckedItems, setManualCheckedItems] = useState(() => {
+    return readFarmChecklist(activeBatchId, today);
+  });
+
+  const currentBatchIdAndDate = `${activeBatchId}:${today}`;
+  if (lastBatchIdAndDate !== currentBatchIdAndDate) {
+    setLastBatchIdAndDate(currentBatchIdAndDate);
+    setManualCheckedItems(readFarmChecklist(activeBatchId, today));
+  }
+
+  const toggleFarmChecklistItem = (itemKey) => {
+    setManualCheckedItems((prev) => {
+      const next = { ...prev, [itemKey]: !prev[itemKey] };
+      if (activeBatchId) {
+        localStorage.setItem(`farmChecklist:${activeBatchId}:${today}`, JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
   const ageDay = activeBatch?.startDate ? getAgeDay(activeBatch.startDate, today) : null;
   const lastTargetDay = getLastBroilerTargetDay();
   const daysToHarvest = diffDays(activeBatch?.targetHarvestDate, today);
@@ -466,7 +498,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     [loadings]
   );
 
-  const buildingChecks = useMemo(() => activeLoadings.map((loading) => {
+  const buildingChecks = activeLoadings.map((loading) => {
     const buildingKey = getBuildingKey(loading.building);
     const todaysBuildingLogs = todayLogs.filter((log) => getBuildingKey(log.building) === buildingKey);
     const buildingLogsToDate = logs.filter((log) => getBuildingKey(log.building) === buildingKey && log.date <= today);
@@ -492,31 +524,21 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
       hasLogToday: todaysBuildingLogs.length > 0,
       hasAssignedEmployee: assignedEmployees.length > 0
     };
-  }), [activeLoadings, ageDay, assignments, logs, today, todayLogs]);
+  });
 
-  const lowFeedItems = useMemo(
-    () => feedItems.filter((item) => (
-      Number(item.reorderLevel || 0) > 0 && Number(item.currentStock || 0) < Number(item.reorderLevel || 0)
-    )),
-    [feedItems]
-  );
+  const lowFeedItems = feedItems.filter((item) => (
+    Number(item.reorderLevel || 0) > 0 && Number(item.currentStock || 0) < Number(item.reorderLevel || 0)
+  ));
 
-  const dailyFeedTarget = useMemo(
-    () => calculateTargetFeedForHeads(activeBatch?.totalChicksLoaded, ageDay),
-    [activeBatch?.totalChicksLoaded, ageDay]
-  );
+  const dailyFeedTarget = calculateTargetFeedForHeads(activeBatch?.totalChicksLoaded, ageDay);
 
-  const totalFeedStock = useMemo(
-    () => feedItems.reduce((sum, item) => sum + Number(item.currentStock || 0), 0),
-    [feedItems]
-  );
+  const totalFeedStock = feedItems.reduce((sum, item) => sum + Number(item.currentStock || 0), 0);
 
-  const daysOfFeedRemaining = useMemo(() => {
-    if (!dailyFeedTarget || dailyFeedTarget.targetBags <= 0) return null;
-    return totalFeedStock / dailyFeedTarget.targetBags;
-  }, [dailyFeedTarget, totalFeedStock]);
+  const daysOfFeedRemaining = (!dailyFeedTarget || dailyFeedTarget.targetBags <= 0)
+    ? null
+    : totalFeedStock / dailyFeedTarget.targetBags;
 
-  const abnormalWarnings = useMemo(() => {
+  const abnormalWarnings = (() => {
     const warnings = [];
 
     buildingChecks.forEach((check) => {
@@ -629,12 +651,131 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     }
 
     return warnings;
-  }, [activeBatch?.targetHarvestDate, ageDay, buildingChecks, daysToHarvest, daysOfFeedRemaining, totalFeedStock, lastTargetDay, lowFeedItems, todayLogs]);
+  })();
 
   const missingLogCount = buildingChecks.filter((check) => !check.hasLogToday).length;
   const noEmployeeCount = buildingChecks.filter((check) => !check.hasAssignedEmployee).length;
   const dangerCount = abnormalWarnings.filter((warning) => warning.severity === 'danger').length;
   const todayTotals = buildLogTotals(todayLogs);
+
+  const farmChecklistItems = (() => {
+    const isMortalityRecorded = buildingChecks.length > 0 && buildingChecks.every(check => 
+      check.hasLogToday && check.todaysLogs.some(log => log.mortality !== null && log.mortality !== undefined && log.mortality !== '')
+    );
+
+    const isFeedRecorded = buildingChecks.length > 0 && buildingChecks.every(check => 
+      check.hasLogToday && check.todaysLogs.some(log => log.feed !== null && log.feed !== undefined && log.feed !== '')
+    );
+
+    const isWeightRecorded = buildingChecks.length > 0 && buildingChecks.some(check => 
+      check.hasLogToday && check.todaysLogs.some(log => Number(log.averageWeightGrams || 0) > 0)
+    );
+
+    const isFeedStockOk = lowFeedItems.length === 0 && (daysOfFeedRemaining === null || daysOfFeedRemaining >= 7);
+
+    const isWarningsClear = dangerCount === 0 && abnormalWarnings.length === 0;
+
+    const isAssignmentsConfirmed = buildingChecks.length > 0 && noEmployeeCount === 0;
+
+    const isDailyLogSubmitted = buildingChecks.length > 0 && missingLogCount === 0;
+
+    const weightLog = todayLogs.find(log => Number(log.averageWeightGrams || 0) > 0);
+    const weightValue = weightLog ? Number(weightLog.averageWeightGrams) : null;
+
+    const items = [
+      {
+        key: 'mortality',
+        title: 'Record mortality',
+        desc: 'Log bird mortality count for each building today.',
+        statusLabel: isMortalityRecorded 
+          ? `Mortality: ${formatNumber(todayTotals.mortality)} head${todayTotals.mortality === 1 ? '' : 's'} recorded`
+          : (todayLogs.length > 0 
+              ? `Mortality: ${formatNumber(todayTotals.mortality)} head${todayTotals.mortality === 1 ? '' : 's'} recorded` 
+              : 'Mortality: Not recorded'),
+        autoComplete: isMortalityRecorded,
+        actionScreen: 'dailyLog',
+        actionLabel: 'Go to Logs'
+      },
+      {
+        key: 'feed',
+        title: 'Record feed used',
+        desc: 'Log bags of feed consumed by flock in each building.',
+        statusLabel: isFeedRecorded 
+          ? `Feed: ${formatNumber(todayTotals.feed, todayTotals.feed % 1 === 0 ? 0 : 1)} sack${todayTotals.feed === 1 ? '' : 's'} recorded`
+          : (todayTotals.feed > 0 
+              ? `Feed: ${formatNumber(todayTotals.feed, todayTotals.feed % 1 === 0 ? 0 : 1)} sack${todayTotals.feed === 1 ? '' : 's'} recorded` 
+              : 'Feed: Not recorded'),
+        autoComplete: isFeedRecorded,
+        actionScreen: 'dailyLog',
+        actionLabel: 'Go to Logs'
+      },
+      {
+        key: 'weight',
+        title: 'Record average weight',
+        desc: 'Weigh a sample of birds to update daily average weight.',
+        statusLabel: weightValue !== null 
+          ? `Weight: ${formatNumber(weightValue)}g average` 
+          : 'Weight: Missing',
+        autoComplete: isWeightRecorded,
+        actionScreen: 'dailyLog',
+        actionLabel: 'Go to Logs'
+      },
+      {
+        key: 'feedStock',
+        title: 'Check feed stock',
+        desc: 'Verify if current feed inventory is above safety thresholds.',
+        statusLabel: daysOfFeedRemaining !== null 
+          ? `Inventory: Feed will last ${Math.round(daysOfFeedRemaining)} day${Math.round(daysOfFeedRemaining) === 1 ? '' : 's'}` 
+          : 'Inventory: Feed levels unknown',
+        autoComplete: isFeedStockOk,
+        actionScreen: 'inventory',
+        actionLabel: 'Check Stock'
+      },
+      {
+        key: 'warnings',
+        title: 'Check abnormal warnings',
+        desc: 'Review any feed, mortality, or age variance warning alerts.',
+        statusLabel: abnormalWarnings.length > 0 
+          ? `Warnings: ${abnormalWarnings.length} active warning${abnormalWarnings.length === 1 ? '' : 's'}` 
+          : 'Warnings: Clear',
+        autoComplete: isWarningsClear,
+        actionScreen: 'warnings',
+        actionLabel: 'Review Warnings'
+      },
+      {
+        key: 'assignments',
+        title: 'Confirm employee assignments',
+        desc: 'Ensure all active buildings have assigned workers today.',
+        statusLabel: noEmployeeCount > 0 
+          ? `Employees: ${noEmployeeCount} building${noEmployeeCount === 1 ? '' : 's'} unassigned` 
+          : 'Employees: All buildings assigned',
+        autoComplete: isAssignmentsConfirmed,
+        actionScreen: 'employees',
+        actionLabel: 'Assign Staff'
+      },
+      {
+        key: 'dailyLog',
+        title: 'Submit daily log',
+        desc: 'Verify all logs are submitted and finalise for the day.',
+        statusLabel: missingLogCount > 0 
+          ? `Logs: ${missingLogCount} building${missingLogCount === 1 ? '' : 's'} missing` 
+          : 'Logs: All buildings submitted',
+        autoComplete: isDailyLogSubmitted,
+        actionScreen: 'dailyLog',
+        actionLabel: 'Submit Log'
+      }
+    ];
+
+    return items.map(item => ({
+      ...item,
+      checked: Boolean(manualCheckedItems[item.key] || item.autoComplete)
+    }));
+  })();
+
+  const farmCheckedCount = farmChecklistItems.filter(item => item.checked).length;
+  const farmPercentComplete = farmChecklistItems.length > 0 
+    ? Math.round((farmCheckedCount / farmChecklistItems.length) * 100) 
+    : 0;
 
   const postSummary = useMemo(() => {
     if (!activeBatch) return null;
@@ -748,7 +889,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     };
   }, [activeBatch, activeLoadings, assignments, harvestProductionSummary, lastTargetDay, logs, today]);
 
-  const postChecklist = useMemo(() => {
+  const postChecklist = (() => {
     if (!postSummary) return [];
 
     return [
@@ -795,7 +936,134 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
         actionScreen: lowFeedItems.length ? 'inventory' : null
       }
     ];
-  }, [activeBatch, activeLoadings.length, logs.length, lowFeedItems.length, postSummary]);
+  })();
+
+  const renderFarmChecklist = () => {
+    return (
+      <div className="rounded-2xl border border-app-border bg-gradient-to-br from-app-card via-app-card to-app-accent/5 p-6 shadow-sm mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-6">
+          <div className="space-y-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-app-accent/10 px-2.5 py-0.5 text-xs font-semibold text-app-accent">
+              <span className="h-1.5 w-1.5 rounded-full bg-app-accent animate-pulse" />
+              Active Operations Checklist
+            </span>
+            <h3 className="text-xl font-black font-hanken tracking-tight">
+              Today’s Farm Checklist
+            </h3>
+            <p className="text-xs text-app-text-secondary font-inter">
+              Operator page tasks for Batch #{activeBatch.id} • D{ageDay || '--'}.
+            </p>
+          </div>
+
+          <div className="w-full lg:w-80 shrink-0 space-y-2">
+            <div className="flex justify-between text-xs font-bold font-inter">
+              <span className="text-app-text-secondary">DAILY PROGRESS</span>
+              <span className="text-app-accent font-black">{farmPercentComplete}% COMPLETE</span>
+            </div>
+            <div className="h-3 w-full rounded-full bg-app-bg overflow-hidden border border-app-border">
+              <div 
+                className="h-full rounded-full bg-gradient-to-r from-app-accent to-[#50B8F9] transition-all duration-500 ease-out"
+                style={{ width: `${farmPercentComplete}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-app-text-secondary text-right font-inter font-semibold">
+              {farmCheckedCount} of {farmChecklistItems.length} tasks completed today
+            </p>
+          </div>
+        </div>
+
+        <div className="divide-y divide-app-border/60">
+          {farmChecklistItems.map((item) => {
+            const isAuto = item.autoComplete;
+            return (
+              <div
+                key={item.key}
+                onClick={() => toggleFarmChecklistItem(item.key)}
+                className="group flex items-center justify-between py-3.5 transition-all duration-150 cursor-pointer first:pt-0 last:pb-0 hover:bg-app-accent/[0.02] px-2 -mx-2 rounded-xl"
+              >
+                <div className="flex items-center gap-3.5 min-w-0 pr-4">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleFarmChecklistItem(item.key);
+                    }}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-app-bg border border-app-border text-app-text-secondary/40 hover:text-app-accent hover:border-app-accent hover:bg-app-accent/5 focus-visible:ring-2 focus-visible:ring-app-accent transition-all active:scale-95 cursor-pointer"
+                    aria-label={`Toggle check for ${item.title}`}
+                  >
+                    {item.checked ? (
+                      <svg className="h-6 w-6 text-app-success animate-[checkmark-in_0.2s_ease-out]" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg className="h-6 w-6 text-app-text-secondary/30 transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" />
+                      </svg>
+                    )}
+                  </button>
+
+                  <div className="min-w-0">
+                    <p className={`font-extrabold text-sm font-hanken tracking-tight leading-snug transition-colors group-hover:text-app-accent ${
+                      item.checked ? 'line-through text-app-text-secondary/70' : 'text-app-text'
+                    }`}>
+                      {item.title}
+                    </p>
+                    <p className={`mt-0.5 text-[11px] font-black font-inter leading-tight ${
+                      item.checked 
+                        ? 'text-app-success' 
+                        : item.key === 'warnings' && dangerCount > 0
+                          ? 'text-app-danger'
+                          : item.key === 'feedStock' && daysOfFeedRemaining !== null && daysOfFeedRemaining < 3
+                            ? 'text-app-danger'
+                            : item.key === 'feedStock' && daysOfFeedRemaining !== null && daysOfFeedRemaining < 7
+                              ? 'text-app-warning'
+                              : ['mortality', 'feed', 'weight', 'assignments', 'dailyLog'].includes(item.key) && !item.checked
+                                ? 'text-app-warning'
+                                : 'text-app-text-secondary'
+                    }`}>
+                      {item.statusLabel}
+                    </p>
+                    <p className="mt-1 text-xs text-app-text-secondary leading-snug font-inter truncate sm:whitespace-normal">
+                      {item.desc}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className={`hidden sm:inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider font-inter border ${
+                    item.checked
+                      ? isAuto
+                        ? 'bg-app-success-bg/40 text-app-success border-app-success/20'
+                        : 'bg-app-accent/10 text-app-accent border-app-accent/20'
+                      : 'bg-app-bg text-app-text-secondary/60 border-app-border'
+                  }`}>
+                    {item.checked ? (isAuto ? 'Auto-done' : 'Done') : 'Pending'}
+                  </span>
+
+                  {item.actionScreen && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (item.actionScreen === 'warnings') {
+                          setMobileTab('warnings');
+                        } else {
+                          setActiveScreen(item.actionScreen);
+                        }
+                      }}
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-app-border bg-app-card px-3 text-xs font-black text-app-text-secondary hover:text-app-accent hover:border-app-accent active:scale-[0.98] transition-all shadow-sm cursor-pointer font-inter whitespace-nowrap"
+                    >
+                      {item.actionLabel}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   if (!activeBatch) {
     const emptyBatchTitle = token ? 'Batch data unavailable' : 'No current batch available';
@@ -1589,6 +1857,10 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
             <span className="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-app-danger animate-pulse" />
           )}
         </button>
+      </div>
+
+      <div className={mobileTab === 'overview' ? 'block' : 'hidden md:block'}>
+        {renderFarmChecklist()}
       </div>
 
       <div className={`grid gap-3 md:grid-cols-4 md:grid ${mobileTab === 'overview' ? 'grid' : 'hidden'}`}>

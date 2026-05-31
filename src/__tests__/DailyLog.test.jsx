@@ -71,7 +71,7 @@ describe('DailyLog Component', () => {
 
     // Loading indicators or element presence after async mount
     await waitFor(() => {
-      expect(screen.getByText(/1. Bldg & Date/i)).toBeInTheDocument();
+      expect(screen.getByText(/1. Bldg/i)).toBeInTheDocument();
     });
 
     expect(screen.getByLabelText(/select date/i)).toBeInTheDocument();
@@ -97,10 +97,10 @@ describe('DailyLog Component', () => {
     const workerSelect = screen.getByRole('combobox');
     fireEvent.change(workerSelect, { target: { value: '20' } });
 
-    // Go to step 3 (Log Info)
+    // Go to step 3 (Feed)
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => {
-      expect(screen.getByText(/3. Log Info/i)).toBeInTheDocument();
+      expect(screen.getByText(/3. Feed/i)).toBeInTheDocument();
     });
 
     // Enter feed consumed
@@ -172,12 +172,20 @@ describe('DailyLog Component', () => {
     const workerSelect = screen.getByRole('combobox');
     fireEvent.change(workerSelect, { target: { value: '20' } });
 
-    // Step 3
+    // Step 3 (Feed)
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
-    await screen.findByText(/3. Log Info/i);
+    await screen.findByText(/3. Feed/i);
 
     const feedInput = screen.getByPlaceholderText('0.00');
     fireEvent.change(feedInput, { target: { value: '5' } });
+
+    // Step 4 (Mortality)
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await screen.findByText(/4. Mortality/i);
+
+    // Step 5 (Weight)
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await screen.findByText(/5. Weight/i);
     
     const weightInput = screen.getByPlaceholderText(/average bird weight/i);
     fireEvent.change(weightInput, { target: { value: '50' } });

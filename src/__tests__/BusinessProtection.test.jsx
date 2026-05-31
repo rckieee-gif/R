@@ -121,12 +121,21 @@ describe('Business protection coverage', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
 
-    await screen.findByText(/3. Log Info/i);
+    await screen.findByText(/3. Feed/i);
     fireEvent.change(screen.getByLabelText(/Feed Used/i), { target: { value: '5' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    await screen.findByText(/4. Mortality/i);
     fireEvent.change(screen.getByLabelText(/Mortality/i), { target: { value: '1' } });
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
 
-    await screen.findByText(/4. Review/i);
+    await screen.findByText(/5. Weight/i);
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    await screen.findByText(/6. Warnings/i);
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    await screen.findByText(/7. Save/i);
     fireEvent.click(screen.getByRole('button', { name: /save log/i }));
 
     await waitFor(() => {

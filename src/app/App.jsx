@@ -8,6 +8,8 @@ import Sidebar from './layout/Sidebar';
 import MobileNav from './layout/MobileNav';
 import AppShell from './layout/AppShell';
 import StatusBar from '../shared/components/StatusBar';
+import { useSyncStatus } from '../offline/syncStatus';
+import SyncDrawer from '../offline/SyncDrawer';
 
 import useAuth from '../features/auth/useAuth';
 import useBatches from '../features/batches/useBatches';
@@ -86,6 +88,19 @@ function BatchesRoute({ batches, ...props }) {
 function App() {
   const auth = useAuth();
   const batches = useBatches(auth.token, auth.user, auth.viewerSnapshot);
+
+  const { isOnline } = useSyncStatus();
+  const [isSyncDrawerOpen, setIsSyncDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenSyncDrawer = () => {
+      setIsSyncDrawerOpen(true);
+    };
+    window.addEventListener('open-sync-drawer', handleOpenSyncDrawer);
+    return () => {
+      window.removeEventListener('open-sync-drawer', handleOpenSyncDrawer);
+    };
+  }, []);
 
   const canEnterDaily = useMemo(() => hasMinimumRole(auth.user?.role, 'DataEntry'), [auth.user]);
   const canManageOperations = useMemo(() => hasMinimumRole(auth.user?.role, 'OperationManager'), [auth.user]);
@@ -311,6 +326,12 @@ function App() {
 
   return (
     <AppShell sidebar={sidebar} mobileNav={mobileNav} isDarkMode={isDarkMode}>
+      {!isOnline && (
+        <div className="no-print bg-app-warning-bg/90 border-b border-app-warning/20 px-4 py-2.5 flex items-center justify-center gap-2 text-xs font-bold text-app-warning text-center transition-all duration-300">
+          <span className="material-symbols-outlined text-[15px] leading-none animate-pulse">wifi_off</span>
+          <span className="font-semibold">You are offline. New entries will be saved on this device and synced later.</span>
+        </div>
+      )}
       <StatusBar activeBatch={batches.visibleActiveBatch} />
 
       {/* Batch list error overlay */}
@@ -519,6 +540,7 @@ function App() {
           token={auth.apiToken}
         />
       </div>
+      <SyncDrawer isOpen={isSyncDrawerOpen} onClose={() => setIsSyncDrawerOpen(false)} />
     </AppShell>
   );
 }
