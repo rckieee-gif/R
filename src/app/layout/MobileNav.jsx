@@ -71,54 +71,52 @@ export default function MobileNav({
         )}
         
         {allowedMoreScreens.length > 0 && (
-          <div className="relative flex items-center">
-            <button
-              onClick={() => setIsMoreOpen(!isMoreOpen)}
-              className={`h-11 px-4 rounded uppercase tracking-wider font-bold text-[10px] sm:text-xs whitespace-nowrap transition-all duration-200 flex items-center justify-center gap-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-app-accent focus:ring-offset-1 focus:ring-offset-app-card ${
-                isMoreActive || isMoreOpen
-                  ? 'bg-app-accent text-app-on-accent shadow-sm scale-[1.02]'
-                  : 'bg-app-card text-app-text-secondary border border-app-border hover:bg-app-bg hover:text-app-text'
-              }`}
-            >
-              <span>More</span>
-              <span className="material-symbols-outlined text-xs leading-none shrink-0" aria-hidden="true">
-                {isMoreOpen ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}
-              </span>
-            </button>
-            
-            {isMoreOpen && (
-              <>
-                <div 
-                  className="fixed inset-0 z-40 bg-transparent" 
-                  onClick={() => setIsMoreOpen(false)}
-                />
-                
-                <div className="absolute left-0 top-full mt-1.5 z-50 w-44 bg-app-card border border-app-border rounded-xl shadow-2xl overflow-hidden py-1.5 animate-[fadeIn_0.15s_ease-out]">
-                  {allowedMoreScreens.map(item => {
-                    const isActive = currentScreen === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => {
-                          setActiveScreen(item.id);
-                          setIsMoreOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-inset focus:ring-app-accent ${
-                          isActive
-                            ? 'bg-[#70B8F9]/10 text-app-accent font-black'
-                            : 'text-app-text-secondary hover:bg-app-bg hover:text-app-text'
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
+          <button
+            onClick={() => setIsMoreOpen(!isMoreOpen)}
+            className={`h-11 px-4 rounded uppercase tracking-wider font-bold text-[10px] sm:text-xs whitespace-nowrap transition-all duration-200 flex items-center justify-center gap-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-app-accent focus:ring-offset-1 focus:ring-offset-app-card ${
+              isMoreActive || isMoreOpen
+                ? 'bg-app-accent text-app-on-accent shadow-sm scale-[1.02]'
+                : 'bg-app-card text-app-text-secondary border border-app-border hover:bg-app-bg hover:text-app-text'
+            }`}
+          >
+            <span>More</span>
+            <span className="material-symbols-outlined text-xs leading-none shrink-0" aria-hidden="true">
+              {isMoreOpen ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}
+            </span>
+          </button>
         )}
       </div>
+
+      {isMoreOpen && allowedMoreScreens.length > 0 && (
+        <>
+          <div 
+            className="fixed inset-0 z-40 bg-transparent" 
+            onClick={() => setIsMoreOpen(false)}
+          />
+          
+          <div className="absolute left-3 top-full mt-1.5 z-50 w-44 bg-app-card border border-app-border rounded-xl shadow-2xl overflow-hidden py-1.5 animate-[fadeIn_0.15s_ease-out]">
+            {allowedMoreScreens.map(item => {
+              const isActive = currentScreen === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveScreen(item.id);
+                    setIsMoreOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-inset focus:ring-app-accent ${
+                    isActive
+                      ? 'bg-[#70B8F9]/10 text-app-accent font-black'
+                      : 'text-app-text-secondary hover:bg-app-bg hover:text-app-text'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
       
       <div className="flex items-center gap-2 ml-3 shrink-0">
         {!isPublicViewer && (
