@@ -4,11 +4,8 @@ import { apiClient, registerAuthFailureHandler } from '../../shared/utils/apiCli
 
 export default function useAuth() {
   const [user, setUser] = useState(() => {
-    const savedToken = localStorage.getItem('octavioToken');
     const savedUser = localStorage.getItem('octavioUser');
-
-    if (!savedToken || !savedUser) {
-      localStorage.removeItem('octavioUser');
+    if (!savedUser) {
       localStorage.removeItem('octavioToken');
       return null;
     }
@@ -24,11 +21,48 @@ export default function useAuth() {
   });
 
   const [token, setToken] = useState(() => localStorage.getItem('octavioToken'));
+  const [isCheckingSession, setIsCheckingSession] = useState(() => {
+    const savedUser = localStorage.getItem('octavioUser');
+    const savedToken = localStorage.getItem('octavioToken');
+    return Boolean(savedUser && !savedToken);
+  });
   const [authView, setAuthView] = useState('intro');
   const [viewerSnapshot, setViewerSnapshot] = useState(null);
   const [viewerError, setViewerError] = useState('');
   const [isViewerLoading, setIsViewerLoading] = useState(false);
   const [preloadedSnapshot, setPreloadedSnapshot] = useState(null);
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const savedUser = localStorage.getItem('octavioUser');
+      const savedToken = localStorage.getItem('octavioToken');
+      if (!savedUser || savedToken) {
+        setIsCheckingSession(false);
+        return;
+      }
+      try {
+        const data = await apiClient.get('/api/auth/me');
+        if (data && data.user) {
+          setUser(data.user);
+          setToken(data.token);
+        } else {
+          setUser(null);
+          setToken(null);
+          localStorage.removeItem('octavioUser');
+          localStorage.removeItem('octavioToken');
+        }
+      } catch (err) {
+        console.error("Session verification failed:", err);
+        setUser(null);
+        setToken(null);
+        localStorage.removeItem('octavioUser');
+        localStorage.removeItem('octavioToken');
+      } finally {
+        setIsCheckingSession(false);
+      }
+    };
+    checkSession();
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -53,10 +87,13 @@ export default function useAuth() {
     setToken(authToken);
     setAuthView('intro');
     localStorage.setItem('octavioUser', JSON.stringify(userData));
-    localStorage.setItem('octavioToken', authToken);
+    // Secure Cookie auth: do not save token to localStorage in normal web flows
   }, []);
 
   const clearSession = useCallback(() => {
+    apiClient.post('/api/auth/logout').catch(err => {
+      console.warn("Backend logout failed or session already cleared:", err);
+    });
     setUser(null);
     setToken(null);
     setViewerSnapshot(null);
@@ -131,6 +168,7 @@ export default function useAuth() {
     handleLogin,
     handleViewerAccess,
     handleLogout: clearSession,
-    clearSession
+    clearSession,
+    isCheckingSession
   };
 }

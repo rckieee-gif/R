@@ -79,6 +79,7 @@ export async function request(path, options = {}) {
 
   const fetchOptions = {
     ...options,
+    credentials: 'include',
     headers,
   };
 
