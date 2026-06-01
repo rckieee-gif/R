@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, Suspense } from 'react';
-import { Routes, Route, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
 import Login from '../features/auth/Login';
 import IntroPage from '../features/auth/IntroPage';
 import AntigravityAssistant from '../shared/components/AntigravityAssistant';
@@ -16,6 +16,10 @@ import useBatches from '../features/batches/useBatches';
 import useTransactions from '../features/ledger/useTransactions';
 import useDailyLogs from '../features/dailyLogs/useDailyLogs';
 
+import useAppPreferences from './hooks/useAppPreferences';
+import usePermissions from './hooks/usePermissions';
+import useNavigation from './hooks/useNavigation';
+
 import {
   TodayOperations,
   BatchManagement,
@@ -30,17 +34,6 @@ import {
   FinancialStatement,
   Settings
 } from './routes';
-
-const ZERO_GRAVITY_STORAGE_KEY = 'octavioZeroGravityEnabled';
-const LEGACY_ZERO_GRAVITY_STORAGE_KEY = 'antigravityMode';
-
-import { hasMinimumRole } from '../shared/utils/roles';
-
-function readZeroGravityPreference() {
-  const saved = localStorage.getItem(ZERO_GRAVITY_STORAGE_KEY);
-
-  return saved !== 'false';
-}
 
 function BatchesRoute({ batches, ...props }) {
   const { batchId } = useParams();
@@ -102,10 +95,7 @@ function App() {
     };
   }, []);
 
-  const canEnterDaily = useMemo(() => hasMinimumRole(auth.user?.role, 'DataEntry'), [auth.user]);
-  const canManageOperations = useMemo(() => hasMinimumRole(auth.user?.role, 'OperationManager'), [auth.user]);
-  const canViewFinancial = canManageOperations;
-  const canEditOrDelete = useMemo(() => Boolean(auth.user?.isPrimaryOwner), [auth.user]);
+  const { canEnterDaily, canManageOperations, canViewFinancial, canEditOrDelete } = usePermissions(auth.user);
 
   const { transactions, setTransactions, refreshTransactions } = useTransactions(
     batches.visibleActiveBatch?.id,
@@ -120,155 +110,28 @@ function App() {
     auth.viewerPreviewData
   );
 
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const saved = localStorage.getItem('themeMode');
-    return saved ? saved === 'dark' : true;
+  const { isDarkMode, setIsDarkMode, isZeroGravity, setIsZeroGravity, isNavMinimized, toggleNavMinimized } = useAppPreferences();
+
+  const { currentScreen, setActiveScreen, allowedScreens, screensMeta, visibleNavItems } = useNavigation({
+    canManageOperations,
+    isPublicViewer: auth.isPublicViewer,
+    user: auth.user,
   });
-
-  useEffect(() => {
-    localStorage.setItem('themeMode', isDarkMode ? 'dark' : 'light');
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDarkMode]);
-
-  const [isZeroGravity, setIsZeroGravity] = useState(readZeroGravityPreference);
-
-  useEffect(() => {
-    document.body.classList.toggle('antigravity-active', isZeroGravity);
-    localStorage.setItem(ZERO_GRAVITY_STORAGE_KEY, String(isZeroGravity));
-    localStorage.setItem(LEGACY_ZERO_GRAVITY_STORAGE_KEY, String(isZeroGravity));
-
-    return () => {
-      document.body.classList.remove('antigravity-active');
-    };
-  }, [isZeroGravity]);
-
-  const [isNavMinimized, setIsNavMinimized] = useState(() => {
-    const saved = localStorage.getItem('octavioNavMinimized');
-    return saved ? saved === 'true' : false;
-  });
-
-  const toggleNavMinimized = () => {
-    setIsNavMinimized((prev) => {
-      const next = !prev;
-      localStorage.setItem('octavioNavMinimized', String(next));
-      return next;
-    });
-  };
-
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const currentScreen = useMemo(() => {
-    const path = location.pathname;
-    if (path.startsWith('/today')) return 'today';
-    if (path.startsWith('/dashboard')) return 'dashboard';
-    if (path.startsWith('/batches')) return 'batches';
-    if (path.startsWith('/employees')) return 'employees';
-    if (path.startsWith('/pay-summary')) return 'paySummary';
-    if (path.startsWith('/ledger')) return 'ledger';
-    if (path.startsWith('/harvest')) return 'harvest';
-    if (path.startsWith('/daily-log')) return 'dailyLog';
-    if (path.startsWith('/inventory')) return 'inventory';
-    if (path.startsWith('/analytics')) return 'analytics';
-    if (path.startsWith('/statement')) return 'statement';
-    if (path.startsWith('/settings')) return 'settings';
-    return 'today';
-  }, [location.pathname]);
-
-  const setActiveScreen = (screenId) => {
-    const routeMap = {
-      today: '/today',
-      dashboard: '/dashboard',
-      batches: '/batches',
-      employees: '/employees',
-      paySummary: '/pay-summary',
-      ledger: '/ledger',
-      harvest: '/harvest',
-      dailyLog: '/daily-log',
-      inventory: '/inventory',
-      analytics: '/analytics',
-      statement: '/statement',
-      settings: '/settings',
-    };
-    const route = routeMap[screenId];
-    if (route) {
-      navigate(route);
-    }
-  };
-
-  const allowedScreens = useMemo(() => {
-    if (auth.isPublicViewer) {
-      return ['today', 'dashboard'];
-    }
-
-    return [
-      'today',
-      'dashboard',
-      'batches',
-      'dailyLog',
-      'paySummary',
-      'inventory',
-      'analytics',
-      'settings',
-      ...(canManageOperations ? ['employees', 'ledger', 'harvest', 'statement'] : []),
-    ];
-  }, [canManageOperations, auth.isPublicViewer]);
-
-  const screensMeta = useMemo(() => [
-    { id: 'today', label: 'Today', icon: 'today' },
-    { id: 'dashboard', label: 'Home', icon: 'home' },
-    { id: 'batches', label: 'Batches', icon: 'layers' },
-    { id: 'employees', label: 'Employees', icon: 'group' },
-    { id: 'paySummary', label: 'Pay Summary', icon: 'payments' },
-    { id: 'ledger', label: 'Ledger', icon: 'receipt_long' },
-    { id: 'harvest', label: 'Harvest', icon: 'agriculture' },
-    { id: 'dailyLog', label: 'Daily Logs', icon: 'edit_note' },
-    { id: 'inventory', label: 'Inventory', icon: 'inventory' },
-    { id: 'analytics', label: 'Analytics', icon: 'monitoring' },
-    { id: 'statement', label: 'Statement', icon: 'description' },
-  ], []);
-
-  const visibleNavItems = useMemo(() => {
-    return screensMeta.filter((item) => allowedScreens.includes(item.id));
-  }, [allowedScreens, screensMeta]);
-
-  // Route guard: Redirect if trying to access unauthorized screen
-  useEffect(() => {
-    const routeToScreen = {
-      '/today': 'today',
-      '/dashboard': 'dashboard',
-      '/batches': 'batches',
-      '/inventory': 'inventory',
-      '/ledger': 'ledger',
-      '/harvest': 'harvest',
-      '/employees': 'employees',
-      '/pay-summary': 'paySummary',
-      '/daily-log': 'dailyLog',
-      '/analytics': 'analytics',
-      '/statement': 'statement',
-      '/settings': 'settings',
-    };
-    
-    const path = location.pathname;
-    let screen = null;
-    for (const [route, screenId] of Object.entries(routeToScreen)) {
-      if (path.startsWith(route)) {
-        screen = screenId;
-        break;
-      }
-    }
-    
-    // Only guard if user is logged in
-    if (auth.user && screen && !allowedScreens.includes(screen)) {
-      navigate('/today', { replace: true });
-    }
-  }, [location.pathname, allowedScreens, navigate, auth.user]);
 
   // --- SECURITY GATEKEEPER ---
+  if (auth.isCheckingSession) {
+    return (
+      <div className="flex h-screen w-screen flex-col items-center justify-center gap-3 bg-slate-950 text-slate-100">
+        <span className="material-symbols-outlined text-app-accent animate-spin text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+          progress_activity
+        </span>
+        <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-jetbrains">
+          Verifying session...
+        </p>
+      </div>
+    );
+  }
+
   if (!auth.user || (!auth.token && !auth.isPublicViewer)) {
     if (auth.authView === 'login') {
       return <Login onLogin={auth.handleLogin} onBack={() => auth.setAuthView('intro')} />;
