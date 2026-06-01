@@ -159,20 +159,25 @@ export default function Login({ onLogin, onBack }) {
                 </h2>
               </div>
 
-              {/* Error Alert */}
-              {error && (
-                <div className="w-full bg-app-danger-bg border border-app-danger/40 text-app-danger px-4 py-3 rounded-full text-xs font-semibold text-center mb-5 backdrop-blur-md">
-                  {error}
-                </div>
-              )}
+              {/* Error Alert — always rendered so the live region exists in the DOM for screen readers */}
+              <div
+                id="login-error"
+                role="alert"
+                aria-live="assertive"
+                aria-atomic="true"
+                className={error ? 'w-full bg-app-danger-bg border border-app-danger/40 text-app-danger px-4 py-3 rounded-full text-xs font-semibold text-center mb-5 backdrop-blur-md' : ''}
+              >
+                {error || ''}
+              </div>
 
               {/* Login Form */}
               <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4 z-20 relative">
                 
                 {/* Username Input */}
                 <div className="relative animate-login-item" style={{ animationDelay: '200ms' }}>
+                  <label htmlFor="username" className="sr-only">Username or Email</label>
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-app-text-secondary">
-                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                       <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"></path>
                     </svg>
                   </div>
@@ -181,17 +186,21 @@ export default function Login({ onLogin, onBack }) {
                     id="username"
                     name="username"
                     required
+                    autoComplete="username"
                     value={login}
                     onChange={(e) => setLogin(e.target.value)}
                     className="input-glass block w-full pl-12 pr-4 py-3 rounded-full text-app-text text-sm"
                     placeholder="Username or Email"
+                    aria-invalid={!!error}
+                    aria-describedby={error ? 'login-error' : undefined}
                   />
                 </div>
 
                 {/* Password Input */}
                 <div className="relative animate-login-item" style={{ animationDelay: '300ms' }}>
+                  <label htmlFor="password" className="sr-only">Password</label>
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-app-text-secondary">
-                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                       <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"></path>
                     </svg>
                   </div>
@@ -200,10 +209,13 @@ export default function Login({ onLogin, onBack }) {
                     id="password"
                     name="password"
                     required
+                    autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="input-glass block w-full pl-12 pr-4 py-3 rounded-full text-app-text text-sm"
                     placeholder="Password"
+                    aria-invalid={!!error}
+                    aria-describedby={error ? 'login-error' : undefined}
                   />
                 </div>
 
