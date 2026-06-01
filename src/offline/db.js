@@ -36,6 +36,8 @@ export async function saveCache(url, data) {
   }
 }
 
+const CACHE_TTL = 15 * 60 * 1000; // 15 minutes default TTL
+
 export async function getCache(url) {
   try {
     const db = await openDatabase();
@@ -45,7 +47,27 @@ export async function getCache(url) {
       const request = store.get(url);
 
       request.onsuccess = () => {
-        resolve(request.result ? request.result.data : null);
+        const result = request.result;
+        if (result && result.data && typeof result.data === 'object') {
+          try {
+            Object.defineProperty(result.data, '_cacheMeta', {
+              value: {
+                isCached: true,
+                timestamp: result.timestamp,
+                isStale: Date.now() - result.timestamp > CACHE_TTL,
+                ageMs: Date.now() - result.timestamp
+              },
+              enumerable: false,
+              writable: true,
+              configurable: true
+            });
+          } catch (e) {
+            console.warn('Failed to define _cacheMeta on cached data:', e);
+          }
+          resolve(result.data);
+        } else {
+          resolve(result ? result.data : null);
+        }
       };
       request.onerror = () => reject(request.error);
     });

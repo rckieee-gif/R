@@ -7,6 +7,7 @@ import {
   getAgeDay,
   getLastBroilerTargetDay
 } from '../../shared/utils/broilerTargets';
+import OfflineStaleBanner from '../../shared/components/OfflineStaleBanner';
 
 const FEED_VARIANCE_WARNING_PERCENT = 15;
 const MORTALITY_WARNING_RATE = 0.005;
@@ -1818,6 +1819,8 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           </div>
         </div>
       </div>
+
+      <OfflineStaleBanner data={[loadings, assignments, feedItems]} />
 
       {error && (
         <div className="mb-5 rounded-xl border border-app-danger/30 bg-app-danger-bg p-3 text-sm font-bold text-app-danger">

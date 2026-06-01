@@ -9,6 +9,7 @@ import { hasMinimumRole } from '../../shared/utils/roles';
 import { openDatabase, removeFromQueue, updateQueueStatus, getQueue } from '../../offline/db';
 import { processSyncQueue } from '../../offline/syncQueue';
 import { apiClient } from '../../shared/utils/apiClient';
+import OfflineStaleBanner from '../../shared/components/OfflineStaleBanner';
 
 async function updateQueuePayload(id, nextPayload) {
   const db = await openDatabase();
@@ -508,6 +509,8 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
           </div>
         </div>
       </div>
+
+      <OfflineStaleBanner data={[feedItems, transactions, loadings]} />
 
       {/* Date and Log Summary row */}
       <div className="grid grid-cols-3 gap-3 mb-6">

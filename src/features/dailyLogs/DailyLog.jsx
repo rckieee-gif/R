@@ -7,6 +7,7 @@ import {
   calculateTargetFeedForHeads,
   getAgeDay
 } from '../../shared/utils/broilerTargets';
+import OfflineStaleBanner from '../../shared/components/OfflineStaleBanner';
 import { calculateMortalityBuffer, applyMortalityBuffer } from '../../shared/utils/mortalityBuffer';
 import DailyLogForm from './components/DailyLogForm';
 import DailyLogHistory from './components/DailyLogHistory';
@@ -569,6 +570,8 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
           </p>
         )}
       </div>
+
+      <OfflineStaleBanner data={[logs, buildings, feedItems, assignmentsState.rows]} />
 
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="bg-app-card p-4 rounded-xl border border-app-border shadow-sm">

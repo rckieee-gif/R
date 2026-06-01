@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../shared/utils/apiClient';
 import { inventoryItemSchema, inventoryMovementSchema } from './inventorySchemas';
+import OfflineStaleBanner from '../../shared/components/OfflineStaleBanner';
 
 const emptyItemForm = {
   name: '',
@@ -404,6 +405,8 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
           {activeBatch?.id ? `Batch ${activeBatch.id}` : 'Farm stock tracker'}
         </p>
       </div>
+
+      <OfflineStaleBanner data={[items, movements]} />
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
         <div className="bg-app-card p-4 rounded-xl border border-app-border shadow-sm">

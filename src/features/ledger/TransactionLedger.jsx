@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../shared/utils/apiClient';
+import OfflineStaleBanner from '../../shared/components/OfflineStaleBanner';
 import QuickEntryBox from './components/QuickEntryBox';
 import TransactionForm from './components/TransactionForm';
 import TransactionTable from './components/TransactionTable';
@@ -716,6 +717,8 @@ export default function TransactionLedger({ transactions, setTransactions, activ
           </div>
         </div>
       </div>
+
+      <OfflineStaleBanner data={[transactions, stakeholders, feedItems]} />
 
       {signedOutLedgerMessage && (
         <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger">
