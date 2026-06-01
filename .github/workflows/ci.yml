@@ -26,6 +26,9 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
+    - name: Install backend dependencies
+      run: npm --prefix farm-backend ci
+
     - name: Run lint
       run: npm run lint
 

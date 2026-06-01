@@ -7,8 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "test": "vitest run",
+    "test": "vitest run && npm run test:backend-unit",
     "test:backend": "npm --prefix farm-backend run test:regression",
+    "test:idempotency": "npm --prefix farm-backend run test:idempotency",
+    "test:isolation": "npm --prefix farm-backend run test:isolation",
+    "test:env": "npm --prefix farm-backend run test:env",
+    "test:backend-unit": "npm --prefix farm-backend run test:unit",
     "preview": "vite preview"
   },
   "dependencies": {
