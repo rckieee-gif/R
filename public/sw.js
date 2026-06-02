@@ -1,4 +1,4 @@
-const CACHE_NAME = 'octavio-assets-v2';
+const CACHE_NAME = 'octavio-assets-v3';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -24,7 +24,7 @@ self.addEventListener('fetch', (event) => {
 
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request)
+      fetch(event.request, { cache: 'no-store' })
         .then((networkResponse) => {
           const clone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
@@ -35,7 +35,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Stale-While-Revalidate caching strategy
+  if (url.pathname.startsWith('/assets/') || url.pathname === '/manifest.webmanifest') {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
+    return;
+  }
+
+  // Stale-While-Revalidate caching strategy for static public files.
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
