@@ -6,6 +6,7 @@ import NotificationProvider from '../shared/components/NotificationProvider';
 
 vi.mock('../shared/utils/apiClient', () => ({
   apiClient: {
+    get: vi.fn(),
     post: vi.fn(),
   },
 }));
@@ -32,6 +33,9 @@ describe('Login Component', () => {
     const mockUser = { id: 1, name: 'Roland', role: 'Admin' };
 
     apiClient.post.mockResolvedValueOnce({
+      message: 'Login successful',
+    });
+    apiClient.get.mockResolvedValueOnce({
       user: mockUser,
     });
 
@@ -55,7 +59,30 @@ describe('Login Component', () => {
         email: 'admin.roland',
         password: 'password123',
       });
+      expect(apiClient.get).toHaveBeenCalledWith('/api/auth/me', {
+        retries: 0,
+        suppressAuthFailure: true,
+      });
       expect(mockOnLogin).toHaveBeenCalledWith(mockUser);
+    });
+  });
+
+  it('shows a clear error if the session cookie cannot be confirmed after login', async () => {
+    apiClient.post.mockResolvedValueOnce({ message: 'Login successful' });
+    apiClient.get.mockRejectedValueOnce(new Error('Your session has expired. Please sign in again.'));
+
+    render(
+      <NotificationProvider>
+        <Login onLogin={vi.fn()} />
+      </NotificationProvider>
+    );
+
+    fireEvent.change(screen.getByPlaceholderText(/username or email/i), { target: { value: 'admin.roland' } });
+    fireEvent.change(screen.getByPlaceholderText(/password/i), { target: { value: 'password123' } });
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+
+    await waitFor(() => {
+      expect(screen.getAllByText(/session has expired/i).length).toBeGreaterThan(0);
     });
   });
 

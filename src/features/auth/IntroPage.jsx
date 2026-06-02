@@ -56,7 +56,7 @@ function PreviewStat({ label, value, tone = 'text-app-text', suffix = null, isAl
   );
 }
 
-export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerLoading = false, viewerError = '', preloadedSnapshot = null }) {
+export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerLoading = false, viewerError = '', sessionError = '', preloadedSnapshot = null }) {
   const todayStr = getTodayDateString();
 
   const batch = preloadedSnapshot?.batch;
@@ -264,9 +264,9 @@ export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerL
             </button>
           </div>
 
-          {viewerError && (
+          {(sessionError || viewerError) && (
             <div className="mb-8 rounded-lg border border-app-danger/40 bg-app-danger-bg px-4 py-3 text-sm font-medium text-app-danger">
-              {viewerError}
+              {sessionError || viewerError}
             </div>
           )}
 

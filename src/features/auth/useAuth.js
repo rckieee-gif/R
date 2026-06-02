@@ -29,11 +29,14 @@ export default function useAuth() {
   const [authView, setAuthView] = useState('intro');
   const [viewerSnapshot, setViewerSnapshot] = useState(null);
   const [viewerError, setViewerError] = useState('');
+  const [sessionError, setSessionError] = useState('');
   const [isViewerLoading, setIsViewerLoading] = useState(false);
   const [preloadedSnapshot, setPreloadedSnapshot] = useState(null);
 
   useEffect(() => {
     const checkSession = async () => {
+      const hadStoredUser = Boolean(localStorage.getItem('octavioUser'));
+
       try {
         const data = await apiClient.get('/api/auth/me', {
           retries: 0,
@@ -42,6 +45,7 @@ export default function useAuth() {
         if (data && data.user) {
           setUser(data.user);
           setToken(COOKIE_SESSION_MARKER);
+          setSessionError('');
           localStorage.setItem('octavioUser', JSON.stringify(data.user));
         } else {
           setUser(null);
@@ -51,6 +55,9 @@ export default function useAuth() {
       } catch (err) {
         if (err.status !== 401) {
           console.error("Session verification failed:", err);
+        }
+        if (hadStoredUser) {
+          setSessionError('Your saved session could not be verified. Please sign in again.');
         }
         setUser(null);
         setToken(null);
@@ -84,11 +91,12 @@ export default function useAuth() {
     setUser(userData);
     setToken(COOKIE_SESSION_MARKER);
     setAuthView('intro');
+    setSessionError('');
     localStorage.setItem('octavioUser', JSON.stringify(userData));
     localStorage.removeItem('octavioToken');
   }, []);
 
-  const clearSession = useCallback(() => {
+  const clearSession = useCallback((message = '') => {
     apiClient.post('/api/auth/logout').catch(err => {
       console.warn("Backend logout failed or session already cleared:", err);
     });
@@ -96,12 +104,15 @@ export default function useAuth() {
     setToken(null);
     setViewerSnapshot(null);
     setViewerError('');
+    setSessionError(message);
     clearStoredSession();
     setAuthView('intro');
   }, []);
 
   useEffect(() => {
-    registerAuthFailureHandler(clearSession);
+    registerAuthFailureHandler(() => {
+      clearSession('Your session could not be verified. Please sign in again.');
+    });
     return () => {
       registerAuthFailureHandler(null);
     };
@@ -109,7 +120,8 @@ export default function useAuth() {
 
   const handleViewerAccess = useCallback(async () => {
     setIsViewerLoading(true);
-    setViewerError('');
+      setViewerError('');
+      setSessionError('');
 
     try {
       let data = preloadedSnapshot;
@@ -161,6 +173,7 @@ export default function useAuth() {
     viewerSnapshot,
     viewerPreviewData,
     viewerError,
+    sessionError,
     setViewerError,
     isViewerLoading,
     preloadedSnapshot,

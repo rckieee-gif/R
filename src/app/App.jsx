@@ -143,6 +143,7 @@ function App() {
         onMemberLogin={() => auth.setAuthView('login')}
         isViewerLoading={auth.isViewerLoading}
         viewerError={auth.viewerError}
+        sessionError={auth.sessionError}
         preloadedSnapshot={auth.preloadedSnapshot}
       />
     );
