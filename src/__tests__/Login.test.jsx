@@ -31,11 +31,9 @@ describe('Login Component', () => {
   it('calls apiClient.post on submit and handles successful login', async () => {
     const mockOnLogin = vi.fn();
     const mockUser = { id: 1, name: 'Roland', role: 'Admin' };
-    const mockToken = 'fallback-jwt';
 
     apiClient.post.mockResolvedValueOnce({
       message: 'Login successful',
-      token: mockToken,
     });
     apiClient.get.mockResolvedValueOnce({
       user: mockUser,
@@ -65,40 +63,7 @@ describe('Login Component', () => {
         retries: 0,
         suppressAuthFailure: true,
       });
-      expect(mockOnLogin).toHaveBeenCalledWith(mockUser, mockToken);
-    });
-  });
-
-  it('falls back to the returned bearer token when cookie confirmation fails', async () => {
-    const mockOnLogin = vi.fn();
-    const mockUser = { id: 1, name: 'Roland', role: 'Admin' };
-    const mockToken = 'fallback-jwt';
-
-    apiClient.post.mockResolvedValueOnce({
-      message: 'Login successful',
-      token: mockToken,
-    });
-    apiClient.get
-      .mockRejectedValueOnce(new Error('Your session has expired. Please sign in again.'))
-      .mockResolvedValueOnce({ user: mockUser });
-
-    render(
-      <NotificationProvider>
-        <Login onLogin={mockOnLogin} />
-      </NotificationProvider>
-    );
-
-    fireEvent.change(screen.getByPlaceholderText(/username or email/i), { target: { value: 'admin.roland' } });
-    fireEvent.change(screen.getByPlaceholderText(/password/i), { target: { value: 'password123' } });
-    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
-
-    await waitFor(() => {
-      expect(apiClient.get).toHaveBeenLastCalledWith('/api/auth/me', {
-        authToken: mockToken,
-        retries: 0,
-        suppressAuthFailure: true,
-      });
-      expect(mockOnLogin).toHaveBeenCalledWith(mockUser, mockToken);
+      expect(mockOnLogin).toHaveBeenCalledWith(mockUser);
     });
   });
 

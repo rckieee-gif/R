@@ -87,31 +87,17 @@ export default function Login({ onLogin, onBack }) {
     setError('');
 
     try {
-      const loginResult = await apiClient.post('/api/auth/login', { login, email: login, password });
-      let session = null;
-
-      try {
-        session = await apiClient.get('/api/auth/me', {
-          retries: 0,
-          suppressAuthFailure: true,
-        });
-      } catch (cookieErr) {
-        if (!loginResult?.token) {
-          throw cookieErr;
-        }
-
-        session = await apiClient.get('/api/auth/me', {
-          authToken: loginResult.token,
-          retries: 0,
-          suppressAuthFailure: true,
-        });
-      }
+      await apiClient.post('/api/auth/login', { login, email: login, password });
+      const session = await apiClient.get('/api/auth/me', {
+        retries: 0,
+        suppressAuthFailure: true,
+      });
 
       if (!session?.user) {
         throw new Error('Login succeeded, but the browser could not confirm the session cookie. Please refresh and try again.');
       }
 
-      onLogin(session.user, loginResult?.token || null);
+      onLogin(session.user);
     } catch (err) {
       console.error('Login connection error:', err);
       const errMsg = err.message || 'Cannot connect to the server. Is it running?';

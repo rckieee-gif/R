@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { publicViewerUser } from '../../shared/utils/publicViewerData';
-import { apiClient, registerAuthFailureHandler, setFallbackAuthToken } from '../../shared/utils/apiClient';
+import { apiClient, registerAuthFailureHandler } from '../../shared/utils/apiClient';
 
 const COOKIE_SESSION_MARKER = 'cookie-session';
-const FALLBACK_TOKEN_KEY = 'octavioToken';
 
 function readStoredUser() {
   const savedUser = localStorage.getItem('octavioUser');
@@ -20,13 +19,12 @@ function readStoredUser() {
 
 function clearStoredSession() {
   localStorage.removeItem('octavioUser');
-  localStorage.removeItem(FALLBACK_TOKEN_KEY);
-  setFallbackAuthToken(null);
+  localStorage.removeItem('octavioToken');
 }
 
 export default function useAuth() {
   const [user, setUser] = useState(() => readStoredUser());
-  const [token, setToken] = useState(() => localStorage.getItem(FALLBACK_TOKEN_KEY) || (readStoredUser() ? COOKIE_SESSION_MARKER : null));
+  const [token, setToken] = useState(() => (readStoredUser() ? COOKIE_SESSION_MARKER : null));
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [authView, setAuthView] = useState('intro');
   const [viewerSnapshot, setViewerSnapshot] = useState(null);
@@ -38,7 +36,6 @@ export default function useAuth() {
   useEffect(() => {
     const checkSession = async () => {
       const hadStoredUser = Boolean(localStorage.getItem('octavioUser'));
-      const fallbackToken = localStorage.getItem(FALLBACK_TOKEN_KEY);
 
       try {
         const data = await apiClient.get('/api/auth/me', {
@@ -48,8 +45,7 @@ export default function useAuth() {
         if (data && data.user) {
           setUser(data.user);
           setToken(COOKIE_SESSION_MARKER);
-          setFallbackAuthToken(null);
-          localStorage.removeItem(FALLBACK_TOKEN_KEY);
+          localStorage.removeItem('octavioToken');
           setSessionError('');
           localStorage.setItem('octavioUser', JSON.stringify(data.user));
         } else {
@@ -58,28 +54,6 @@ export default function useAuth() {
           clearStoredSession();
         }
       } catch (err) {
-        if (fallbackToken) {
-          try {
-            const data = await apiClient.get('/api/auth/me', {
-              authToken: fallbackToken,
-              retries: 0,
-              suppressAuthFailure: true,
-            });
-            if (data?.user) {
-              setFallbackAuthToken(fallbackToken);
-              setUser(data.user);
-              setToken(fallbackToken);
-              setSessionError('');
-              localStorage.setItem('octavioUser', JSON.stringify(data.user));
-              return;
-            }
-          } catch (fallbackErr) {
-            if (fallbackErr.status !== 401) {
-              console.error("Bearer fallback session verification failed:", fallbackErr);
-            }
-          }
-        }
-
         if (err.status !== 401) {
           console.error("Session verification failed:", err);
         }
@@ -114,19 +88,13 @@ export default function useAuth() {
     };
   }, []);
 
-  const handleLogin = useCallback((userData, authToken = null) => {
+  const handleLogin = useCallback((userData) => {
     setUser(userData);
-    setToken(authToken || COOKIE_SESSION_MARKER);
+    setToken(COOKIE_SESSION_MARKER);
     setAuthView('intro');
     setSessionError('');
     localStorage.setItem('octavioUser', JSON.stringify(userData));
-    if (authToken) {
-      setFallbackAuthToken(authToken);
-      localStorage.setItem(FALLBACK_TOKEN_KEY, authToken);
-    } else {
-      setFallbackAuthToken(null);
-      localStorage.removeItem(FALLBACK_TOKEN_KEY);
-    }
+    localStorage.removeItem('octavioToken');
   }, []);
 
   const clearSession = useCallback((message = '') => {
@@ -183,8 +151,7 @@ export default function useAuth() {
       });
       setToken(null);
       localStorage.removeItem('octavioUser');
-      localStorage.removeItem(FALLBACK_TOKEN_KEY);
-      setFallbackAuthToken(null);
+      localStorage.removeItem('octavioToken');
     } catch (error) {
       console.error('Failed to open viewer mode:', error);
       setViewerError(error.message || 'Cannot open the current batch right now.');
