@@ -3,6 +3,14 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "https://octavio-poultry-farms.onrender.com/api/$1"
+    },
+    {
+      "source": "/health",
+      "destination": "https://octavio-poultry-farms.onrender.com/health"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
