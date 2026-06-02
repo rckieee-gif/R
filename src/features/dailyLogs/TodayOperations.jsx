@@ -61,6 +61,35 @@ function formatDate(value) {
   }) || '--';
 }
 
+function getArrivalEtaStatus(daysUntilArrival, expectedDate) {
+  if (daysUntilArrival === null) {
+    return {
+      statusText: 'Date not set',
+      detailText: 'Set the expected arrival date.'
+    };
+  }
+
+  if (daysUntilArrival > 0) {
+    return {
+      statusText: `On schedule: ${daysUntilArrival} day${daysUntilArrival === 1 ? '' : 's'}`,
+      detailText: `Expected: ${expectedDate}`
+    };
+  }
+
+  if (daysUntilArrival === 0) {
+    return {
+      statusText: 'Arriving today',
+      detailText: `Expected: ${expectedDate}`
+    };
+  }
+
+  const lateDays = Math.abs(daysUntilArrival);
+  return {
+    statusText: `Overdue: ${lateDays} day${lateDays === 1 ? '' : 's'} late`,
+    detailText: `Expected: ${expectedDate}`
+  };
+}
+
 function formatNumber(value, digits = 0) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return '--';
   return Number(value).toLocaleString(undefined, {
@@ -541,6 +570,18 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
 
   const abnormalWarnings = (() => {
     const warnings = [];
+    const mortalityAllowance = Number(activeBatch?.mortalityAllowance || 0);
+    const totalMortalityToDate = logs.reduce((sum, log) => sum + Number(log.mortality || 0), 0);
+
+    if (mortalityAllowance > 0 && totalMortalityToDate > mortalityAllowance) {
+      warnings.push({
+        key: 'mortality-allowance',
+        label: 'Mortality allowance',
+        severity: totalMortalityToDate > mortalityAllowance * 2 ? 'danger' : 'warning',
+        title: 'Cumulative mortality is above allowance',
+        detail: `${formatNumber(totalMortalityToDate)} total mortality recorded; allowance is ${formatNumber(mortalityAllowance)} heads.`
+      });
+    }
 
     buildingChecks.forEach((check) => {
       if (!check.hasLogToday) {
@@ -1113,17 +1154,9 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     const checkedCount = Object.values(prepChecklist).filter(Boolean).length;
     const percentComplete = Math.round((checkedCount / checklistItems.length) * 100);
 
-    const countdownText = daysUntilArrival !== null && daysUntilArrival > 0
-      ? `Starts in ${daysUntilArrival} day${daysUntilArrival === 1 ? '' : 's'}`
-      : daysUntilArrival === 0
-        ? 'Arriving Today'
-        : 'In Transit / Delayed';
-
-    const countdownSubtext = daysUntilArrival !== null && daysUntilArrival > 0
-      ? `Expected arrival: ${formatDate(activeBatch.startDate)}`
-      : daysUntilArrival === 0
-        ? 'Prepare for reception and unloading.'
-        : `Expected arrival date was ${formatDate(activeBatch.startDate)}`;
+    const arrivalEta = getArrivalEtaStatus(daysUntilArrival, formatDate(activeBatch.startDate));
+    const countdownText = arrivalEta.statusText;
+    const countdownSubtext = arrivalEta.detailText;
 
     const readinessTone = percentComplete === 100
       ? 'success'
@@ -1149,15 +1182,18 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
               </p>
             </div>
             
-            {/* Countdown Badge */}
-            <div className="rounded-xl border border-app-border bg-app-card px-4 py-2 flex items-center gap-3 shadow-sm min-w-56">
+            {/* ETA Badge */}
+            <div className="rounded-xl border border-app-border bg-app-card px-4 py-2 flex items-center gap-3 shadow-sm min-w-60">
               <svg className="h-6 w-6 text-app-accent shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-inter">ETA Status</p>
+                <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-inter">Arrival ETA</p>
                 <p className="text-sm font-black font-jetbrains text-app-accent">
                   {countdownText}
+                </p>
+                <p className="text-[10px] font-bold text-app-text-secondary font-inter">
+                  {countdownSubtext}
                 </p>
               </div>
             </div>
@@ -1238,7 +1274,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           </div>
 
           {/* Expected Metrics Bento Grid */}
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             <SummaryMetric
               label="Arrival Date"
               value={formatDate(activeBatch.startDate)}
@@ -1248,6 +1284,11 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
               label="Planned Flock"
               value={formatNumber(activeBatch.plannedFlock || activeBatch.totalChicksLoaded)}
               detail="Target flock size"
+            />
+            <SummaryMetric
+              label="Mortality Allowance"
+              value={formatNumber(activeBatch.mortalityAllowance || 0)}
+              detail="Allowed heads before alert"
             />
             <SummaryMetric
               label="Target Feed Requirement"

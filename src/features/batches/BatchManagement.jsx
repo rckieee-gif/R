@@ -24,6 +24,11 @@ function getLoadingTotal(loadings) {
   return loadings.reduce((sum, row) => sum + Number(row.chicksLoaded || 0), 0);
 }
 
+function isIncomingStatus(status) {
+  const normalized = String(status || '').trim().toUpperCase();
+  return normalized === 'ON_THE_WAY' || normalized === 'ON THE WAY';
+}
+
 function getLockedSharePct(chicksLoaded, totalChicksLoaded) {
   const total = Number(totalChicksLoaded || 0);
   if (!total) return 0;
@@ -75,9 +80,10 @@ export default function BatchManagement({
   const [startDate, setStartDate] = useState('');
   const [targetHarvestDate, setTargetHarvestDate] = useState('');
   const [plannedFlock, setPlannedFlock] = useState('');
+  const [mortalityAllowance, setMortalityAllowance] = useState('');
   const [targetFeedKg, setTargetFeedKg] = useState('');
   const [notes, setNotes] = useState('');
-  const [statusField, setStatusField] = useState('ONGOING');
+  const [statusField, setStatusField] = useState('ON_THE_WAY');
   const [editingBatchId, setEditingBatchId] = useState(null);
   const [isLoadingLoadings, setIsLoadingLoadings] = useState(false);
   const { success, error: toastError, confirm } = useNotification();
@@ -150,9 +156,10 @@ export default function BatchManagement({
     setStartDate('');
     setTargetHarvestDate('');
     setPlannedFlock('');
+    setMortalityAllowance('');
     setTargetFeedKg('');
     setNotes('');
-    setStatusField('ONGOING');
+    setStatusField('ON_THE_WAY');
     setLoadings(buildLoadingRows(buildings));
   };
 
@@ -225,8 +232,10 @@ export default function BatchManagement({
       return;
     }
 
-    if (loadingTotal <= 0) {
-      toastError('Enter chicks loaded for at least one building.');
+    const isStartingCycle = !isIncomingStatus(statusField);
+
+    if (isStartingCycle && loadingTotal <= 0) {
+      toastError('Enter actual chicks arrived for at least one building before starting the cycle.');
       return;
     }
 
@@ -235,9 +244,10 @@ export default function BatchManagement({
       targetHarvestDate,
       totalChicksLoaded: loadingTotal,
       plannedFlock: parseInt(plannedFlock || 0),
+      mortalityAllowance: parseInt(mortalityAllowance || 0),
       targetFeedKg: parseFloat(targetFeedKg || 0),
       notes,
-      status: editingBatchId ? statusField : 'ONGOING',
+      status: statusField,
       loadings: loadingsWithShares.map((row) => ({
         building: row.building,
         chicksLoaded: parseInt(row.chicksLoaded || 0),
@@ -261,11 +271,11 @@ export default function BatchManagement({
         if (activeBatch?.id === editingBatchId) {
           setActiveBatch(data);
         }
-        success('Batch updated successfully!');
+        success(isStartingCycle ? 'Cycle started successfully!' : 'Batch updated successfully!');
       } else {
         updateBatchList((current) => [data, ...current]);
         setActiveBatch(data);
-        success('Batch created successfully!');
+        success(isStartingCycle ? 'Batch cycle created successfully!' : 'Incoming batch created successfully!');
       }
 
       refreshExternalBatchList();
@@ -275,16 +285,17 @@ export default function BatchManagement({
     }
   };
 
-  const handleEditBatch = async (batch) => {
+  const handleEditBatch = async (batch, options = {}) => {
     if (!canEditOrDelete) return;
 
     setEditingBatchId(batch.id);
     setStartDate(toDateInput(batch.startDate));
     setTargetHarvestDate(toDateInput(batch.targetHarvestDate));
     setPlannedFlock(batch.plannedFlock || '');
+    setMortalityAllowance(batch.mortalityAllowance || '');
     setTargetFeedKg(batch.targetFeedKg || '');
     setNotes(batch.notes || '');
-    setStatusField(batch.status || 'ONGOING');
+    setStatusField(options.startCycle ? 'ONGOING' : (batch.status || 'ONGOING'));
     await fetchBatchLoadings(batch.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -341,7 +352,10 @@ export default function BatchManagement({
           <p className="text-xs font-bold uppercase opacity-80 font-jetbrains">Current Active Batch</p>
           <p className="text-2xl font-black mt-1 font-jetbrains">{activeBatch.id}</p>
           <p className="text-sm mt-1 opacity-90 font-inter">
-            Started: {toDateInput(activeBatch.startDate)}
+            {isIncomingStatus(activeBatch.status) ? 'Expected arrival' : 'Cycle started'}: {toDateInput(activeBatch.startDate)}
+          </p>
+          <p className="text-xs mt-1 opacity-80 font-inter">
+            Mortality allowance: {Number(activeBatch.mortalityAllowance || 0).toLocaleString()} heads
           </p>
         </div>
       )}
@@ -362,7 +376,30 @@ export default function BatchManagement({
         <form onSubmit={handleSaveBatch} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-app-text-secondary mb-1 font-jetbrains">
-              Loading / Start Date
+              Batch Stage
+            </label>
+            <select
+              value={statusField}
+              onChange={(e) => setStatusField(e.target.value)}
+              className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-bold"
+            >
+              <option value="ON_THE_WAY">ON THE WAY</option>
+              <option value="ONGOING">ONGOING</option>
+              {editingBatchId && (
+                <>
+                  <option value="HARVESTED">HARVESTED</option>
+                  <option value="CLOSED">CLOSED</option>
+                </>
+              )}
+            </select>
+            <p className="mt-1 text-[10px] text-app-text-secondary font-inter">
+              Use ON THE WAY before arrival. Switch to ONGOING when chicks are unloaded to start Day 1.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-app-text-secondary mb-1 font-jetbrains">
+              {isIncomingStatus(statusField) ? 'Expected Arrival Date' : 'Actual Arrival / Cycle Start Date'}
             </label>
             <input
               type="date"
@@ -371,6 +408,9 @@ export default function BatchManagement({
               onChange={(e) => setStartDate(e.target.value)}
               className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent"
             />
+            <p className="mt-1 text-[10px] text-app-text-secondary font-inter">
+              Feed targets, age, and daily cycle counts start from the actual arrival date once the batch is ONGOING.
+            </p>
           </div>
 
           <div>
@@ -388,7 +428,7 @@ export default function BatchManagement({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-app-text-secondary mb-1 font-jetbrains">
-                Total Chicks Loaded
+                Actual Chicks Arrived
               </label>
               <input
                 type="number"
@@ -399,7 +439,7 @@ export default function BatchManagement({
                 placeholder="0"
               />
               <p className="text-[10px] text-app-text-secondary mt-1 font-inter">
-                Calculated from building chicks.
+                Calculated from building chick counts.
               </p>
             </div>
 
@@ -415,6 +455,37 @@ export default function BatchManagement({
                 className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-jetbrains"
                 placeholder="0"
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-app-text-secondary mb-1 font-jetbrains">
+                Mortality Allowance
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={mortalityAllowance}
+                onChange={(e) => setMortalityAllowance(e.target.value)}
+                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-jetbrains"
+                placeholder="0"
+              />
+              <p className="text-[10px] text-app-text-secondary mt-1 font-inter">
+                Allowed heads before cumulative mortality warnings.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-app-border bg-app-bg p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary font-jetbrains">
+                Arrival Variance
+              </p>
+              <p className="mt-1 text-lg font-black text-app-text font-jetbrains">
+                {Number(plannedFlock || 0) > 0 ? (loadingTotal - Number(plannedFlock || 0)).toLocaleString() : '--'}
+              </p>
+              <p className="text-[10px] text-app-text-secondary mt-1 font-inter">
+                Actual chicks arrived minus planned flock.
+              </p>
             </div>
           </div>
 
@@ -460,7 +531,7 @@ export default function BatchManagement({
 
                   <div>
                     <label className="block text-[10px] font-bold text-app-text-secondary mb-1 font-jetbrains">
-                      Chicks
+                      Arrived
                     </label>
                     <input
                       type="number"
@@ -512,19 +583,6 @@ export default function BatchManagement({
 
           {editingBatchId && (
             <div>
-              <label className="block text-xs font-bold text-app-text-secondary mb-1 font-jetbrains">
-                Status
-              </label>
-              <select
-                value={statusField}
-                onChange={(e) => setStatusField(e.target.value)}
-                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-bold"
-              >
-                <option value="ONGOING">ONGOING</option>
-                <option value="HARVESTED">HARVESTED</option>
-                <option value="CLOSED">CLOSED</option>
-              </select>
-
               {statusField === 'CLOSED' && (
                 <div className="bg-app-warning-bg border border-app-warning/20 p-4 rounded-xl text-xs space-y-2 mt-3 animate-toast-in text-app-warning">
                   <p className="font-extrabold flex items-center gap-1.5">
@@ -576,7 +634,9 @@ export default function BatchManagement({
               type="submit"
               className="flex-[2] bg-app-accent text-app-on-accent p-3 rounded-xl font-bold shadow-md active:scale-95 transition-all cursor-pointer font-hanken"
             >
-              {editingBatchId ? 'Update Batch' : 'Create Batch'}
+              {isIncomingStatus(statusField)
+                ? (editingBatchId ? 'Save Incoming Batch' : 'Create Incoming Batch')
+                : (editingBatchId ? 'Start / Update Cycle' : 'Create Active Cycle')}
             </button>
           </div>
         </form>
@@ -609,6 +669,9 @@ export default function BatchManagement({
                   <p className="text-sm text-app-text-secondary mt-1 font-jetbrains">
                     Chicks: {Number(batch.totalChicksLoaded || 0).toLocaleString()}
                   </p>
+                  <p className="text-xs text-app-text-secondary mt-1 font-inter">
+                    Mortality allowance: {Number(batch.mortalityAllowance || 0).toLocaleString()} heads
+                  </p>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -625,6 +688,15 @@ export default function BatchManagement({
 
                   {!readOnly && canEditOrDelete && (
                     <>
+                      {isIncomingStatus(batch.status) && (
+                        <button
+                          onClick={() => handleEditBatch(batch, { startCycle: true })}
+                          className="px-3 py-2 rounded-xl text-xs font-bold bg-app-success-bg text-app-success border border-app-success/30 hover:border-app-success cursor-pointer"
+                        >
+                          Start cycle
+                        </button>
+                      )}
+
                       <button
                         onClick={() => handleEditBatch(batch)}
                         className="px-3 py-2 rounded-xl text-xs font-bold bg-app-accent text-app-on-accent cursor-pointer"

@@ -8,7 +8,7 @@ function getBatchPreferenceKey(user) {
 
 function isCurrentBatch(batch) {
   const status = String(batch?.status || '').trim().toLowerCase();
-  return status === 'ongoing' || status === 'active';
+  return status === 'ongoing' || status === 'active' || status === 'on_the_way' || status === 'on the way';
 }
 
 function pickPreferredBatch(batches, user) {

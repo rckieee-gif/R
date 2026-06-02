@@ -126,7 +126,10 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
   const totalMortality = logs.reduce((sum, log) => sum + Number(log.mortality || 0), 0);
   const liveBirds = Math.max(actualLoaded - totalMortality, 0);
   const mortalityPercent = actualLoaded > 0 ? (totalMortality / actualLoaded) * 100 : 0;
-  const batchThreshold = Math.max(5, Math.ceil(actualLoaded * 0.005));
+  const configuredMortalityAllowance = Number(activeBatch?.mortalityAllowance || 0);
+  const batchThreshold = configuredMortalityAllowance > 0
+    ? configuredMortalityAllowance
+    : Math.max(5, Math.ceil(actualLoaded * 0.005));
   const mortalityTone = totalMortality <= batchThreshold ? 'text-dashboard-success' :
     totalMortality <= batchThreshold * 2 ? 'text-dashboard-warning' : 'text-dashboard-danger';
   const yieldVsPlanPercent = plannedFlock > 0 ? (liveBirds / plannedFlock) * 100 : null;
@@ -255,14 +258,14 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
     healthDeductions.push({
       label: 'Severe Mortality Exceedance',
       value: '-30 pts',
-      detail: `Total mortality is ${formatNumber(totalMortality)} (limit: ${formatNumber(batchThreshold)})`
+      detail: `Total mortality is ${formatNumber(totalMortality)} (allowance: ${formatNumber(batchThreshold)})`
     });
   } else if (totalMortality > batchThreshold) {
     healthScore -= 15;
     healthDeductions.push({
       label: 'Mortality Exceeds Guidelines',
       value: '-15 pts',
-      detail: `Total mortality is ${formatNumber(totalMortality)} (limit: ${formatNumber(batchThreshold)})`
+      detail: `Total mortality is ${formatNumber(totalMortality)} (allowance: ${formatNumber(batchThreshold)})`
     });
   }
 

@@ -27,6 +27,7 @@ export const publicViewerBatch = {
   targetHarvestDate,
   totalChicksLoaded: 38500,
   plannedFlock: 40000,
+  mortalityAllowance: 200,
   targetFeedKg: 0,
   notes: 'Read-only preview data'
 };
