@@ -29,6 +29,46 @@ function isIncomingStatus(status) {
   return normalized === 'ON_THE_WAY' || normalized === 'ON THE WAY';
 }
 
+function getArrivalVarianceMeta(actualChicks, plannedChicks) {
+  const actual = Number(actualChicks || 0);
+  const planned = Number(plannedChicks || 0);
+
+  if (planned <= 0) {
+    return {
+      value: '--',
+      detail: 'Set planned flock to track variance.',
+      toneClass: 'border-app-border bg-app-bg text-app-text'
+    };
+  }
+
+  if (actual <= 0) {
+    return {
+      value: '--',
+      detail: 'Enter building chick counts when the delivery arrives.',
+      toneClass: 'border-app-border bg-app-bg text-app-text'
+    };
+  }
+
+  const variance = actual - planned;
+  const percent = (variance / planned) * 100;
+
+  if (variance === 0) {
+    return {
+      value: 'On plan',
+      detail: `${actual.toLocaleString()} arrived, matching planned flock.`,
+      toneClass: 'border-app-success/30 bg-app-success-bg text-app-success'
+    };
+  }
+
+  return {
+    value: `${variance > 0 ? '+' : ''}${variance.toLocaleString()}`,
+    detail: `${Math.abs(variance).toLocaleString()} ${variance > 0 ? 'above' : 'below'} planned flock (${variance > 0 ? '+' : ''}${formatPercent(percent)}%).`,
+    toneClass: variance < 0
+      ? 'border-app-warning/30 bg-app-warning-bg text-app-warning'
+      : 'border-app-accent/30 bg-app-accent/10 text-app-accent'
+  };
+}
+
 function getLockedSharePct(chicksLoaded, totalChicksLoaded) {
   const total = Number(totalChicksLoaded || 0);
   if (!total) return 0;
@@ -114,6 +154,7 @@ export default function BatchManagement({
     () => loadingsWithShares.reduce((sum, row) => sum + Number(row.loadingSharePct || 0), 0),
     [loadingsWithShares]
   );
+  const formArrivalVariance = getArrivalVarianceMeta(loadingTotal, plannedFlock);
 
   useEffect(() => {
     if (!token) return;
@@ -476,15 +517,15 @@ export default function BatchManagement({
               </p>
             </div>
 
-            <div className="rounded-xl border border-app-border bg-app-bg p-3">
+            <div className={`rounded-xl border p-3 ${formArrivalVariance.toneClass}`}>
               <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary font-jetbrains">
-                Arrival Variance
+                Arrival Variance Alert
               </p>
-              <p className="mt-1 text-lg font-black text-app-text font-jetbrains">
-                {Number(plannedFlock || 0) > 0 ? (loadingTotal - Number(plannedFlock || 0)).toLocaleString() : '--'}
+              <p className="mt-1 text-lg font-black font-jetbrains">
+                {formArrivalVariance.value}
               </p>
-              <p className="text-[10px] text-app-text-secondary mt-1 font-inter">
-                Actual chicks arrived minus planned flock.
+              <p className="text-[10px] mt-1 font-inter opacity-90">
+                {formArrivalVariance.detail}
               </p>
             </div>
           </div>
@@ -649,15 +690,18 @@ export default function BatchManagement({
         </h3>
 
         <div className="space-y-3">
-          {visibleBatches.map((batch) => (
-            <div
-              key={batch.id}
-              className={`bg-app-card p-4 rounded-xl shadow-sm border transition-all ${
-                activeBatch?.id === batch.id
-                  ? 'border-app-accent shadow-[0_0_12px_rgba(75,226,119,0.15)]'
-                  : 'border-app-border'
-              }`}
-            >
+          {visibleBatches.map((batch) => {
+            const arrivalVariance = getArrivalVarianceMeta(batch.totalChicksLoaded, batch.plannedFlock);
+
+            return (
+              <div
+                key={batch.id}
+                className={`bg-app-card p-4 rounded-xl shadow-sm border transition-all ${
+                  activeBatch?.id === batch.id
+                    ? 'border-app-accent shadow-[0_0_12px_rgba(75,226,119,0.15)]'
+                    : 'border-app-border'
+                }`}
+              >
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-lg font-black text-app-text font-jetbrains">
@@ -672,6 +716,17 @@ export default function BatchManagement({
                   <p className="text-xs text-app-text-secondary mt-1 font-inter">
                     Mortality allowance: {Number(batch.mortalityAllowance || 0).toLocaleString()} heads
                   </p>
+                  <div className={`mt-3 rounded-lg border px-3 py-2 ${arrivalVariance.toneClass}`}>
+                    <p className="text-[10px] font-black uppercase tracking-wider font-inter opacity-85">
+                      Arrival variance
+                    </p>
+                    <p className="mt-0.5 text-xs font-black font-jetbrains">
+                      {arrivalVariance.value}
+                    </p>
+                    <p className="mt-0.5 text-[10px] font-bold leading-snug font-inter opacity-90">
+                      {arrivalVariance.detail}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -721,7 +776,8 @@ export default function BatchManagement({
                 </p>
               )}
             </div>
-          ))}
+            );
+          })}
 
           {visibleBatches.length === 0 && (
             <p className="text-center text-app-text-secondary text-sm mt-4 font-inter">

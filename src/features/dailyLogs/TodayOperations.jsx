@@ -567,11 +567,36 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
   const daysOfFeedRemaining = (!dailyFeedTarget || dailyFeedTarget.targetBags <= 0)
     ? null
     : totalFeedStock / dailyFeedTarget.targetBags;
+  const totalMortalityToDate = logs.reduce((sum, log) => sum + Number(log.mortality || 0), 0);
+  const mortalityAllowance = Number(activeBatch?.mortalityAllowance || 0);
+  const mortalityAllowanceLimit = mortalityAllowance > 0
+    ? mortalityAllowance
+    : Math.max(MORTALITY_WARNING_HEADS, Math.ceil(Number(activeBatch?.totalChicksLoaded || 0) * MORTALITY_WARNING_RATE));
+  const mortalityAllowanceUsedPercent = mortalityAllowanceLimit > 0
+    ? Math.min(100, (totalMortalityToDate / mortalityAllowanceLimit) * 100)
+    : 0;
+  const mortalityAllowanceRemaining = Math.max(mortalityAllowanceLimit - totalMortalityToDate, 0);
+  const mortalityAllowanceTone = totalMortalityToDate <= mortalityAllowanceLimit
+    ? 'success'
+    : totalMortalityToDate <= mortalityAllowanceLimit * 2
+      ? 'warning'
+      : 'danger';
 
   const abnormalWarnings = (() => {
     const warnings = [];
-    const mortalityAllowance = Number(activeBatch?.mortalityAllowance || 0);
-    const totalMortalityToDate = logs.reduce((sum, log) => sum + Number(log.mortality || 0), 0);
+    const plannedFlock = Number(activeBatch?.plannedFlock || 0);
+    const actualLoaded = Number(activeBatch?.totalChicksLoaded || 0);
+    const arrivalVariance = actualLoaded - plannedFlock;
+
+    if (plannedFlock > 0 && actualLoaded > 0 && arrivalVariance < 0) {
+      warnings.push({
+        key: 'arrival-variance',
+        label: 'Arrival variance',
+        severity: 'warning',
+        title: 'Actual arrival is below plan',
+        detail: `${formatNumber(Math.abs(arrivalVariance))} fewer chicks arrived than the planned flock of ${formatNumber(plannedFlock)}.`
+      });
+    }
 
     if (mortalityAllowance > 0 && totalMortalityToDate > mortalityAllowance) {
       warnings.push({
@@ -1907,7 +1932,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
         {renderFarmChecklist()}
       </div>
 
-      <div className={`grid gap-3 md:grid-cols-4 md:grid ${mobileTab === 'overview' ? 'grid' : 'hidden'}`}>
+      <div className={`grid gap-3 md:grid-cols-2 xl:grid-cols-5 md:grid ${mobileTab === 'overview' ? 'grid' : 'hidden'}`}>
         <AttentionCard
           label="Buildings without log"
           value={missingLogCount}
@@ -1922,6 +1947,16 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           detail={lowFeedItems.length ? 'Review feed purchases or stock transfers.' : 'Feed items are above reorder level.'}
           tone={lowFeedItems.length ? 'warning' : 'success'}
           onClick={() => setActiveScreen('inventory')}
+          isLoading={isLoading}
+        />
+        <AttentionCard
+          label={mortalityAllowance > 0 ? 'Allowance used' : 'Mortality limit used'}
+          value={`${formatNumber(totalMortalityToDate)} / ${formatNumber(mortalityAllowanceLimit)}`}
+          detail={mortalityAllowanceRemaining > 0
+            ? `${formatNumber(mortalityAllowanceRemaining)} heads remaining before alert.`
+            : 'Allowance has been exceeded.'}
+          tone={mortalityAllowanceTone}
+          onClick={() => setMobileTab('warnings')}
           isLoading={isLoading}
         />
         <AttentionCard
@@ -2127,6 +2162,35 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+              <div className="rounded-lg bg-app-bg p-3">
+                <p className="font-bold uppercase text-app-text-secondary font-inter">
+                  {mortalityAllowance > 0 ? 'Allowance used' : 'Mortality limit'}
+                </p>
+                <p className={`mt-1 font-black font-jetbrains ${
+                  mortalityAllowanceTone === 'success'
+                    ? 'text-app-success'
+                    : mortalityAllowanceTone === 'warning'
+                      ? 'text-app-warning'
+                      : 'text-app-danger'
+                }`}>
+                  {formatNumber(totalMortalityToDate)} / {formatNumber(mortalityAllowanceLimit)}
+                </p>
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-app-border/40">
+                  <div
+                    className={`h-full rounded-full ${
+                      mortalityAllowanceTone === 'success'
+                        ? 'bg-app-success'
+                        : mortalityAllowanceTone === 'warning'
+                          ? 'bg-app-warning'
+                          : 'bg-app-danger'
+                    }`}
+                    style={{ width: `${mortalityAllowanceUsedPercent}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-[10px] font-bold text-app-text-secondary">
+                  {mortalityAllowanceRemaining > 0 ? `${formatNumber(mortalityAllowanceRemaining)} heads remaining` : 'Allowance exceeded'}
+                </p>
+              </div>
               <div className="rounded-lg bg-app-bg p-3">
                 <p className="font-bold uppercase text-app-text-secondary font-inter">Days of Feed Remaining <InfoButton term="feed-variance" setActiveTooltip={setActiveTooltip} /></p>
                 <p className={`mt-1 font-black font-jetbrains ${

@@ -123,6 +123,7 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
   const currentAgeDays = activeBatch?.startDate ? getAgeDay(activeBatch.startDate, today) : null;
   const actualLoaded = Number(activeBatch?.totalChicksLoaded || 0);
   const plannedFlock = Number(activeBatch?.plannedFlock || 0);
+  const arrivalVariance = actualLoaded - plannedFlock;
   const totalMortality = logs.reduce((sum, log) => sum + Number(log.mortality || 0), 0);
   const liveBirds = Math.max(actualLoaded - totalMortality, 0);
   const mortalityPercent = actualLoaded > 0 ? (totalMortality / actualLoaded) * 100 : 0;
@@ -130,6 +131,11 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
   const batchThreshold = configuredMortalityAllowance > 0
     ? configuredMortalityAllowance
     : Math.max(5, Math.ceil(actualLoaded * 0.005));
+  const mortalityAllowanceUsedPercent = batchThreshold > 0
+    ? Math.min(100, (totalMortality / batchThreshold) * 100)
+    : 0;
+  const mortalityAllowanceRemaining = Math.max(batchThreshold - totalMortality, 0);
+  const mortalityAllowanceLabel = configuredMortalityAllowance > 0 ? 'Allowance Used' : 'Warning Limit Used';
   const mortalityTone = totalMortality <= batchThreshold ? 'text-dashboard-success' :
     totalMortality <= batchThreshold * 2 ? 'text-dashboard-warning' : 'text-dashboard-danger';
   const yieldVsPlanPercent = plannedFlock > 0 ? (liveBirds / plannedFlock) * 100 : null;
@@ -389,6 +395,15 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
 
   // 2. Warnings List
   const warningsList = [];
+  if (plannedFlock > 0 && actualLoaded > 0 && arrivalVariance < 0) {
+    warningsList.push({
+      type: 'arrival_variance',
+      severity: 'warning',
+      icon: 'assignment_late',
+      text: `Arrival variance: actual arrival is ${formatNumber(Math.abs(arrivalVariance))} below planned flock.`
+    });
+  }
+
   if (missingLogsBuildings.length > 0) {
     warningsList.push({
       type: 'missing_log',
@@ -404,7 +419,7 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
       type: 'high_mortality',
       severity: 'danger',
       icon: 'warning',
-      text: `High cumulative mortality: ${formatNumber(totalMortality)} birds lost (${formatNumber(mortalityPercent, 2)}% rate)`
+      text: `High cumulative mortality: ${formatNumber(totalMortality)} birds lost, ${formatNumber(totalMortality)} / ${formatNumber(batchThreshold)} allowance used (${formatNumber(mortalityPercent, 2)}% rate)`
     });
   }
 
@@ -616,7 +631,7 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
         </div>
 
         {/* Live Telemetry Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 pt-5 border-t border-dashboard-border/50">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-6 pt-5 border-t border-dashboard-border/50">
           <div className="bg-dashboard-bg/50 border border-dashboard-border/40 rounded-xl p-3 flex flex-col justify-between">
             <span className="text-[9px] font-bold uppercase tracking-wider text-dashboard-text-secondary font-jetbrains">Live Birds</span>
             <p className="text-lg font-black font-jetbrains text-dashboard-text mt-1">{formatNumber(liveBirds)}</p>
@@ -630,6 +645,28 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
             <p className={`text-lg font-black font-jetbrains mt-1 ${mortalityTone}`}>{formatNumber(mortalityPercent, 2)}%</p>
             <span className="text-[8px] font-bold text-dashboard-text-secondary font-inter mt-1.5 leading-none">
               {formatNumber(totalMortality)} total lost
+            </span>
+          </div>
+
+          <div className="bg-dashboard-bg/50 border border-dashboard-border/40 rounded-xl p-3 flex flex-col justify-between">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-dashboard-text-secondary font-jetbrains">{mortalityAllowanceLabel}</span>
+            <p className={`text-lg font-black font-jetbrains mt-1 ${mortalityTone}`}>
+              {formatNumber(totalMortality)} / {formatNumber(batchThreshold)}
+            </p>
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-dashboard-border/40">
+              <div
+                className={`h-full rounded-full ${
+                  totalMortality <= batchThreshold
+                    ? 'bg-dashboard-success'
+                    : totalMortality <= batchThreshold * 2
+                      ? 'bg-dashboard-warning'
+                      : 'bg-dashboard-danger'
+                }`}
+                style={{ width: `${mortalityAllowanceUsedPercent}%` }}
+              />
+            </div>
+            <span className="text-[8px] font-bold text-dashboard-text-secondary font-inter mt-1.5 leading-none">
+              {mortalityAllowanceRemaining > 0 ? `${formatNumber(mortalityAllowanceRemaining)} heads remaining` : 'Allowance exceeded'}
             </span>
           </div>
 
