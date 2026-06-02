@@ -88,7 +88,7 @@ export default function Login({ onLogin, onBack }) {
 
     try {
       const data = await apiClient.post('/api/auth/login', { login, email: login, password });
-      onLogin(data.user, data.token);
+      onLogin(data.user);
     } catch (err) {
       console.error('Login connection error:', err);
       const errMsg = err.message || 'Cannot connect to the server. Is it running?';

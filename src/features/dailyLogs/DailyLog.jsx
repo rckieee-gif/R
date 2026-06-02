@@ -43,6 +43,11 @@ function getAssignmentBuilding(assignment) {
 const FEED_VARIANCE_WARNING_PERCENT = 15;
 const MORTALITY_WARNING_RATE = 0.005;
 const MORTALITY_WARNING_HEADS = 5;
+const DEFAULT_BUILDINGS = [
+  { name: 'A' },
+  { name: 'B' },
+  { name: 'C' }
+];
 
 function getDailyLogFormKey(batchId, building, editingId) {
   return `${batchId || 'none'}:${building || 'A'}:${editingId || 'new'}`;
@@ -307,12 +312,6 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
 
     return warnings;
   }, [activeBuilding, ageDay, feedStockAfterLog, feedTarget, isLoading, mortality, selectedAssignment, selectedFeedItem, targetVarianceKg]);
-
-  const DEFAULT_BUILDINGS = [
-    { name: 'A' },
-    { name: 'B' },
-    { name: 'C' }
-  ];
 
   useEffect(() => {
     if (!token) return undefined;

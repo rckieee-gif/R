@@ -71,12 +71,14 @@ export default function SyncDrawer({ isOpen, onClose }) {
   const openTimeRef = useRef(0);
   const prevIsOpenRef = useRef(isOpen);
 
-  if (isOpen && !prevIsOpenRef.current) {
-    openTimeRef.current = Date.now();
-  }
-  prevIsOpenRef.current = isOpen;
+  useEffect(() => {
+    if (isOpen && !prevIsOpenRef.current) {
+      openTimeRef.current = Date.now();
+    }
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen]);
 
-  const handleBackdropClick = (e) => {
+  const handleBackdropClick = () => {
     if (Date.now() - openTimeRef.current < 300) {
       return;
     }

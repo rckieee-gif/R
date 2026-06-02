@@ -50,6 +50,12 @@ function buildLoadingRows(buildings) {
   }));
 }
 
+const DEFAULT_BUILDINGS = [
+  { name: 'A' },
+  { name: 'B' },
+  { name: 'C' }
+];
+
 export default function BatchManagement({
   activeBatch,
   setActiveBatch,
@@ -102,12 +108,6 @@ export default function BatchManagement({
     () => loadingsWithShares.reduce((sum, row) => sum + Number(row.loadingSharePct || 0), 0),
     [loadingsWithShares]
   );
-
-  const DEFAULT_BUILDINGS = [
-    { name: 'A' },
-    { name: 'B' },
-    { name: 'C' }
-  ];
 
   useEffect(() => {
     if (!token) return;

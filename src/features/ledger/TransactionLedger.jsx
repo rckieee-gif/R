@@ -91,6 +91,44 @@ async function fetchStakeholders() {
   return uniqueStakeholders(data);
 }
 
+const DEFAULT_BUILDING_DATA = [{ name: 'A' }, { name: 'B' }, { name: 'C' }];
+const DEFAULT_STAKEHOLDER_DATA = [
+  { id: 'default-rolly', name: 'Rolly', displayName: 'Rolly', type: 'Employee' },
+  { id: 'default-rodney', name: 'Rodney', displayName: 'Rodney', type: 'Employee' },
+  { id: 'default-jane', name: 'Jane', displayName: 'Jane', type: 'Employee' }
+];
+const DEFAULT_CATEGORY_DATA = [
+  { name: 'Feed', fundingNature: 'OPEX' },
+  { name: 'DOC', fundingNature: 'OPEX' },
+  { name: 'Medicine', fundingNature: 'OPEX' },
+  { name: 'Brooding Paper', fundingNature: 'OPEX' },
+  { name: 'Charcoal', fundingNature: 'OPEX' },
+  { name: 'Labor', fundingNature: 'OPEX' },
+  { name: 'Food Expense', fundingNature: 'OPEX' },
+  { name: 'Utilities', fundingNature: 'OPEX' },
+  { name: 'Supplies', fundingNature: 'OPEX' },
+  { name: 'Minor Repair', fundingNature: 'OPEX' },
+  { name: 'Transport', fundingNature: 'OPEX' },
+  { name: 'Cleaning & Janitorial', fundingNature: 'OPEX' },
+  { name: 'Dressing Plant Expense', fundingNature: 'OPEX' },
+  { name: 'Miscellaneous', fundingNature: 'OPEX' },
+  { name: 'Building Repair', fundingNature: 'CAPEX' },
+  { name: 'Equipment', fundingNature: 'CAPEX' },
+  { name: 'Hardware', fundingNature: 'CAPEX' },
+  { name: 'Farm Improvement', fundingNature: 'CAPEX' },
+  { name: 'Cash Advance', fundingNature: 'Receivable' },
+  { name: 'Reimbursement', fundingNature: 'Receivable' },
+  { name: 'Supplier Credit', fundingNature: 'Payable' },
+  { name: 'Owner Paid Expense', fundingNature: 'Payable' },
+  { name: 'Reimbursement Due', fundingNature: 'Payable' },
+  { name: 'Previous Deficit', fundingNature: 'Payable' },
+  { name: 'Net Meat Sale', fundingNature: 'Other Revenue' },
+  { name: 'Empty Sack Sale', fundingNature: 'Other Revenue' },
+  { name: 'Miscellaneous Income', fundingNature: 'Other Revenue' },
+  { name: 'Recoverable Hardware', fundingNature: 'CAPEX-Recoverable' },
+  { name: 'Recoverable Equipment', fundingNature: 'CAPEX-Recoverable' }
+];
+
 export default function TransactionLedger({ transactions, setTransactions, activeBatch, token, readOnly = false, canEditOrDelete = false }) {
   const { success, error: toastError, confirm } = useNotification();
 
@@ -248,44 +286,6 @@ export default function TransactionLedger({ transactions, setTransactions, activ
     setLedgerDateFrom('');
     setLedgerDateTo('');
   };
-
-  const DEFAULT_BUILDING_DATA = [{ name: 'A' }, { name: 'B' }, { name: 'C' }];
-  const DEFAULT_STAKEHOLDER_DATA = [
-    { id: 'default-rolly', name: 'Rolly', displayName: 'Rolly', type: 'Employee' },
-    { id: 'default-rodney', name: 'Rodney', displayName: 'Rodney', type: 'Employee' },
-    { id: 'default-jane', name: 'Jane', displayName: 'Jane', type: 'Employee' }
-  ];
-  const DEFAULT_CATEGORY_DATA = [
-    { name: 'Feed', fundingNature: 'OPEX' },
-    { name: 'DOC', fundingNature: 'OPEX' },
-    { name: 'Medicine', fundingNature: 'OPEX' },
-    { name: 'Brooding Paper', fundingNature: 'OPEX' },
-    { name: 'Charcoal', fundingNature: 'OPEX' },
-    { name: 'Labor', fundingNature: 'OPEX' },
-    { name: 'Food Expense', fundingNature: 'OPEX' },
-    { name: 'Utilities', fundingNature: 'OPEX' },
-    { name: 'Supplies', fundingNature: 'OPEX' },
-    { name: 'Minor Repair', fundingNature: 'OPEX' },
-    { name: 'Transport', fundingNature: 'OPEX' },
-    { name: 'Cleaning & Janitorial', fundingNature: 'OPEX' },
-    { name: 'Dressing Plant Expense', fundingNature: 'OPEX' },
-    { name: 'Miscellaneous', fundingNature: 'OPEX' },
-    { name: 'Building Repair', fundingNature: 'CAPEX' },
-    { name: 'Equipment', fundingNature: 'CAPEX' },
-    { name: 'Hardware', fundingNature: 'CAPEX' },
-    { name: 'Farm Improvement', fundingNature: 'CAPEX' },
-    { name: 'Cash Advance', fundingNature: 'Receivable' },
-    { name: 'Reimbursement', fundingNature: 'Receivable' },
-    { name: 'Supplier Credit', fundingNature: 'Payable' },
-    { name: 'Owner Paid Expense', fundingNature: 'Payable' },
-    { name: 'Reimbursement Due', fundingNature: 'Payable' },
-    { name: 'Previous Deficit', fundingNature: 'Payable' },
-    { name: 'Net Meat Sale', fundingNature: 'Other Revenue' },
-    { name: 'Empty Sack Sale', fundingNature: 'Other Revenue' },
-    { name: 'Miscellaneous Income', fundingNature: 'Other Revenue' },
-    { name: 'Recoverable Hardware', fundingNature: 'CAPEX-Recoverable' },
-    { name: 'Recoverable Equipment', fundingNature: 'CAPEX-Recoverable' }
-  ];
 
   useEffect(() => {
     if (!token) {

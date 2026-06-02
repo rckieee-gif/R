@@ -2,30 +2,30 @@ import { useState, useEffect, useCallback } from 'react';
 import { publicViewerUser } from '../../shared/utils/publicViewerData';
 import { apiClient, registerAuthFailureHandler } from '../../shared/utils/apiClient';
 
+const COOKIE_SESSION_MARKER = 'cookie-session';
+
+function readStoredUser() {
+  const savedUser = localStorage.getItem('octavioUser');
+  if (!savedUser) return null;
+
+  try {
+    return JSON.parse(savedUser);
+  } catch (err) {
+    console.error("Failed to parse user session:", err);
+    localStorage.removeItem('octavioUser');
+    return null;
+  }
+}
+
+function clearStoredSession() {
+  localStorage.removeItem('octavioUser');
+  localStorage.removeItem('octavioToken');
+}
+
 export default function useAuth() {
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('octavioUser');
-    if (!savedUser) {
-      localStorage.removeItem('octavioToken');
-      return null;
-    }
-
-    try {
-      return JSON.parse(savedUser);
-    } catch (err) {
-      console.error("Failed to parse user session:", err);
-      localStorage.removeItem('octavioUser');
-      localStorage.removeItem('octavioToken');
-      return null;
-    }
-  });
-
-  const [token, setToken] = useState(() => localStorage.getItem('octavioToken'));
-  const [isCheckingSession, setIsCheckingSession] = useState(() => {
-    const savedUser = localStorage.getItem('octavioUser');
-    const savedToken = localStorage.getItem('octavioToken');
-    return Boolean(savedUser && !savedToken);
-  });
+  const [user, setUser] = useState(() => readStoredUser());
+  const [token, setToken] = useState(() => (readStoredUser() ? COOKIE_SESSION_MARKER : null));
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [authView, setAuthView] = useState('intro');
   const [viewerSnapshot, setViewerSnapshot] = useState(null);
   const [viewerError, setViewerError] = useState('');
@@ -34,29 +34,27 @@ export default function useAuth() {
 
   useEffect(() => {
     const checkSession = async () => {
-      const savedUser = localStorage.getItem('octavioUser');
-      const savedToken = localStorage.getItem('octavioToken');
-      if (!savedUser || savedToken) {
-        setIsCheckingSession(false);
-        return;
-      }
       try {
-        const data = await apiClient.get('/api/auth/me');
+        const data = await apiClient.get('/api/auth/me', {
+          retries: 0,
+          suppressAuthFailure: true,
+        });
         if (data && data.user) {
           setUser(data.user);
-          setToken(data.token);
+          setToken(COOKIE_SESSION_MARKER);
+          localStorage.setItem('octavioUser', JSON.stringify(data.user));
         } else {
           setUser(null);
           setToken(null);
-          localStorage.removeItem('octavioUser');
-          localStorage.removeItem('octavioToken');
+          clearStoredSession();
         }
       } catch (err) {
-        console.error("Session verification failed:", err);
+        if (err.status !== 401) {
+          console.error("Session verification failed:", err);
+        }
         setUser(null);
         setToken(null);
-        localStorage.removeItem('octavioUser');
-        localStorage.removeItem('octavioToken');
+        clearStoredSession();
       } finally {
         setIsCheckingSession(false);
       }
@@ -82,12 +80,12 @@ export default function useAuth() {
     };
   }, []);
 
-  const handleLogin = useCallback((userData, authToken) => {
+  const handleLogin = useCallback((userData) => {
     setUser(userData);
-    setToken(authToken);
+    setToken(COOKIE_SESSION_MARKER);
     setAuthView('intro');
     localStorage.setItem('octavioUser', JSON.stringify(userData));
-    // Secure Cookie auth: do not save token to localStorage in normal web flows
+    localStorage.removeItem('octavioToken');
   }, []);
 
   const clearSession = useCallback(() => {
@@ -98,8 +96,7 @@ export default function useAuth() {
     setToken(null);
     setViewerSnapshot(null);
     setViewerError('');
-    localStorage.removeItem('octavioUser');
-    localStorage.removeItem('octavioToken');
+    clearStoredSession();
     setAuthView('intro');
   }, []);
 
@@ -140,6 +137,8 @@ export default function useAuth() {
         email: 'viewer@octavio.live',
       });
       setToken(null);
+      localStorage.removeItem('octavioUser');
+      localStorage.removeItem('octavioToken');
     } catch (error) {
       console.error('Failed to open viewer mode:', error);
       setViewerError(error.message || 'Cannot open the current batch right now.');

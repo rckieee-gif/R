@@ -57,6 +57,12 @@ function apiPath(path) {
   return `*/api${path}`;
 }
 
+function mockAuthenticatedUser(user) {
+  server.use(
+    http.get(apiPath('/auth/me'), () => json({ user }))
+  );
+}
+
 function mockCommonAppApi() {
   server.use(
     http.get(apiPath('/public/current-batch'), () => json({
@@ -96,13 +102,12 @@ describe('Business protection coverage', () => {
         return json({ id: 99, ...body });
       })
     );
-    localStorage.setItem('octavioToken', 'data-entry-token');
-    localStorage.setItem('octavioUser', JSON.stringify({
+    mockAuthenticatedUser({
       id: 7,
       username: 'data.entry',
       role: 'DataEntry',
       isPrimaryOwner: false,
-    }));
+    });
 
     render(
       <NotificationProvider>
@@ -152,13 +157,12 @@ describe('Business protection coverage', () => {
 
   it('redirects a Viewer away from financial screens', async () => {
     mockCommonAppApi();
-    localStorage.setItem('octavioToken', 'viewer-token');
-    localStorage.setItem('octavioUser', JSON.stringify({
+    mockAuthenticatedUser({
       id: 8,
       username: 'viewer.user',
       role: 'Viewer',
       isPrimaryOwner: false,
-    }));
+    });
 
     render(
       <NotificationProvider>

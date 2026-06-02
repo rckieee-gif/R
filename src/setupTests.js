@@ -7,7 +7,7 @@ import { server } from './test/mswServer';
 window.scrollTo = vi.fn();
 
 // Mock ResizeObserver for test environment
-global.ResizeObserver = class ResizeObserver {
+globalThis.ResizeObserver = class ResizeObserver {
   observe() {}
   unobserve() {}
   disconnect() {}

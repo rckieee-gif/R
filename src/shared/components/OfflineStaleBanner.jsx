@@ -1,11 +1,16 @@
 import { useEffect, useState } from 'react';
 
 export default function OfflineStaleBanner({ data }) {
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(null);
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 30000); // update every 30s
-    return () => clearInterval(timer);
+    const refreshNow = () => setNow(Date.now());
+    const initialTimer = setTimeout(refreshNow, 0);
+    const intervalTimer = setInterval(refreshNow, 30000); // update every 30s
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(intervalTimer);
+    };
   }, []);
 
   // Find if any of the passed data has cache metadata
@@ -15,7 +20,7 @@ export default function OfflineStaleBanner({ data }) {
   if (!cachedItem) return null;
 
   const { timestamp, isStale } = cachedItem._cacheMeta;
-  const ageMs = now - timestamp;
+  const ageMs = (now ?? timestamp) - timestamp;
   
   const formatAge = (ms) => {
     const diffSecs = Math.floor(ms / 1000);

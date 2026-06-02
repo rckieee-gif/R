@@ -30,11 +30,9 @@ describe('Login Component', () => {
   it('calls apiClient.post on submit and handles successful login', async () => {
     const mockOnLogin = vi.fn();
     const mockUser = { id: 1, name: 'Roland', role: 'Admin' };
-    const mockToken = 'mocked-jwt-token';
 
     apiClient.post.mockResolvedValueOnce({
       user: mockUser,
-      token: mockToken,
     });
 
     render(
@@ -57,7 +55,7 @@ describe('Login Component', () => {
         email: 'admin.roland',
         password: 'password123',
       });
-      expect(mockOnLogin).toHaveBeenCalledWith(mockUser, mockToken);
+      expect(mockOnLogin).toHaveBeenCalledWith(mockUser);
     });
   });
 

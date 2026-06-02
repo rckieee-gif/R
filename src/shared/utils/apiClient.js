@@ -51,6 +51,17 @@ export async function request(path, options = {}) {
   const isGet = method === 'GET';
   const isMutationMethod = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
   const isQueueRequest = options.headers?.['X-Sync-Queue-Id'];
+  const {
+    authToken,
+    bearerToken,
+    suppressAuthFailure = false,
+    retries,
+    returnResponse,
+    expectArray,
+    ...fetchOptionOverrides
+  } = options;
+  const explicitBearerToken = bearerToken || authToken;
+  const shouldUseCache = isGet && !path.startsWith('/api/auth/');
 
   // Fast offline guard: if completely offline, intercept mutation requests immediately
   if (!navigator.onLine && isMutationMethod && !isQueueRequest) {
@@ -63,7 +74,6 @@ export async function request(path, options = {}) {
   }
 
   const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
-  const token = localStorage.getItem('octavioToken');
 
   const headers = {
     ...options.headers,
@@ -73,19 +83,19 @@ export async function request(path, options = {}) {
     headers['Content-Type'] = 'application/json';
   }
 
-  if (token && !path.startsWith('http')) {
-    headers['Authorization'] = `Bearer ${token}`;
+  if (explicitBearerToken && !path.startsWith('http') && !headers.Authorization) {
+    headers.Authorization = `Bearer ${explicitBearerToken}`;
   }
 
   const fetchOptions = {
-    ...options,
+    ...fetchOptionOverrides,
     credentials: 'include',
     headers,
   };
 
   // Only retry GET or idempotent requests
   const isIdempotent = method === 'GET';
-  const maxRetries = isIdempotent ? (options.retries ?? 2) : 0;
+  const maxRetries = isIdempotent ? (retries ?? 2) : 0;
   let attempt = 0;
 
   while (attempt <= maxRetries) {
@@ -106,10 +116,12 @@ export async function request(path, options = {}) {
           throw new Error(errorMessage);
         }
 
-        if (onAuthFailureHandler) {
+        if (!suppressAuthFailure && onAuthFailureHandler) {
           onAuthFailureHandler();
         }
-        throw new Error('Your session has expired. Please sign in again.');
+        const error = new Error('Your session has expired. Please sign in again.');
+        error.status = 401;
+        throw error;
       }
 
       // Handle forbidden access
@@ -132,7 +144,7 @@ export async function request(path, options = {}) {
         throw error;
       }
 
-      if (options.returnResponse) {
+      if (returnResponse) {
         return response;
       }
 
@@ -146,13 +158,13 @@ export async function request(path, options = {}) {
       }
 
       // Handle array validation to prevent rendering crashes
-      if (options.expectArray && !Array.isArray(data)) {
+      if (expectArray && !Array.isArray(data)) {
         console.warn(`Expected array from api path: ${path}, but received:`, data);
         return [];
       }
 
       // Cache successful GET results
-      if (isGet) {
+      if (shouldUseCache) {
         saveCache(path, data);
       }
 
@@ -166,7 +178,7 @@ export async function request(path, options = {}) {
         error.message.includes('denied')
       ) {
         // Handle offline fallback reads for GET
-        if (isGet) {
+        if (shouldUseCache) {
           const cached = await getCache(path);
           if (cached !== null) {
             console.log(`Offline fallback: serving cached data for ${path}`);

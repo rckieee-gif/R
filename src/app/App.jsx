@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
 import Login from '../features/auth/Login';
 import IntroPage from '../features/auth/IntroPage';
@@ -112,7 +112,7 @@ function App() {
 
   const { isDarkMode, setIsDarkMode, isZeroGravity, setIsZeroGravity, isNavMinimized, toggleNavMinimized } = useAppPreferences();
 
-  const { currentScreen, setActiveScreen, allowedScreens, screensMeta, visibleNavItems } = useNavigation({
+  const { currentScreen, setActiveScreen, allowedScreens, visibleNavItems } = useNavigation({
     canManageOperations,
     isPublicViewer: auth.isPublicViewer,
     user: auth.user,

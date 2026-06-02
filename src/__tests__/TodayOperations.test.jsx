@@ -203,16 +203,17 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
   it('shows a usable offline state when current batch and batch list requests fail', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     server.use(
+      http.get(apiPath('/auth/me'), () => json({
+        user: {
+          id: 9,
+          username: 'offline.manager',
+          role: 'OperationManager',
+          isPrimaryOwner: false,
+        },
+      })),
       http.get(apiPath('/public/current-batch'), () => HttpResponse.error()),
       http.get(apiPath('/batches'), () => HttpResponse.error())
     );
-    localStorage.setItem('octavioToken', 'offline-token');
-    localStorage.setItem('octavioUser', JSON.stringify({
-      id: 9,
-      username: 'offline.manager',
-      role: 'OperationManager',
-      isPrimaryOwner: false,
-    }));
 
     try {
       render(
