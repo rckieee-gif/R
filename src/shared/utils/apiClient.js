@@ -3,6 +3,7 @@ import { saveCache, getCache } from '../../offline/db';
 import { enqueueRequest, processSyncQueue } from '../../offline/syncQueue';
 
 let onAuthFailureHandler = null;
+let fallbackBearerToken = null;
 
 /**
  * Register a callback to be executed when a 401 Unauthorized response is received.
@@ -10,6 +11,10 @@ let onAuthFailureHandler = null;
  */
 export function registerAuthFailureHandler(handler) {
   onAuthFailureHandler = handler;
+}
+
+export function setFallbackAuthToken(token) {
+  fallbackBearerToken = token || null;
 }
 
 function isQueueablePath(path) {
@@ -60,7 +65,7 @@ export async function request(path, options = {}) {
     expectArray,
     ...fetchOptionOverrides
   } = options;
-  const explicitBearerToken = bearerToken || authToken;
+  const explicitBearerToken = bearerToken || authToken || fallbackBearerToken;
   const shouldUseCache = isGet && !path.startsWith('/api/auth/');
 
   // Fast offline guard: if completely offline, intercept mutation requests immediately
