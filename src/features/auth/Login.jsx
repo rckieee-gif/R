@@ -87,14 +87,10 @@ export default function Login({ onLogin, onBack }) {
     setError('');
 
     try {
-      await apiClient.post('/api/auth/login', { login, email: login, password });
-      const session = await apiClient.get('/api/auth/me', {
-        retries: 0,
-        suppressAuthFailure: true,
-      });
+      const session = await apiClient.post('/api/auth/login', { login, email: login, password });
 
       if (!session?.user) {
-        throw new Error('Login succeeded, but the browser could not confirm the session cookie. Please refresh and try again.');
+        throw new Error('Login succeeded, but the server did not return your user profile. Please refresh and try again.');
       }
 
       onLogin(session.user);

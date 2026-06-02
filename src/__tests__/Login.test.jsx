@@ -34,8 +34,6 @@ describe('Login Component', () => {
 
     apiClient.post.mockResolvedValueOnce({
       message: 'Login successful',
-    });
-    apiClient.get.mockResolvedValueOnce({
       user: mockUser,
     });
 
@@ -59,17 +57,13 @@ describe('Login Component', () => {
         email: 'admin.roland',
         password: 'password123',
       });
-      expect(apiClient.get).toHaveBeenCalledWith('/api/auth/me', {
-        retries: 0,
-        suppressAuthFailure: true,
-      });
+      expect(apiClient.get).not.toHaveBeenCalled();
       expect(mockOnLogin).toHaveBeenCalledWith(mockUser);
     });
   });
 
-  it('shows a clear error if the session cookie cannot be confirmed after login', async () => {
+  it('shows a clear error if login succeeds without a user profile', async () => {
     apiClient.post.mockResolvedValueOnce({ message: 'Login successful' });
-    apiClient.get.mockRejectedValueOnce(new Error('Your session has expired. Please sign in again.'));
 
     render(
       <NotificationProvider>
@@ -82,7 +76,7 @@ describe('Login Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
-      expect(screen.getAllByText(/session has expired/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/did not return your user profile/i).length).toBeGreaterThan(0);
     });
   });
 
