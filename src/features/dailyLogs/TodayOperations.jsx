@@ -9,6 +9,7 @@ import {
   getLastBroilerTargetDay
 } from '../../shared/utils/broilerTargets';
 import OfflineStaleBanner from '../../shared/components/OfflineStaleBanner';
+import { useNotification } from '../../shared/hooks/useNotification';
 
 const FEED_VARIANCE_WARNING_PERCENT = 15;
 const MORTALITY_WARNING_RATE = 0.005;
@@ -44,6 +45,7 @@ const ARRIVED_DOC_FIELD_KEYS = [
   'actualChicksArrived',
   'actualChicksLoaded'
 ];
+const DEFAULT_LOADING_BUILDINGS = ['A', 'B', 'C'];
 
 function todayInput() {
   const now = new Date();
@@ -132,6 +134,24 @@ function getBatchStatus(batch) {
   return String(batch?.status || '').trim().toUpperCase();
 }
 
+function getArrivedDocConfirmationKey(batchId) {
+  return batchId ? `octavioArrivedDocConfirmed:${batchId}` : '';
+}
+
+function readArrivedDocConfirmation(batchId) {
+  const key = getArrivedDocConfirmationKey(batchId);
+  if (!key || typeof localStorage === 'undefined') return 0;
+
+  return Number(localStorage.getItem(key) || 0);
+}
+
+function writeArrivedDocConfirmation(batchId, count) {
+  const key = getArrivedDocConfirmationKey(batchId);
+  if (!key || typeof localStorage === 'undefined') return;
+
+  localStorage.setItem(key, String(count));
+}
+
 function hasOwnField(record, key) {
   return Boolean(record && Object.prototype.hasOwnProperty.call(record, key));
 }
@@ -151,10 +171,51 @@ function hasArrivedDocInput(batch, logRows, ageDay, today) {
   const loadedHeads = Number(batch.totalChicksLoaded || 0);
   if (loadedHeads <= 0) return false;
 
+  if (readArrivedDocConfirmation(batch.id) > 0) return true;
+
   const hasTodayLog = logRows.some((log) => log.date === today);
   if (ageDay !== null && ageDay <= 1 && !hasTodayLog) return false;
 
   return true;
+}
+
+function getLoadingSharePct(chicksLoaded, totalChicksLoaded) {
+  const total = Number(totalChicksLoaded || 0);
+  if (!total) return 0;
+  return Number(((Number(chicksLoaded || 0) / total) * 100).toFixed(4));
+}
+
+function buildQuickArrivedDocLoadings(existingLoadings, arrivedDocCount) {
+  const rows = existingLoadings.length
+    ? existingLoadings
+    : DEFAULT_LOADING_BUILDINGS.map((building) => ({ building, chicksLoaded: 0, loadingSharePct: 0, remarks: '' }));
+  const currentTotal = rows.reduce((sum, row) => sum + Number(row.chicksLoaded || 0), 0);
+  const baseWeight = currentTotal > 0 ? currentTotal : rows.length;
+  const draftRows = rows.map((row) => {
+    const rowWeight = currentTotal > 0 ? Number(row.chicksLoaded || 0) : 1;
+    const rawCount = (rowWeight / baseWeight) * arrivedDocCount;
+    const floorCount = Math.floor(rawCount);
+
+    return {
+      ...row,
+      chicksLoaded: floorCount,
+      fractionalRemainder: rawCount - floorCount
+    };
+  });
+  let remaining = arrivedDocCount - draftRows.reduce((sum, row) => sum + row.chicksLoaded, 0);
+  const remainderOrder = [...draftRows].sort((left, right) => right.fractionalRemainder - left.fractionalRemainder);
+
+  for (let index = 0; remaining > 0 && index < remainderOrder.length; index += 1) {
+    remainderOrder[index].chicksLoaded += 1;
+    remaining -= 1;
+  }
+
+  return draftRows.map((row) => ({
+    building: row.building,
+    chicksLoaded: row.chicksLoaded,
+    loadingSharePct: getLoadingSharePct(row.chicksLoaded, arrivedDocCount),
+    remarks: row.remarks || ''
+  }));
 }
 
 function readPrepChecklist(batchId) {
@@ -278,7 +339,17 @@ function WarningRow({ warning }) {
   );
 }
 
-function SummaryMetric({ label, value, detail, tone = 'neutral', isLoading = false, infoTerm = null, setActiveTooltip = null }) {
+function SummaryMetric({
+  label,
+  value,
+  detail,
+  tone = 'neutral',
+  isLoading = false,
+  infoTerm = null,
+  setActiveTooltip = null,
+  actionLabel = null,
+  onAction = null
+}) {
   if (isLoading) {
     return (
       <div className="rounded-xl border border-app-border bg-app-card p-4 shadow-sm animate-pulse">
@@ -305,6 +376,15 @@ function SummaryMetric({ label, value, detail, tone = 'neutral', isLoading = fal
       </p>
       <p className="mt-1 text-2xl font-black font-jetbrains">{value}</p>
       <p className="mt-2 text-xs font-bold leading-snug opacity-90 font-inter">{detail}</p>
+      {actionLabel && onAction && (
+        <button
+          type="button"
+          onClick={onAction}
+          className="mt-3 inline-flex min-h-9 items-center justify-center rounded-lg bg-app-accent px-3 py-2 text-xs font-black text-app-on-accent shadow-sm transition-all duration-200 hover:opacity-90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-card font-inter"
+        >
+          {actionLabel}
+        </button>
+      )}
     </div>
   );
 }
@@ -324,10 +404,19 @@ const TOOLTIP_DEFINITIONS = {
   }
 };
 
-export default function TodayOperations({ token, activeBatch, logs = EMPTY_LOGS, setActiveScreen, previewData = null }) {
+export default function TodayOperations({
+  token,
+  activeBatch,
+  logs = EMPTY_LOGS,
+  setActiveScreen,
+  previewData = null,
+  setActiveBatch = null,
+  onBatchesChanged = null
+}) {
   const activeBatchId = activeBatch?.id ?? null;
   const location = useLocation();
   const navigate = useNavigate();
+  const { success: notifySuccess, error: notifyError } = useNotification();
   const previewKey = previewData ? `preview:${previewData.batch?.id || activeBatchId || 'current'}` : null;
   const todayDataKey = token && activeBatchId ? `batch:${activeBatchId}` : previewKey;
   const [todayRequest, setTodayRequest] = useState({
@@ -336,6 +425,10 @@ export default function TodayOperations({ token, activeBatch, logs = EMPTY_LOGS,
     error: '',
     isLoading: false
   });
+  const [isArrivedDocDialogOpen, setIsArrivedDocDialogOpen] = useState(false);
+  const [arrivedDocInput, setArrivedDocInput] = useState('');
+  const [arrivedDocError, setArrivedDocError] = useState('');
+  const [isSavingArrivedDoc, setIsSavingArrivedDoc] = useState(false);
 
   const [mobileTabState, setMobileTabState] = useState({
     batchId: activeBatchId,
@@ -392,6 +485,19 @@ export default function TodayOperations({ token, activeBatch, logs = EMPTY_LOGS,
     );
   };
 
+  const openArrivedDocDialog = () => {
+    const suggestedCount = Number(activeBatch?.plannedFlock || activeBatch?.totalChicksLoaded || 0);
+    setArrivedDocInput(suggestedCount > 0 ? String(suggestedCount) : '');
+    setArrivedDocError('');
+    setIsArrivedDocDialogOpen(true);
+  };
+
+  const closeArrivedDocDialog = () => {
+    if (isSavingArrivedDoc) return;
+    setIsArrivedDocDialogOpen(false);
+    setArrivedDocError('');
+  };
+
   const [prepChecklistState, setPrepChecklistState] = useState(() => ({
     batchId: activeBatchId,
     items: readPrepChecklist(activeBatchId)
@@ -430,6 +536,163 @@ export default function TodayOperations({ token, activeBatch, logs = EMPTY_LOGS,
   const { loadings, assignments, feedItems, harvestProductionSummary } = todayData;
   const error = !token && previewTodayData ? '' : (isCurrentTodayData ? todayRequest.error : '');
   const isLoading = Boolean(token && isCurrentTodayData && todayRequest.isLoading);
+
+  const handleQuickArrivedDocSave = async (event) => {
+    event.preventDefault();
+
+    if (!token || !activeBatch?.id) {
+      notifyError('Select an active batch before recording arrived DOC.');
+      return;
+    }
+
+    const arrivedDocCount = Number.parseInt(String(arrivedDocInput).replace(/,/g, ''), 10);
+    if (!Number.isFinite(arrivedDocCount) || arrivedDocCount <= 0) {
+      setArrivedDocError('Enter the actual DOC head count before saving.');
+      return;
+    }
+
+    setIsSavingArrivedDoc(true);
+    setArrivedDocError('');
+
+    const nextLoadings = buildQuickArrivedDocLoadings(loadings, arrivedDocCount);
+    const nextStatus = ['ON_THE_WAY', 'ON THE WAY'].includes(getBatchStatus(activeBatch))
+      ? 'ONGOING'
+      : (activeBatch.status || 'ONGOING');
+    const payload = {
+      startDate: activeBatch.startDate?.split('T')[0] || todayInput(),
+      targetHarvestDate: activeBatch.targetHarvestDate?.split('T')[0] || '',
+      totalChicksLoaded: arrivedDocCount,
+      actualChicksArrived: arrivedDocCount,
+      plannedFlock: Number.parseInt(activeBatch.plannedFlock || arrivedDocCount, 10),
+      mortalityAllowance: Number.parseInt(activeBatch.mortalityAllowance || 0, 10),
+      targetFeedKg: Number.parseFloat(activeBatch.targetFeedKg || 0),
+      notes: activeBatch.notes || '',
+      status: nextStatus,
+      loadings: nextLoadings.map((row) => ({
+        building: row.building,
+        chicksLoaded: row.chicksLoaded,
+        loadingSharePct: row.loadingSharePct,
+        remarks: row.remarks || ''
+      }))
+    };
+
+    try {
+      const data = await apiClient.patch(`/api/batches/${activeBatch.id}`, payload);
+      const nextBatch = {
+        ...activeBatch,
+        ...data,
+        totalChicksLoaded: Number(data?.totalChicksLoaded || arrivedDocCount),
+        actualChicksArrived: Number(data?.actualChicksArrived || arrivedDocCount),
+        status: data?.status || nextStatus
+      };
+
+      writeArrivedDocConfirmation(activeBatch.id, arrivedDocCount);
+      setActiveBatch?.(nextBatch);
+      setTodayRequest((current) => {
+        if (current.key !== todayDataKey) return current;
+        return {
+          ...current,
+          data: {
+            ...current.data,
+            loadings: nextLoadings
+          }
+        };
+      });
+      await Promise.resolve(onBatchesChanged?.());
+      notifySuccess('Arrived DOC recorded. Today operations are ready.');
+      setIsArrivedDocDialogOpen(false);
+    } catch (err) {
+      setArrivedDocError(err.message || 'Cannot save arrived DOC right now.');
+      notifyError(err.message || 'Cannot save arrived DOC right now.');
+    } finally {
+      setIsSavingArrivedDoc(false);
+    }
+  };
+
+  const renderArrivedDocDialog = () => {
+    if (!isArrivedDocDialogOpen) return null;
+
+    const plannedCount = Number(activeBatch?.plannedFlock || 0);
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 sm:items-center sm:p-4 animate-backdrop-in">
+        <form
+          onSubmit={handleQuickArrivedDocSave}
+          className="w-full max-w-md rounded-xl border border-app-border bg-app-card p-5 shadow-xl animate-modal-in"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-inter">
+                Fast transaction
+              </p>
+              <h3 className="mt-1 text-xl font-black text-app-text font-hanken">Record arrived DOC</h3>
+              <p className="mt-1 text-sm font-semibold leading-snug text-app-text-secondary font-inter">
+                Enter the actual day-old chicken count received for Batch {activeBatch?.id}.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={closeArrivedDocDialog}
+              disabled={isSavingArrivedDoc}
+              className="rounded-lg p-2 text-app-text-secondary transition-colors hover:bg-app-bg hover:text-app-text disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-accent"
+              aria-label="Close arrived DOC popup"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <label className="mt-5 block text-xs font-black uppercase tracking-wide text-app-text-secondary font-inter" htmlFor="quick-arrived-doc">
+            Arrived DOC
+          </label>
+          <input
+            id="quick-arrived-doc"
+            type="number"
+            inputMode="numeric"
+            min="1"
+            step="1"
+            autoFocus
+            value={arrivedDocInput}
+            onChange={(event) => {
+              setArrivedDocInput(event.target.value);
+              setArrivedDocError('');
+            }}
+            placeholder={plannedCount > 0 ? String(plannedCount) : 'Enter head count'}
+            className="mt-2 min-h-12 w-full rounded-lg border border-app-border bg-app-bg px-4 text-lg font-black text-app-text outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 font-jetbrains"
+          />
+          <div className="mt-2 flex flex-col gap-1 text-xs font-semibold text-app-text-secondary font-inter sm:flex-row sm:items-center sm:justify-between">
+            <span>{plannedCount > 0 ? `Planned flock: ${formatNumber(plannedCount)} heads` : 'Planned flock not set'}</span>
+            <span>Building shares will update automatically.</span>
+          </div>
+
+          {arrivedDocError && (
+            <p className="mt-3 rounded-lg border border-app-danger/30 bg-app-danger-bg px-3 py-2 text-xs font-bold text-app-danger font-inter">
+              {arrivedDocError}
+            </p>
+          )}
+
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={closeArrivedDocDialog}
+              disabled={isSavingArrivedDoc}
+              className="min-h-11 rounded-lg border border-app-border bg-app-card px-4 text-sm font-black text-app-text-secondary shadow-sm transition-all hover:text-app-text active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 font-inter"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSavingArrivedDoc}
+              className="min-h-11 rounded-lg bg-app-accent px-4 text-sm font-black text-app-on-accent shadow-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 font-inter"
+            >
+              {isSavingArrivedDoc ? 'Saving...' : 'Save DOC'}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  };
   const today = todayInput();
   const [lastBatchIdAndDate, setLastBatchIdAndDate] = useState(`${activeBatchId}:${today}`);
   const [manualCheckedItems, setManualCheckedItems] = useState(() => {
@@ -1545,6 +1808,8 @@ export default function TodayOperations({ token, activeBatch, logs = EMPTY_LOGS,
                 value="Not entered"
                 detail="Daily flock operations start after actual arrivals are recorded."
                 tone="warning"
+                actionLabel={token ? 'Enter DOC' : null}
+                onAction={token ? openArrivedDocDialog : null}
               />
             )}
             <SummaryMetric
@@ -1724,8 +1989,9 @@ export default function TodayOperations({ token, activeBatch, logs = EMPTY_LOGS,
               </svg>
             </button>
           </div>
-        </section>
+          </section>
         )}
+        {renderArrivedDocDialog()}
       </div>
     );
   }

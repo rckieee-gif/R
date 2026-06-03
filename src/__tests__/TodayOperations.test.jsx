@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { http, HttpResponse } from 'msw';
 import { vi } from 'vitest';
@@ -198,6 +198,65 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
     expect(screen.getByRole('heading', { name: /Today.s Farm Checklist/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Daily Logs$/i })).toBeInTheDocument();
     expect(screen.queryByText(/No arrived DOC input yet/i)).not.toBeInTheDocument();
+  });
+
+  it('records arrived DOC from the pre-placement quick popup', async () => {
+    const setActiveBatch = vi.fn();
+    const onBatchesChanged = vi.fn();
+    let patchPayload;
+
+    server.use(
+      http.get(apiPath('/batches/:batchId/loadings'), () => json([
+        { building: 'A', chicksLoaded: 15000, loadingSharePct: 33.3333, remarks: '' },
+        { building: 'B', chicksLoaded: 15000, loadingSharePct: 33.3333, remarks: '' },
+        { building: 'C', chicksLoaded: 15000, loadingSharePct: 33.3333, remarks: '' },
+      ])),
+      http.patch(apiPath('/batches/:batchId'), async ({ request }) => {
+        patchPayload = await request.json();
+        return json({
+          id: 47,
+          batchCode: 'BATCH-47',
+          ...patchPayload,
+        });
+      })
+    );
+
+    renderComponent({
+      activeBatch: {
+        ...mockBatchActive,
+        id: 47,
+        batchCode: 'BATCH-47',
+        startDate: todayInputForTest(),
+        status: 'ONGOING',
+        totalChicksLoaded: 45000,
+        plannedFlock: 45000,
+      },
+      setActiveBatch,
+      onBatchesChanged,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Enter DOC/i }));
+
+    const arrivedDocInput = screen.getByLabelText(/^Arrived DOC$/i);
+    fireEvent.change(arrivedDocInput, { target: { value: '44850' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save DOC/i }));
+
+    await waitFor(() => {
+      expect(patchPayload).toMatchObject({
+        totalChicksLoaded: 44850,
+        actualChicksArrived: 44850,
+        status: 'ONGOING',
+      });
+    });
+    expect(patchPayload.loadings).toHaveLength(3);
+    expect(patchPayload.loadings.reduce((sum, row) => sum + row.chicksLoaded, 0)).toBe(44850);
+    expect(setActiveBatch).toHaveBeenCalledWith(expect.objectContaining({
+      id: 47,
+      totalChicksLoaded: 44850,
+      actualChicksArrived: 44850,
+    }));
+    expect(onBatchesChanged).toHaveBeenCalled();
+    expect(await screen.findByRole('heading', { name: /Today.s Farm Checklist/i })).toBeInTheDocument();
   });
 
   it('allows switching mobile tabs in Post Batch mode', async () => {

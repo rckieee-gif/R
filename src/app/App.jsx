@@ -236,6 +236,8 @@ function App() {
                   logs={logs}
                   setActiveScreen={setActiveScreen}
                   previewData={auth.viewerPreviewData}
+                  setActiveBatch={batches.selectActiveBatch}
+                  onBatchesChanged={batches.refreshBatches}
                 />
               }
             />
