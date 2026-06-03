@@ -185,29 +185,77 @@ function getLoadingSharePct(chicksLoaded, totalChicksLoaded) {
   return Number(((Number(chicksLoaded || 0) / total) * 100).toFixed(4));
 }
 
+function parseArrivalWholeNumber(value) {
+  const normalized = String(value ?? '').replace(/,/g, '').trim();
+  if (!normalized) return 0;
+  const parsed = Number.parseInt(normalized, 10);
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
+}
+
+function parseArrivalDecimal(value) {
+  const normalized = String(value ?? '').replace(/,/g, '').trim();
+  if (!normalized) return null;
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
+}
+
+function getArrivalRowNumber(row, keys) {
+  const value = keys.map((key) => row?.[key]).find((candidate) => candidate !== undefined && candidate !== null && candidate !== '');
+  return Number(value || 0) > 0 ? String(value) : '';
+}
+
 function buildQuickArrivedDocRows(existingLoadings) {
   const rows = existingLoadings.length
     ? existingLoadings
-    : DEFAULT_LOADING_BUILDINGS.map((building) => ({ building, chicksLoaded: 0, loadingSharePct: 0, remarks: '' }));
+    : DEFAULT_LOADING_BUILDINGS.map((building) => ({
+        building,
+        chicksLoaded: 0,
+        doaCount: 0,
+        sampleWeightGrams: '',
+        loadingSharePct: 0,
+        remarks: ''
+      }));
 
   return rows.map((row) => ({
     building: row.building,
-    value: Number(row.chicksLoaded || 0) > 0 ? String(row.chicksLoaded) : '',
+    arrivedDoc: Number(row.chicksLoaded || 0) > 0 ? String(row.chicksLoaded) : '',
+    doa: getArrivalRowNumber(row, ['doaCount', 'doa', 'deadOnArrival', 'deadOnArrivalCount']),
+    sampleWeightGrams: getArrivalRowNumber(row, ['sampleWeightGrams', 'arrivalSampleWeightGrams', 'sampleWeight']),
     remarks: row.remarks || ''
   }));
 }
 
 function buildQuickArrivedDocLoadings(arrivedDocRows, arrivedDocCount) {
   return arrivedDocRows.map((row) => {
-    const chicksLoaded = Number.parseInt(String(row.value || '').replace(/,/g, ''), 10) || 0;
+    const chicksLoaded = parseArrivalWholeNumber(row.arrivedDoc) || 0;
+    const doaCount = parseArrivalWholeNumber(row.doa) || 0;
+    const sampleWeightGrams = parseArrivalDecimal(row.sampleWeightGrams);
 
     return {
       building: row.building,
       chicksLoaded,
+      doaCount,
+      netChicksPlaced: chicksLoaded - doaCount,
+      sampleWeightGrams,
       loadingSharePct: getLoadingSharePct(chicksLoaded, arrivedDocCount),
       remarks: row.remarks || ''
     };
   });
+}
+
+function getWeightedSampleWeightGrams(arrivedDocRows) {
+  const sampleRows = arrivedDocRows
+    .map((row) => ({
+      arrivedDoc: parseArrivalWholeNumber(row.arrivedDoc) || 0,
+      sampleWeightGrams: parseArrivalDecimal(row.sampleWeightGrams)
+    }))
+    .filter((row) => row.arrivedDoc > 0 && Number(row.sampleWeightGrams || 0) > 0);
+
+  const sampledHeads = sampleRows.reduce((sum, row) => sum + row.arrivedDoc, 0);
+  if (!sampledHeads) return null;
+
+  const weightedTotal = sampleRows.reduce((sum, row) => sum + (row.arrivedDoc * row.sampleWeightGrams), 0);
+  return Number((weightedTotal / sampledHeads).toFixed(2));
 }
 
 function readPrepChecklist(batchId) {
@@ -536,21 +584,33 @@ export default function TodayOperations({
       return;
     }
 
-    const hasInvalidBuildingCount = arrivedDocRows.some((row) => {
-      const rawValue = String(row.value || '').replace(/,/g, '').trim();
-      if (!rawValue) return false;
-      const parsedValue = Number.parseInt(rawValue, 10);
-      return !Number.isFinite(parsedValue) || parsedValue < 0;
+    const hasInvalidArrivalContext = arrivedDocRows.some((row) => {
+      const arrivedDoc = parseArrivalWholeNumber(row.arrivedDoc);
+      const doa = parseArrivalWholeNumber(row.doa);
+      const sampleWeightGrams = parseArrivalDecimal(row.sampleWeightGrams);
+
+      return (
+        Number.isNaN(arrivedDoc) ||
+        Number.isNaN(doa) ||
+        Number.isNaN(sampleWeightGrams) ||
+        arrivedDoc < 0 ||
+        doa < 0 ||
+        doa > arrivedDoc ||
+        (sampleWeightGrams !== null && sampleWeightGrams <= 0)
+      );
     });
 
-    if (hasInvalidBuildingCount) {
-      setArrivedDocError('Enter valid DOC counts for each building.');
+    if (hasInvalidArrivalContext) {
+      setArrivedDocError('Check each building: DOA cannot exceed arrived DOC and sample weight must be positive.');
       return;
     }
 
     const arrivedDocCount = arrivedDocRows.reduce((sum, row) => {
-      return sum + (Number.parseInt(String(row.value || '').replace(/,/g, ''), 10) || 0);
+      return sum + (parseArrivalWholeNumber(row.arrivedDoc) || 0);
     }, 0);
+    const doaCount = arrivedDocRows.reduce((sum, row) => sum + (parseArrivalWholeNumber(row.doa) || 0), 0);
+    const netChicksPlaced = arrivedDocCount - doaCount;
+    const arrivalSampleWeightGrams = getWeightedSampleWeightGrams(arrivedDocRows);
 
     if (arrivedDocCount <= 0) {
       setArrivedDocError('Enter the arrived DOC count for at least one building.');
@@ -569,6 +629,9 @@ export default function TodayOperations({
       targetHarvestDate: activeBatch.targetHarvestDate?.split('T')[0] || '',
       totalChicksLoaded: arrivedDocCount,
       actualChicksArrived: arrivedDocCount,
+      doaCount,
+      netChicksPlaced,
+      arrivalSampleWeightGrams,
       plannedFlock: Number.parseInt(activeBatch.plannedFlock || arrivedDocCount, 10),
       mortalityAllowance: Number.parseInt(activeBatch.mortalityAllowance || 0, 10),
       targetFeedKg: Number.parseFloat(activeBatch.targetFeedKg || 0),
@@ -577,6 +640,9 @@ export default function TodayOperations({
       loadings: nextLoadings.map((row) => ({
         building: row.building,
         chicksLoaded: row.chicksLoaded,
+        doaCount: row.doaCount,
+        netChicksPlaced: row.netChicksPlaced,
+        sampleWeightGrams: row.sampleWeightGrams,
         loadingSharePct: row.loadingSharePct,
         remarks: row.remarks || ''
       }))
@@ -589,6 +655,9 @@ export default function TodayOperations({
         ...data,
         totalChicksLoaded: Number(data?.totalChicksLoaded || arrivedDocCount),
         actualChicksArrived: Number(data?.actualChicksArrived || arrivedDocCount),
+        doaCount: Number(data?.doaCount ?? doaCount),
+        netChicksPlaced: Number(data?.netChicksPlaced ?? netChicksPlaced),
+        arrivalSampleWeightGrams: data?.arrivalSampleWeightGrams ?? arrivalSampleWeightGrams,
         status: data?.status || nextStatus
       };
 
@@ -620,8 +689,11 @@ export default function TodayOperations({
 
     const plannedCount = Number(activeBatch?.plannedFlock || 0);
     const arrivedDocTotal = arrivedDocRows.reduce((sum, row) => {
-      return sum + (Number.parseInt(String(row.value || '').replace(/,/g, ''), 10) || 0);
+      return sum + (parseArrivalWholeNumber(row.arrivedDoc) || 0);
     }, 0);
+    const doaTotal = arrivedDocRows.reduce((sum, row) => sum + (parseArrivalWholeNumber(row.doa) || 0), 0);
+    const netPlacedTotal = arrivedDocTotal - doaTotal;
+    const sampleWeightAverage = getWeightedSampleWeightGrams(arrivedDocRows);
 
     return (
       <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 sm:items-center sm:p-4 animate-backdrop-in">
@@ -652,48 +724,109 @@ export default function TodayOperations({
             </button>
           </div>
 
-          <div className="mt-5 rounded-xl border border-app-border bg-app-bg p-3">
-            <div className="mb-2 grid grid-cols-[minmax(0,1fr)_minmax(8rem,11rem)] gap-3 px-1 text-[10px] font-black uppercase tracking-wide text-app-text-secondary font-inter">
-              <span>Building</span>
-              <span>Arrived DOC</span>
-            </div>
-            <div className="space-y-2">
-              {arrivedDocRows.map((row, index) => (
-                <div key={`${row.building}-${index}`} className="grid grid-cols-[minmax(0,1fr)_minmax(8rem,11rem)] items-center gap-3">
-                  <label
-                    className="min-h-11 rounded-lg border border-app-border bg-app-card px-3 py-2 text-sm font-black text-app-text font-hanken"
-                    htmlFor={`quick-arrived-doc-${index}`}
-                  >
-                    Building {row.building}
+          <div className="mt-5 max-h-[58vh] space-y-3 overflow-y-auto pr-1">
+            {arrivedDocRows.map((row, index) => (
+              <fieldset key={`${row.building}-${index}`} className="rounded-xl border border-app-border bg-app-bg p-3">
+                <legend className="px-1 text-sm font-black text-app-accent font-hanken">
+                  Building {row.building}
+                </legend>
+                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <label className="block">
+                    <span className="block text-[10px] font-black uppercase tracking-wide text-app-text-secondary font-inter">
+                      Arrived DOC
+                    </span>
+                    <input
+                      id={`quick-arrived-doc-${index}`}
+                      type="number"
+                      inputMode="numeric"
+                      min="0"
+                      step="1"
+                      autoFocus={index === 0}
+                      value={row.arrivedDoc}
+                      onChange={(event) => {
+                        const nextValue = event.target.value;
+                        setArrivedDocRows((currentRows) => currentRows.map((currentRow, rowIndex) => (
+                          rowIndex === index ? { ...currentRow, arrivedDoc: nextValue } : currentRow
+                        )));
+                        setArrivedDocError('');
+                      }}
+                      aria-label={`Building ${row.building} arrived DOC`}
+                      placeholder="0"
+                      className="mt-1 min-h-11 w-full rounded-lg border border-app-border bg-app-card px-3 text-right text-base font-black text-app-text outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 font-jetbrains"
+                    />
                   </label>
-                  <input
-                    id={`quick-arrived-doc-${index}`}
-                    type="number"
-                    inputMode="numeric"
-                    min="0"
-                    step="1"
-                    autoFocus={index === 0}
-                    value={row.value}
-                    onChange={(event) => {
-                      const nextValue = event.target.value;
-                      setArrivedDocRows((currentRows) => currentRows.map((currentRow, rowIndex) => (
-                        rowIndex === index ? { ...currentRow, value: nextValue } : currentRow
-                      )));
-                      setArrivedDocError('');
-                    }}
-                    aria-label={`Building ${row.building} arrived DOC`}
-                    placeholder="0"
-                    className="min-h-11 w-full rounded-lg border border-app-border bg-app-card px-3 text-right text-base font-black text-app-text outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 font-jetbrains"
-                  />
+                  <label className="block">
+                    <span className="block text-[10px] font-black uppercase tracking-wide text-app-text-secondary font-inter">
+                      DOA
+                    </span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min="0"
+                      step="1"
+                      value={row.doa}
+                      onChange={(event) => {
+                        const nextValue = event.target.value;
+                        setArrivedDocRows((currentRows) => currentRows.map((currentRow, rowIndex) => (
+                          rowIndex === index ? { ...currentRow, doa: nextValue } : currentRow
+                        )));
+                        setArrivedDocError('');
+                      }}
+                      aria-label={`Building ${row.building} DOA`}
+                      placeholder="0"
+                      className="mt-1 min-h-11 w-full rounded-lg border border-app-border bg-app-card px-3 text-right text-base font-black text-app-text outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 font-jetbrains"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="block text-[10px] font-black uppercase tracking-wide text-app-text-secondary font-inter">
+                      Sample wt (g)
+                    </span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="0.1"
+                      value={row.sampleWeightGrams}
+                      onChange={(event) => {
+                        const nextValue = event.target.value;
+                        setArrivedDocRows((currentRows) => currentRows.map((currentRow, rowIndex) => (
+                          rowIndex === index ? { ...currentRow, sampleWeightGrams: nextValue } : currentRow
+                        )));
+                        setArrivedDocError('');
+                      }}
+                      aria-label={`Building ${row.building} sample weight`}
+                      placeholder="0"
+                      className="mt-1 min-h-11 w-full rounded-lg border border-app-border bg-app-card px-3 text-right text-base font-black text-app-text outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 font-jetbrains"
+                    />
+                  </label>
                 </div>
-              ))}
-            </div>
+              </fieldset>
+            ))}
           </div>
 
-          <div className="mt-3 flex flex-col gap-1 text-xs font-semibold text-app-text-secondary font-inter sm:flex-row sm:items-center sm:justify-between">
-            <span>{plannedCount > 0 ? `Planned flock: ${formatNumber(plannedCount)} heads` : 'Planned flock not set'}</span>
-            <span className="font-black text-app-accent">Total arrived: {formatNumber(arrivedDocTotal)} heads</span>
+          <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl border border-app-border bg-app-bg p-3 sm:grid-cols-4">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wide text-app-text-secondary font-inter">Arrived</p>
+              <p className="mt-0.5 text-sm font-black text-app-accent font-jetbrains">{formatNumber(arrivedDocTotal)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wide text-app-text-secondary font-inter">DOA</p>
+              <p className="mt-0.5 text-sm font-black text-app-danger font-jetbrains">{formatNumber(doaTotal)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wide text-app-text-secondary font-inter">Net placed</p>
+              <p className="mt-0.5 text-sm font-black text-app-success font-jetbrains">{formatNumber(netPlacedTotal)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wide text-app-text-secondary font-inter">Avg wt</p>
+              <p className="mt-0.5 text-sm font-black text-app-text font-jetbrains">
+                {sampleWeightAverage ? `${formatNumber(sampleWeightAverage, 1)} g` : '--'}
+              </p>
+            </div>
           </div>
+          <p className="mt-2 text-xs font-semibold text-app-text-secondary font-inter">
+            {plannedCount > 0 ? `Planned flock: ${formatNumber(plannedCount)} heads` : 'Planned flock not set'}
+          </p>
 
           {arrivedDocError && (
             <p className="mt-3 rounded-lg border border-app-danger/30 bg-app-danger-bg px-3 py-2 text-xs font-bold text-app-danger font-inter">
@@ -715,7 +848,7 @@ export default function TodayOperations({
               disabled={isSavingArrivedDoc}
               className="min-h-11 rounded-lg bg-app-accent px-4 text-sm font-black text-app-on-accent shadow-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 font-inter"
             >
-              {isSavingArrivedDoc ? 'Saving...' : 'Save DOC'}
+              {isSavingArrivedDoc ? 'Saving...' : 'Save arrival'}
             </button>
           </div>
         </form>

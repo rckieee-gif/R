@@ -240,27 +240,43 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
     fireEvent.change(screen.getByLabelText(/Building A arrived DOC/i), { target: { value: '14950' } });
     fireEvent.change(screen.getByLabelText(/Building B arrived DOC/i), { target: { value: '14950' } });
     fireEvent.change(screen.getByLabelText(/Building C arrived DOC/i), { target: { value: '14950' } });
-    expect(screen.getByText(/Total arrived: 44,850 heads/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Save DOC/i }));
+    fireEvent.change(screen.getByLabelText(/Building A DOA/i), { target: { value: '25' } });
+    fireEvent.change(screen.getByLabelText(/Building B DOA/i), { target: { value: '18' } });
+    fireEvent.change(screen.getByLabelText(/Building C DOA/i), { target: { value: '30' } });
+    fireEvent.change(screen.getByLabelText(/Building A sample weight/i), { target: { value: '42' } });
+    fireEvent.change(screen.getByLabelText(/Building B sample weight/i), { target: { value: '41' } });
+    fireEvent.change(screen.getByLabelText(/Building C sample weight/i), { target: { value: '43' } });
+
+    expect(screen.getByText('44,850')).toBeInTheDocument();
+    expect(screen.getByText('73')).toBeInTheDocument();
+    expect(screen.getByText('44,777')).toBeInTheDocument();
+    expect(screen.getByText('42.0 g')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Save arrival/i }));
 
     await waitFor(() => {
       expect(patchPayload).toMatchObject({
         totalChicksLoaded: 44850,
         actualChicksArrived: 44850,
+        doaCount: 73,
+        netChicksPlaced: 44777,
+        arrivalSampleWeightGrams: 42,
         status: 'ONGOING',
       });
     });
     expect(patchPayload.loadings).toHaveLength(3);
     expect(patchPayload.loadings.reduce((sum, row) => sum + row.chicksLoaded, 0)).toBe(44850);
     expect(patchPayload.loadings).toEqual([
-      expect.objectContaining({ building: 'A', chicksLoaded: 14950 }),
-      expect.objectContaining({ building: 'B', chicksLoaded: 14950 }),
-      expect.objectContaining({ building: 'C', chicksLoaded: 14950 }),
+      expect.objectContaining({ building: 'A', chicksLoaded: 14950, doaCount: 25, netChicksPlaced: 14925, sampleWeightGrams: 42 }),
+      expect.objectContaining({ building: 'B', chicksLoaded: 14950, doaCount: 18, netChicksPlaced: 14932, sampleWeightGrams: 41 }),
+      expect.objectContaining({ building: 'C', chicksLoaded: 14950, doaCount: 30, netChicksPlaced: 14920, sampleWeightGrams: 43 }),
     ]);
     expect(setActiveBatch).toHaveBeenCalledWith(expect.objectContaining({
       id: 47,
       totalChicksLoaded: 44850,
       actualChicksArrived: 44850,
+      doaCount: 73,
+      netChicksPlaced: 44777,
+      arrivalSampleWeightGrams: 42,
     }));
     expect(onBatchesChanged).toHaveBeenCalled();
     expect(await screen.findByRole('heading', { name: /Today.s Farm Checklist/i })).toBeInTheDocument();

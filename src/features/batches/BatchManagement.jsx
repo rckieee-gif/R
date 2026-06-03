@@ -25,6 +25,25 @@ function getLoadingTotal(loadings) {
   return loadings.reduce((sum, row) => sum + Number(row.chicksLoaded || 0), 0);
 }
 
+function getDoaTotal(loadings) {
+  return loadings.reduce((sum, row) => sum + Number(row.doaCount || 0), 0);
+}
+
+function getWeightedArrivalSampleWeight(loadings) {
+  const rowsWithSampleWeight = loadings
+    .map((row) => ({
+      chicksLoaded: Number(row.chicksLoaded || 0),
+      sampleWeightGrams: Number(row.sampleWeightGrams || 0)
+    }))
+    .filter((row) => row.chicksLoaded > 0 && row.sampleWeightGrams > 0);
+
+  const sampledHeads = rowsWithSampleWeight.reduce((sum, row) => sum + row.chicksLoaded, 0);
+  if (!sampledHeads) return null;
+
+  const weightedTotal = rowsWithSampleWeight.reduce((sum, row) => sum + (row.chicksLoaded * row.sampleWeightGrams), 0);
+  return Number((weightedTotal / sampledHeads).toFixed(2));
+}
+
 function isIncomingStatus(status) {
   const normalized = String(status || '').trim().toUpperCase();
   return normalized === 'ON_THE_WAY' || normalized === 'ON THE WAY';
@@ -51,6 +70,8 @@ function buildLoadingRows(buildings) {
     building: building.name,
     owner: getBuildingOwner(building.name),
     chicksLoaded: '',
+    doaCount: '',
+    sampleWeightGrams: '',
     loadingSharePct: 0,
     remarks: ''
   }));
@@ -109,6 +130,15 @@ export default function BatchManagement({
 
   const loadingTotal = useMemo(
     () => getLoadingTotal(loadings),
+    [loadings]
+  );
+  const doaTotal = useMemo(
+    () => getDoaTotal(loadings),
+    [loadings]
+  );
+  const netPlacedTotal = Math.max(loadingTotal - doaTotal, 0);
+  const arrivalSampleWeightGrams = useMemo(
+    () => getWeightedArrivalSampleWeight(loadings),
     [loadings]
   );
 
@@ -206,6 +236,10 @@ export default function BatchManagement({
         building: row.building,
         owner: getBuildingOwner(row.building),
         chicksLoaded: String(row.chicksLoaded || ''),
+        doaCount: Number(row.doaCount || 0) > 0 ? String(row.doaCount) : '',
+        sampleWeightGrams: Number(row.sampleWeightGrams || row.arrivalSampleWeightGrams || 0) > 0
+          ? String(row.sampleWeightGrams || row.arrivalSampleWeightGrams)
+          : '',
         loadingSharePct: row.loadingSharePct || 0,
         remarks: row.remarks || ''
       })));
@@ -251,10 +285,33 @@ export default function BatchManagement({
       return;
     }
 
+    const hasInvalidArrivalContext = loadings.some((row) => {
+      const chicksLoaded = Number(row.chicksLoaded || 0);
+      const doaCount = Number(row.doaCount || 0);
+      const sampleWeightGrams = row.sampleWeightGrams === '' ? null : Number(row.sampleWeightGrams);
+
+      return (
+        !Number.isFinite(chicksLoaded) ||
+        !Number.isFinite(doaCount) ||
+        chicksLoaded < 0 ||
+        doaCount < 0 ||
+        doaCount > chicksLoaded ||
+        (sampleWeightGrams !== null && (!Number.isFinite(sampleWeightGrams) || sampleWeightGrams <= 0))
+      );
+    });
+
+    if (hasInvalidArrivalContext) {
+      toastError('Check building arrival fields: DOA cannot exceed arrived DOC and sample weight must be positive.');
+      return;
+    }
+
     const batchPayload = {
       startDate,
       targetHarvestDate,
       totalChicksLoaded: loadingTotal,
+      doaCount: doaTotal,
+      netChicksPlaced: netPlacedTotal,
+      arrivalSampleWeightGrams,
       plannedFlock: parseInt(plannedFlock || 0),
       mortalityAllowance: parseInt(mortalityAllowance || 0),
       targetFeedKg: parseFloat(targetFeedKg || 0),
@@ -263,6 +320,9 @@ export default function BatchManagement({
       loadings: loadingsWithShares.map((row) => ({
         building: row.building,
         chicksLoaded: parseInt(row.chicksLoaded || 0),
+        doaCount: parseInt(row.doaCount || 0),
+        netChicksPlaced: Math.max(parseInt(row.chicksLoaded || 0) - parseInt(row.doaCount || 0), 0),
+        sampleWeightGrams: row.sampleWeightGrams === '' ? null : parseFloat(row.sampleWeightGrams),
         loadingSharePct: parseFloat(row.loadingSharePct || 0),
         remarks: row.remarks || ''
       }))
@@ -531,8 +591,11 @@ export default function BatchManagement({
 
             <div className="divide-y divide-app-border">
               {loadingsWithShares.map((row, index) => (
-                <div key={row.building} className="p-3 grid grid-cols-[80px_1fr_90px] gap-2 items-end">
-                  <div>
+                <div
+                  key={row.building}
+                  className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-[80px_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,0.85fr)_90px] sm:items-end"
+                >
+                  <div className="col-span-2 sm:col-span-1">
                     <label className="block text-[10px] font-bold text-app-text-secondary mb-1 font-jetbrains">
                       Building
                     </label>
@@ -546,13 +609,42 @@ export default function BatchManagement({
 
                   <div>
                     <label className="block text-[10px] font-bold text-app-text-secondary mb-1 font-jetbrains">
-                      Arrived
+                      Arrived DOC
                     </label>
                     <input
                       type="number"
                       min="0"
                       value={row.chicksLoaded}
                       onChange={(e) => updateLoading(index, 'chicksLoaded', e.target.value)}
+                      className="w-full h-10 px-3 border border-app-border rounded-lg bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-jetbrains"
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-app-text-secondary mb-1 font-jetbrains">
+                      DOA
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={row.doaCount}
+                      onChange={(e) => updateLoading(index, 'doaCount', e.target.value)}
+                      className="w-full h-10 px-3 border border-app-border rounded-lg bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-jetbrains"
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-app-text-secondary mb-1 font-jetbrains">
+                      Sample wt (g)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={row.sampleWeightGrams}
+                      onChange={(e) => updateLoading(index, 'sampleWeightGrams', e.target.value)}
                       className="w-full h-10 px-3 border border-app-border rounded-lg bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-jetbrains"
                       placeholder="0"
                     />
@@ -582,11 +674,20 @@ export default function BatchManagement({
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-2 bg-app-bg px-3 py-2 text-xs font-jetbrains">
+            <div className="grid gap-2 bg-app-bg px-3 py-2 text-xs font-jetbrains sm:grid-cols-5">
               <p className="font-bold text-app-text-secondary">
                 Total chicks: {loadingTotal.toLocaleString()}
               </p>
-              <p className={`font-bold text-right ${Number(shareTotal.toFixed(2)) === 100 ? 'text-app-success' : 'text-app-danger'}`}>
+              <p className="font-bold text-app-text-secondary">
+                DOA: {doaTotal.toLocaleString()}
+              </p>
+              <p className="font-bold text-app-text-secondary">
+                Net placed: {netPlacedTotal.toLocaleString()}
+              </p>
+              <p className="font-bold text-app-text-secondary">
+                Avg wt: {arrivalSampleWeightGrams ? `${arrivalSampleWeightGrams.toLocaleString()}g` : '--'}
+              </p>
+              <p className={`font-bold sm:text-right ${Number(shareTotal.toFixed(2)) === 100 ? 'text-app-success' : 'text-app-danger'}`}>
                 Shares: {shareTotal.toFixed(2)}%
               </p>
             </div>

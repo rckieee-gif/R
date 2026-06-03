@@ -70,7 +70,7 @@ describe('BatchManagement', () => {
     server.use(
       http.get(apiPath('/buildings'), () => json([{ id: 1, name: 'A' }])),
       http.get(apiPath('/batches/:batchId/loadings'), () => json([
-        { id: 10, building: 'A', chicksLoaded: 1000, loadingSharePct: 100, remarks: '' }
+        { id: 10, building: 'A', chicksLoaded: 1000, doaCount: 12, sampleWeightGrams: 42.5, loadingSharePct: 100, remarks: '' }
       ])),
       http.patch(apiPath('/batches/:batchId'), async ({ request }) => {
         patches.push(await request.json());
@@ -102,8 +102,20 @@ describe('BatchManagement', () => {
     expect(patches[0]).toEqual(expect.objectContaining({
       status: 'ONGOING',
       totalChicksLoaded: 1000,
+      doaCount: 12,
+      netChicksPlaced: 988,
+      arrivalSampleWeightGrams: 42.5,
       plannedFlock: 1000
     }));
+    expect(patches[0].loadings).toEqual([
+      expect.objectContaining({
+        building: 'A',
+        chicksLoaded: 1000,
+        doaCount: 12,
+        netChicksPlaced: 988,
+        sampleWeightGrams: 42.5
+      })
+    ]);
     expect(setActiveBatch).toHaveBeenCalledWith(updatedBatch);
     expect(onCycleStarted).toHaveBeenCalledWith(updatedBatch);
   });
