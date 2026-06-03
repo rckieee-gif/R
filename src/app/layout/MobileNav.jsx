@@ -35,9 +35,9 @@ export default function MobileNav({
     { id: 'batches', label: 'Batches' },
     { id: 'employees', label: 'Employees' },
     { id: 'paySummary', label: 'Pay Summary' },
-    { id: 'ledger', label: 'Ledger' },
+    { id: 'ledger', label: 'Expenses' },
     { id: 'harvest', label: 'Harvest' },
-    { id: 'analytics', label: 'Analytics' },
+    { id: 'analytics', label: 'Reports' },
     { id: 'statement', label: 'Statement' },
     { id: 'settings', label: 'Settings' }
   ];
@@ -64,10 +64,10 @@ export default function MobileNav({
           <button onClick={() => setActiveScreen('dashboard')} className={getNavLinkClass('dashboard')}>Home</button>
         )}
         {allowedScreens.includes('dailyLog') && (
-          <button onClick={() => setActiveScreen('dailyLog')} className={getNavLinkClass('dailyLog')}>Logs</button>
+          <button onClick={() => setActiveScreen('dailyLog')} className={getNavLinkClass('dailyLog')}>Daily Logs</button>
         )}
         {allowedScreens.includes('inventory') && (
-          <button onClick={() => setActiveScreen('inventory')} className={getNavLinkClass('inventory')}>Inventory</button>
+          <button onClick={() => setActiveScreen('inventory')} className={getNavLinkClass('inventory')}>Feed & Inventory</button>
         )}
         
         {allowedMoreScreens.length > 0 && (

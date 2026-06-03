@@ -43,13 +43,15 @@ const mockBatchPostSummary = {
 const renderComponent = (props = {}) => {
   return render(
     <NotificationProvider>
-      <TodayOperations
-        token="test-token"
-        activeBatch={mockBatchActive}
-        logs={[]}
-        setActiveScreen={vi.fn()}
-        {...props}
-      />
+      <MemoryRouter initialEntries={props.initialEntries || ['/today']}>
+        <TodayOperations
+          token="test-token"
+          activeBatch={mockBatchActive}
+          logs={[]}
+          setActiveScreen={vi.fn()}
+          {...props}
+        />
+      </MemoryRouter>
     </NotificationProvider>
   );
 };
@@ -84,7 +86,7 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
   it('allows switching mobile tabs via 1, 2, 3 keys in active batch mode', async () => {
     renderComponent();
 
-    const overviewTab = screen.getByRole('button', { name: /^Overview$/i });
+    const overviewTab = screen.getByRole('button', { name: /^Daily Logs$/i });
     const checklistTab = screen.getByRole('button', { name: /^Checklist$/i });
     const warningsTab = screen.getByRole('button', { name: /^Warnings$/i });
 
@@ -111,7 +113,7 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
   it('allows switching mobile tabs in ON_THE_WAY mode', async () => {
     renderComponent({ activeBatch: mockBatchOnTheWay });
 
-    const overviewTab = screen.getByRole('button', { name: /^Overview$/i });
+    const overviewTab = screen.getByRole('button', { name: /^Batches$/i });
     const checklistTab = screen.getByRole('button', { name: /^Checklist$/i });
     const actionsTab = screen.getByRole('button', { name: /^Actions$/i });
 
@@ -136,7 +138,7 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
   it('allows switching mobile tabs in Post Batch mode', async () => {
     renderComponent({ activeBatch: mockBatchPostSummary });
 
-    const overviewTab = screen.getByRole('button', { name: /^Overview$/i });
+    const overviewTab = screen.getByRole('button', { name: /^Reports$/i });
     const buildingsTab = screen.getByRole('button', { name: /^Buildings$/i });
     const checksTab = screen.getByRole('button', { name: /^Checks$/i });
 
@@ -161,7 +163,7 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
   it('ignores keys when focused on input fields', async () => {
     renderComponent();
 
-    const overviewTab = screen.getByRole('button', { name: /^Overview$/i });
+    const overviewTab = screen.getByRole('button', { name: /^Daily Logs$/i });
     const checklistTab = screen.getByRole('button', { name: /^Checklist$/i });
 
     // Default is overview
@@ -198,6 +200,47 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
 
     // Verify the tooltip modal is closed
     expect(screen.queryByLabelText('Close explanation')).not.toBeInTheDocument();
+  });
+
+  it('surfaces day-one arrival tasks first after a cycle handoff', async () => {
+    server.use(
+      http.get(apiPath('/batches/:batchId/loadings'), () => json([
+        { id: 1, building: 'A', chicksLoaded: 900 }
+      ])),
+      http.get(apiPath('/batches/:batchId/employee-assignments'), () => json([])),
+      http.get(apiPath('/inventory/items'), () => json([
+        { id: 1, name: 'Starter Feed', category: 'Feed', currentStock: 2, reorderLevel: 5 }
+      ])),
+      http.get(apiPath('/batches/:batchId/harvest-production-summary'), () => json({
+        totals: { birds: 0 },
+        perHarvest: [],
+      }))
+    );
+
+    renderComponent({
+      activeBatch: {
+        ...mockBatchActive,
+        id: 55,
+        totalChicksLoaded: 900,
+        plannedFlock: 1000,
+        status: 'ONGOING',
+      },
+      initialEntries: [{
+        pathname: '/today',
+        search: '?handoff=day-one',
+        state: { dayOneHandoffBatchId: 55 },
+      }],
+    });
+
+    const handoffTitle = await screen.findByText(/Day-one arrival handoff/i);
+    expect(screen.getByText(/Batch 55 is now active/i)).toBeInTheDocument();
+    expect(screen.getByText(/Confirm arrival counts/i)).toBeInTheDocument();
+    expect(screen.getByText(/Record first daily log/i)).toBeInTheDocument();
+
+    const normalChecklist = screen.getByText(/Active Operations Checklist/i);
+    expect(Boolean(
+      handoffTitle.compareDocumentPosition(normalChecklist) & Node.DOCUMENT_POSITION_FOLLOWING
+    )).toBe(true);
   });
 
   it('shows a usable offline state when current batch and batch list requests fail', async () => {

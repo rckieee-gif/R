@@ -80,7 +80,7 @@ function getQueueItemLabel(item) {
     case 'SAVE_INVENTORY_MOVEMENT':
       return `Feed movement: ${p.feedName || p.itemName || 'Feed'} ${p.bags || p.quantity || 0} sacks`;
     case 'SAVE_TRANSACTION':
-      return `${p.type || 'Transaction'}: ${p.description || p.category || 'Record'} ${formatLedgerMoney(p.amount || p.totalPrice)}`;
+      return `${p.type || 'Expense'}: ${p.description || p.category || 'Daily Log'} ${formatLedgerMoney(p.amount || p.totalPrice)}`;
     case 'VOID_TRANSACTION':
       return `Void transaction #${p.transactionId || '?'}`;
     case 'SAVE_HARVEST_REPORT':
@@ -466,13 +466,13 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
       visible: canUseFinancialScreens
     },
     {
-      label: 'Add Inventory Movement',
+      label: 'Add Feed & Inventory',
       detail: 'Record stock feed usage or adjustments',
       screen: 'inventory',
       visible: canEnterDaily
     },
     {
-      label: 'View Analytics',
+      label: 'View Reports',
       detail: 'Analyze FCR, weight curves and trends',
       screen: 'analytics',
       visible: true
@@ -901,18 +901,18 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
             </div>
           </div>
 
-          {/* Latest Transactions */}
+          {/* Latest Expenses */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-[10px] font-bold text-dashboard-text-secondary uppercase tracking-wider font-jetbrains">
-                Latest Transactions
+                Latest Expenses
               </h4>
               <button
                 type="button"
                 onClick={() => setActiveScreen('ledger')}
                 className="text-[10px] font-bold text-dashboard-accent bg-dashboard-accent/15 px-2.5 py-1 rounded-lg cursor-pointer hover:bg-dashboard-accent/25 transition-colors font-jetbrains"
               >
-                All Ledger
+                All Expenses
               </button>
             </div>
 
@@ -951,7 +951,7 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
 
                 {recentTransactions.length === 0 && (
                   <li className="p-6 text-center text-sm text-dashboard-text-secondary font-inter">
-                    No recent transactions recorded for this flock batch.
+                    No recent expenses recorded for this flock batch.
                   </li>
                 )}
               </ul>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../shared/utils/apiClient';
 import { useNotification } from '../../shared/hooks/useNotification';
+import { getArrivalVarianceMeta } from '../../shared/utils/batchSignals';
 
 function toDateInput(value) {
   return value?.split('T')[0] || value || '';
@@ -27,46 +28,6 @@ function getLoadingTotal(loadings) {
 function isIncomingStatus(status) {
   const normalized = String(status || '').trim().toUpperCase();
   return normalized === 'ON_THE_WAY' || normalized === 'ON THE WAY';
-}
-
-function getArrivalVarianceMeta(actualChicks, plannedChicks) {
-  const actual = Number(actualChicks || 0);
-  const planned = Number(plannedChicks || 0);
-
-  if (planned <= 0) {
-    return {
-      value: '--',
-      detail: 'Set planned flock to track variance.',
-      toneClass: 'border-app-border bg-app-bg text-app-text'
-    };
-  }
-
-  if (actual <= 0) {
-    return {
-      value: '--',
-      detail: 'Enter building chick counts when the delivery arrives.',
-      toneClass: 'border-app-border bg-app-bg text-app-text'
-    };
-  }
-
-  const variance = actual - planned;
-  const percent = (variance / planned) * 100;
-
-  if (variance === 0) {
-    return {
-      value: 'On plan',
-      detail: `${actual.toLocaleString()} arrived, matching planned flock.`,
-      toneClass: 'border-app-success/30 bg-app-success-bg text-app-success'
-    };
-  }
-
-  return {
-    value: `${variance > 0 ? '+' : ''}${variance.toLocaleString()}`,
-    detail: `${Math.abs(variance).toLocaleString()} ${variance > 0 ? 'above' : 'below'} planned flock (${variance > 0 ? '+' : ''}${formatPercent(percent)}%).`,
-    toneClass: variance < 0
-      ? 'border-app-warning/30 bg-app-warning-bg text-app-warning'
-      : 'border-app-accent/30 bg-app-accent/10 text-app-accent'
-  };
 }
 
 function getLockedSharePct(chicksLoaded, totalChicksLoaded) {
@@ -110,7 +71,8 @@ export default function BatchManagement({
   previewData = null,
   batchList = null,
   isBatchListLoading = false,
-  onBatchesChanged = null
+  onBatchesChanged = null,
+  onCycleStarted = null
 }) {
   const hasExternalBatchList = Array.isArray(batchList);
   const [batches, setBatches] = useState([]);
@@ -274,6 +236,15 @@ export default function BatchManagement({
     }
 
     const isStartingCycle = !isIncomingStatus(statusField);
+    const editingBatch = editingBatchId
+      ? visibleBatches.find((batch) => String(batch.id) === String(editingBatchId))
+      : null;
+    const isDayOneHandoff = Boolean(
+      editingBatchId &&
+      editingBatch &&
+      isIncomingStatus(editingBatch.status) &&
+      String(statusField || '').trim().toUpperCase() === 'ONGOING'
+    );
 
     if (isStartingCycle && loadingTotal <= 0) {
       toastError('Enter actual chicks arrived for at least one building before starting the cycle.');
@@ -309,7 +280,7 @@ export default function BatchManagement({
       if (editingBatchId) {
         updateBatchList((current) => current.map((batch) => batch.id === editingBatchId ? data : batch));
 
-        if (activeBatch?.id === editingBatchId) {
+        if (isDayOneHandoff || activeBatch?.id === editingBatchId) {
           setActiveBatch(data);
         }
         success(isStartingCycle ? 'Cycle started successfully!' : 'Batch updated successfully!');
@@ -321,6 +292,9 @@ export default function BatchManagement({
 
       refreshExternalBatchList();
       resetForm();
+      if (isDayOneHandoff) {
+        onCycleStarted?.(data);
+      }
     } catch (err) {
       toastError(err.message || 'Cannot connect to server.');
     }

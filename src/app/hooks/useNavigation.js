@@ -67,11 +67,11 @@ export default function useNavigation({ canManageOperations, isPublicViewer, use
     { id: 'batches', label: 'Batches', icon: 'layers' },
     { id: 'employees', label: 'Employees', icon: 'group' },
     { id: 'paySummary', label: 'Pay Summary', icon: 'payments' },
-    { id: 'ledger', label: 'Ledger', icon: 'receipt_long' },
+    { id: 'ledger', label: 'Expenses', icon: 'receipt_long' },
     { id: 'harvest', label: 'Harvest', icon: 'agriculture' },
     { id: 'dailyLog', label: 'Daily Logs', icon: 'edit_note' },
-    { id: 'inventory', label: 'Inventory', icon: 'inventory' },
-    { id: 'analytics', label: 'Analytics', icon: 'monitoring' },
+    { id: 'inventory', label: 'Feed & Inventory', icon: 'inventory' },
+    { id: 'analytics', label: 'Reports', icon: 'monitoring' },
     { id: 'statement', label: 'Statement', icon: 'description' },
   ], []);
 

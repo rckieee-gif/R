@@ -160,7 +160,7 @@ export default function Login({ onLogin, onBack }) {
                   Octavio Poultry
                 </h1>
                 <h2 className="text-[10px] font-bold tracking-widest text-app-text-secondary uppercase mt-1 font-jetbrains">
-                  Farm Management
+                  Farm Operations
                 </h2>
               </div>
 

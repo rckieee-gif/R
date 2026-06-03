@@ -41,6 +41,13 @@ function BatchesRoute({ batches, ...props }) {
 
   const { batches: batchList, visibleActiveBatch, selectActiveBatch } = batches;
 
+  const handleCycleStarted = (batch) => {
+    selectActiveBatch(batch);
+    navigate('/today?handoff=day-one', {
+      state: { dayOneHandoffBatchId: batch?.id },
+    });
+  };
+
   // URL -> State: when batchId in URL changes, update activeBatch state
   useEffect(() => {
     if (batchId) {
@@ -73,6 +80,7 @@ function BatchesRoute({ batches, ...props }) {
       batchList={batchList}
       isBatchListLoading={batches.isBatchListLoading}
       onBatchesChanged={batches.refreshBatches}
+      onCycleStarted={handleCycleStarted}
       {...props}
     />
   );

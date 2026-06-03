@@ -42,11 +42,11 @@ export default function Sidebar({
     const meta = {
       today: { label: 'Today', icon: 'today' },
       dailyLog: { label: 'Daily Logs', icon: 'edit_note' },
-      inventory: { label: 'Inventory', icon: 'inventory' },
+      inventory: { label: 'Feed & Inventory', icon: 'inventory' },
       batches: { label: 'Batches', icon: 'layers' },
       harvest: { label: 'Harvest', icon: 'agriculture' },
-      analytics: { label: 'Analytics', icon: 'monitoring' },
-      ledger: { label: 'Ledger', icon: 'receipt_long' },
+      analytics: { label: 'Reports', icon: 'monitoring' },
+      ledger: { label: 'Expenses', icon: 'receipt_long' },
       employees: { label: 'Employees', icon: 'group' },
       paySummary: { label: 'Pay Summary', icon: 'payments' },
       statement: { label: 'Statement', icon: 'description' },
@@ -57,15 +57,15 @@ export default function Sidebar({
 
   const groups = [
     {
-      title: 'Daily Work',
+      title: 'Daily Logs',
       items: ['today', 'dailyLog', 'inventory']
     },
     {
-      title: 'Farm Cycle',
+      title: 'Batches',
       items: ['batches', 'harvest', 'analytics']
     },
     {
-      title: 'Money & People',
+      title: 'Expenses',
       items: ['ledger', 'employees', 'paySummary', 'statement']
     },
     {

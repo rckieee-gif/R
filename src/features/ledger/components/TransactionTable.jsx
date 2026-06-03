@@ -5,8 +5,8 @@ export default function TransactionTable({
   canEditOrDelete,
   handleEditClick,
   handleDeleteTransaction,
-  heading = 'Recent Records',
-  emptyMessage = 'No transactions logged yet.'
+  heading = 'Recent Expenses',
+  emptyMessage = 'No expenses logged yet.'
 }) {
   return (
     <>

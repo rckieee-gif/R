@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { getBatchWarningSignals } from '../../shared/utils/batchSignals';
 
 function getTodayDateString() {
   const d = new Date();
@@ -65,12 +66,23 @@ function IntroMetric({ label, value }) {
   );
 }
 
-function PreviewStat({ label, value, tone = 'text-app-text', suffix = null, isAlert = false }) {
+function PreviewStat({ label, value, tone = 'text-app-text', suffix = null, detail = null, isAlert = false, isWarning = false }) {
   if (isAlert) {
     return (
       <div className="bg-app-danger-bg/25 backdrop-blur-sm p-4 rounded-lg border border-app-danger/25 relative overflow-hidden hover:bg-app-danger-bg/35 transition-colors duration-200">
         <p className="text-xs font-medium tracking-widest text-app-danger uppercase mb-2 font-jetbrains relative z-10">{label}</p>
         <p className="text-2xl font-semibold font-jetbrains text-app-danger relative z-10">{value}</p>
+        {detail && <p className="mt-1 text-[10px] font-semibold leading-snug text-app-text-secondary relative z-10">{detail}</p>}
+      </div>
+    );
+  }
+
+  if (isWarning) {
+    return (
+      <div className="bg-app-warning-bg/25 backdrop-blur-sm p-4 rounded-lg border border-app-warning/25 relative overflow-hidden hover:bg-app-warning-bg/35 transition-colors duration-200">
+        <p className="text-xs font-medium tracking-widest text-app-warning uppercase mb-2 font-jetbrains relative z-10">{label}</p>
+        <p className="text-2xl font-semibold font-jetbrains text-app-warning relative z-10">{value}</p>
+        {detail && <p className="mt-1 text-[10px] font-semibold leading-snug text-app-text-secondary relative z-10">{detail}</p>}
       </div>
     );
   }
@@ -81,6 +93,7 @@ function PreviewStat({ label, value, tone = 'text-app-text', suffix = null, isAl
       <p className={`text-2xl font-semibold font-jetbrains ${tone}`}>
         {value} {suffix && <span className="text-sm font-normal text-app-text-secondary font-inter">{suffix}</span>}
       </p>
+      {detail && <p className="mt-1 text-[10px] font-semibold leading-snug text-app-text-secondary">{detail}</p>}
     </div>
   );
 }
@@ -155,11 +168,33 @@ export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerL
         .reduce((sum, item) => sum + Number(item.currentStock || 0), 0)
     : 980;
 
+  const previewSignals = useMemo(() => {
+    const loadedFromBuildings = preloadedSnapshot
+      ? (preloadedSnapshot.loadings || []).reduce((sum, loading) => sum + Number(loading.chicksLoaded || 0), 0)
+      : 0;
+    const signalBatch = batch
+      ? {
+          ...batch,
+          totalChicksLoaded: Number(batch.totalChicksLoaded || 0) || loadedFromBuildings
+        }
+      : {
+          totalChicksLoaded: 0,
+          plannedFlock: 40000,
+          mortalityAllowance: 200
+        };
+
+    return preloadedSnapshot?.previewSignals || getBatchWarningSignals(signalBatch, preloadedSnapshot?.logs || []);
+  }, [batch, preloadedSnapshot]);
+  const arrivalSignal = previewSignals.arrival;
+  const mortalitySignal = previewSignals.mortality;
+  const previewWarnings = useMemo(() => previewSignals.warnings || [], [previewSignals]);
+
   const lowAlertsValue = preloadedSnapshot
     ? (preloadedSnapshot.inventoryItems || []).filter(item => Number(item.reorderLevel || 0) > 0 && Number(item.currentStock || 0) < Number(item.reorderLevel || 0)).length +
       (preloadedSnapshot.loadings || []).filter(l => Number(l.chicksLoaded || 0) > 0).filter(l => 
         !(preloadedSnapshot.logs || []).some(log => log.date === todayStr && String(log.building).toUpperCase() === String(l.building).toUpperCase())
-      ).length
+      ).length +
+      previewWarnings.length
     : 1;
 
   const displayItems = useMemo(() => {
@@ -210,6 +245,14 @@ export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerL
       });
     }
 
+    previewWarnings.forEach((warning) => {
+      items.push({
+        key: warning.key,
+        label: warning.detail,
+        status: warning.severity === 'danger' ? 'alert' : 'warning'
+      });
+    });
+
     // 3. Batch age status
     if (preloadedSnapshot.batch) {
       const start = preloadedSnapshot.batch.startDate;
@@ -233,7 +276,7 @@ export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerL
     }
 
     return items;
-  }, [preloadedSnapshot, todayStr]);
+  }, [preloadedSnapshot, previewWarnings, todayStr]);
 
   return (
     <div className="bg-app-bg text-app-text min-h-screen flex flex-col font-inter selection:bg-app-accent selection:text-app-on-accent">
@@ -248,7 +291,7 @@ export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerL
                 Octavio Poultry
               </div>
               <div className="text-lg md:text-xl font-bold font-hanken text-app-text">
-                Farm Management
+                Farm Operations
               </div>
             </div>
           </div>
@@ -342,9 +385,43 @@ export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerL
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <PreviewStat label="ARRIVING ON" value={formatDateStr(batch?.startDate || '2026-06-01')} tone="text-app-accent" />
                   <PreviewStat label="PLANNED FLOCK" value={formatNumber(batch?.plannedFlock || 40000)} />
+                  <PreviewStat
+                    label="ARRIVAL VARIANCE"
+                    value={arrivalSignal.value}
+                    detail={arrivalSignal.detail}
+                    tone={arrivalSignal.severity === 'success' ? 'text-app-success' : arrivalSignal.severity === 'info' ? 'text-app-accent' : 'text-app-text'}
+                    isWarning={arrivalSignal.severity === 'warning'}
+                  />
+                  <PreviewStat
+                    label={mortalitySignal.label}
+                    value={mortalitySignal.value}
+                    detail={mortalitySignal.detail}
+                    tone={mortalitySignal.severity === 'success' ? 'text-app-success' : 'text-app-text'}
+                    isWarning={mortalitySignal.severity === 'warning'}
+                    isAlert={mortalitySignal.severity === 'danger'}
+                  />
                   <PreviewStat label="TARGET FEED" value={batch?.targetFeedKg ? `${formatNumber(batch.targetFeedKg)} kg` : '5,200 kg'} />
                   <PreviewStat label="READINESS" value={`${percentComplete}%`} tone={percentComplete === 100 ? 'text-app-success' : 'text-app-warning'} />
                 </div>
+
+                {previewWarnings.length > 0 && (
+                  <div className="mb-6 space-y-2">
+                    {previewWarnings.map((warning) => (
+                      <div
+                        key={warning.key}
+                        className={`rounded-lg border p-3 ${
+                          warning.severity === 'danger'
+                            ? 'border-app-danger/25 bg-app-danger-bg/25 text-app-danger'
+                            : 'border-app-warning/25 bg-app-warning-bg/25 text-app-warning'
+                        }`}
+                      >
+                        <p className="text-[10px] font-semibold uppercase tracking-widest font-jetbrains">{warning.label}</p>
+                        <p className="mt-1 text-sm font-semibold text-app-text font-hanken">{warning.title}</p>
+                        <p className="mt-1 text-xs font-medium text-app-text-secondary font-inter">{warning.detail}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   {checklistItems.slice(0, 4).map((item) => {
@@ -466,7 +543,7 @@ export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerL
       <footer className="bg-app-bg border-t border-app-border py-8">
         <div className="max-w-[1440px] mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-app-text-secondary">
           <span className="font-jetbrains">
-            (c) 2024 Octavio Poultry Farm Management System
+            (c) 2024 Octavio Poultry Farm Operations System
           </span>
           <nav className="flex gap-6">
             <span className="hover:text-app-accent cursor-pointer transition-colors duration-200">Daily Checks</span>

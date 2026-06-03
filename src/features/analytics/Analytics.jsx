@@ -21,6 +21,8 @@ import {
 
 const CHART_HEIGHT = 256;
 const CHART_INITIAL_DIMENSION = { width: 640, height: CHART_HEIGHT };
+const MORTALITY_WARNING_RATE = 0.005;
+const MORTALITY_WARNING_HEADS = 5;
 
 function formatMoney(amount) {
   return `PHP ${Number(amount || 0).toLocaleString(undefined, {
@@ -36,6 +38,11 @@ function formatNumber(amount, digits = 2) {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits
   });
+}
+
+function formatSignedNumber(amount, digits = 0) {
+  if (amount === null || amount === undefined || Number.isNaN(Number(amount))) return '--';
+  return `${Number(amount) > 0 ? '+' : ''}${formatNumber(amount, digits)}`;
 }
 
 function getCurveMaxDay(logs, startDate) {
@@ -199,13 +206,41 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
   const latestFeedPoint = feedCurve[feedCurve.length - 1] || null;
   const latestWeightPoint = [...feedCurve].reverse().find((point) => point.actualWeightGrams);
   const totalMortality = logs.reduce((sum, log) => sum + Number(log.mortality || 0), 0);
+  const actualLoaded = Number(activeBatch?.totalChicksLoaded || 0);
+  const plannedFlock = Number(activeBatch?.plannedFlock || 0);
+  const arrivalVariance = actualLoaded - plannedFlock;
+  const hasArrivalPlan = plannedFlock > 0 && actualLoaded > 0;
+  const arrivalVarianceTone = hasArrivalPlan && arrivalVariance < 0 ? 'text-app-warning' : 'text-app-success';
+  const arrivalVarianceDetail = !hasArrivalPlan
+    ? 'Set planned and loaded flock counts.'
+    : arrivalVariance < 0
+      ? `${formatNumber(Math.abs(arrivalVariance), 0)} fewer than planned.`
+      : arrivalVariance > 0
+        ? `${formatNumber(arrivalVariance, 0)} above planned.`
+        : 'Actual arrival matches planned flock.';
+  const configuredMortalityAllowance = Number(activeBatch?.mortalityAllowance || 0);
+  const batchThreshold = configuredMortalityAllowance > 0
+    ? configuredMortalityAllowance
+    : Math.max(MORTALITY_WARNING_HEADS, Math.ceil(actualLoaded * MORTALITY_WARNING_RATE));
+  const mortalityAllowanceUsedPercent = batchThreshold > 0
+    ? Math.min(100, (totalMortality / batchThreshold) * 100)
+    : 0;
+  const mortalityAllowanceRemaining = Math.max(batchThreshold - totalMortality, 0);
+  const mortalityAllowanceLabel = configuredMortalityAllowance > 0 ? 'Mortality Allowance' : 'Warning Limit Used';
+  const mortalityToneClass = totalMortality <= batchThreshold ? 'text-app-success' :
+    totalMortality <= batchThreshold * 2 ? 'text-app-warning' : 'text-app-danger';
+  const mortalityBarClass = totalMortality <= batchThreshold ? 'bg-app-success' :
+    totalMortality <= batchThreshold * 2 ? 'bg-app-warning' : 'bg-app-danger';
+  const mortalityAllowanceDetail = mortalityAllowanceRemaining > 0
+    ? `${formatNumber(mortalityAllowanceRemaining, 0)} heads remaining.`
+    : `${configuredMortalityAllowance > 0 ? 'Allowance' : 'Limit'} exceeded.`;
 
   return (
     <div className="print-container report-page">
       <div className="mb-6 mt-2">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="print-title text-3xl font-extrabold text-app-text tracking-tight font-hanken">Analytics</h2>
+            <h2 className="print-title text-3xl font-extrabold text-app-text tracking-tight font-hanken">Reports</h2>
             <p className="text-app-text-secondary text-sm mt-1">
               {showFinancials ? 'Financials and production target tracking.' : 'Production target tracking.'}
             </p>
@@ -221,15 +256,15 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
       </div>
 
       {showFinancials && (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="print-card bg-app-card p-4 rounded-2xl shadow-sm border border-app-border">
+      <div className="screen-only grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="min-w-0 bg-app-card p-4 rounded-2xl shadow-sm border border-app-border">
           <p className="text-xs font-bold text-app-text-secondary uppercase tracking-wider">Net Profit</p>
           <p className={`text-2xl font-black mt-1 font-jetbrains ${netProfit >= 0 ? 'text-app-success' : 'text-app-danger'}`}>
             {formatMoney(netProfit)}
           </p>
         </div>
 
-        <div className="print-card bg-app-card p-4 rounded-2xl shadow-sm border border-app-border">
+        <div className="min-w-0 bg-app-card p-4 rounded-2xl shadow-sm border border-app-border">
           <p className="text-xs font-bold text-app-text-secondary uppercase tracking-wider">Profit Margin</p>
           <p className={`text-2xl font-black mt-1 font-jetbrains ${profitMargin >= 15 ? 'text-app-accent' : 'text-app-warning'}`}>
             {profitMargin}%
@@ -238,27 +273,45 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
       </div>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <div className="print-card bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
+      <div className="screen-only grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div className="min-w-0 bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
           <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Feed Target Var.</p>
           <p className={`text-lg font-black mt-1 font-jetbrains ${(latestFeedPoint?.varianceKg || 0) > 0 ? 'text-app-danger' : 'text-app-success'}`}>
-            {latestFeedPoint ? `${latestFeedPoint.varianceKg > 0 ? '+' : ''}${formatNumber(latestFeedPoint.varianceKg, 0)} kg` : '--'}
+            {latestFeedPoint ? `${formatSignedNumber(latestFeedPoint.varianceKg, 0)} kg` : '--'}
           </p>
         </div>
 
-        <div className="print-card bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
+        <div className="min-w-0 bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
           <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Mortality</p>
-          {(() => {
-            const batchLoadedBirds = Number(activeBatch?.totalChicksLoaded || 0);
-            const batchThreshold = Math.max(5, Math.ceil(batchLoadedBirds * 0.005));
-            const mortalityColor = totalMortality <= batchThreshold ? 'text-app-success' :
-              totalMortality <= batchThreshold * 2 ? 'text-app-warning' : 'text-app-danger';
-            return (
-              <p className={`text-lg font-black mt-1 font-jetbrains ${mortalityColor}`}>
-                {Number(totalMortality || 0).toLocaleString()} hd
-              </p>
-            );
-          })()}
+          <p className={`text-lg font-black mt-1 font-jetbrains ${mortalityToneClass}`}>
+            {Number(totalMortality || 0).toLocaleString()} hd
+          </p>
+        </div>
+
+        <div className="min-w-0 bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Arrival Variance</p>
+          <p className={`text-lg font-black mt-1 font-jetbrains ${hasArrivalPlan ? arrivalVarianceTone : 'text-app-text'}`}>
+            {hasArrivalPlan ? formatSignedNumber(arrivalVariance, 0) : '--'}
+          </p>
+          <p className="mt-1 text-[11px] font-semibold leading-snug text-app-text-secondary">
+            {arrivalVarianceDetail}
+          </p>
+        </div>
+
+        <div className="min-w-0 bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">{mortalityAllowanceLabel}</p>
+          <p className={`text-lg font-black mt-1 font-jetbrains ${mortalityToneClass}`}>
+            {formatNumber(totalMortality, 0)} / {formatNumber(batchThreshold, 0)}
+          </p>
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-app-border/40">
+            <div
+              className={`h-full rounded-full ${mortalityBarClass}`}
+              style={{ width: `${mortalityAllowanceUsedPercent}%` }}
+            />
+          </div>
+          <p className="mt-1 text-[11px] font-semibold leading-snug text-app-text-secondary">
+            {mortalityAllowanceDetail}
+          </p>
         </div>
       </div>
 
@@ -289,7 +342,7 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
             <tr>
               <td>Feed Variance</td>
               <td className="numeric font-jetbrains">
-                {latestFeedPoint ? `${latestFeedPoint.varianceKg > 0 ? '+' : ''}${formatNumber(latestFeedPoint.varianceKg, 0)} kg` : '--'}
+                {latestFeedPoint ? `${formatSignedNumber(latestFeedPoint.varianceKg, 0)} kg` : '--'}
               </td>
               <td>Actual feed compared with target curve</td>
             </tr>
@@ -297,6 +350,18 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
               <td>Mortality</td>
               <td className="numeric font-jetbrains">{Number(totalMortality || 0).toLocaleString()} heads</td>
               <td>Total from daily logs</td>
+            </tr>
+            <tr>
+              <td>Arrival Variance</td>
+              <td className="numeric font-jetbrains">{hasArrivalPlan ? formatSignedNumber(arrivalVariance, 0) : '--'}</td>
+              <td>{arrivalVarianceDetail}</td>
+            </tr>
+            <tr>
+              <td>{mortalityAllowanceLabel}</td>
+              <td className="numeric font-jetbrains">
+                {formatNumber(totalMortality, 0)} / {formatNumber(batchThreshold, 0)}
+              </td>
+              <td>{mortalityAllowanceDetail}</td>
             </tr>
           </tbody>
         </table>

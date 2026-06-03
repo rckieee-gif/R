@@ -1,13 +1,13 @@
 import Button from './Button';
 
 /**
- * Premium reusable Empty State component to represent blank lists, missing drafts, or empty searches.
+ * Reusable empty state for blank farm logs, missing drafts, or empty searches.
  */
 export default function EmptyState({
-  title = 'No records found',
-  description = 'There is currently no data to display here.',
+  title = 'No mortality logged today.',
+  description = "Add today's mortality count to keep your batch records accurate.",
   icon = 'database_off',
-  actionText = '',
+  actionText = 'Add Mortality',
   onAction,
   className = '',
   ...props

@@ -693,7 +693,7 @@ export default function TransactionLedger({ transactions, setTransactions, activ
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="print-title text-3xl font-extrabold text-app-text tracking-tight font-hanken">
-              Ledger Entry
+              Expenses
             </h2>
             <p className="text-app-text-secondary text-sm mt-1">
               {activeBatch?.id ? `Batch ${activeBatch.id}` : 'Select a batch before saving records.'}
@@ -730,7 +730,7 @@ export default function TransactionLedger({ transactions, setTransactions, activ
         <div className="no-print bg-app-success-bg border border-app-accent rounded-xl p-3 mb-6">
           <p className="text-xs font-black uppercase tracking-wider text-app-accent">Read-only access</p>
           <p className="text-sm font-bold text-app-text-secondary mt-1">
-            You can review ledger records. Changes are restricted to operation managers and owners.
+            You can review expenses. Changes are restricted to operation managers and owners.
           </p>
         </div>
       )}
@@ -959,8 +959,8 @@ export default function TransactionLedger({ transactions, setTransactions, activ
             canEditOrDelete={canEditOrDelete}
             handleEditClick={handleEditClick}
             handleDeleteTransaction={handleDeleteTransaction}
-            heading="Ledger Records"
-            emptyMessage={hasLedgerFilters ? 'No ledger entries match your search or filters.' : 'No transactions logged yet.'}
+            heading="Expenses"
+            emptyMessage={hasLedgerFilters ? 'No expenses match your search or filters.' : 'No expenses logged yet.'}
           />
         </div>
       </div>

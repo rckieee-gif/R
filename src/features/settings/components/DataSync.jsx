@@ -1,17 +1,17 @@
 import { useMemo } from 'react';
 
 const exportDatasets = [
-  { value: 'transactions', label: 'Ledger Transactions' },
+  { value: 'transactions', label: 'Expenses' },
   { value: 'daily_logs', label: 'Daily Logs' },
-  { value: 'inventory', label: 'Inventory Movements' },
+  { value: 'inventory', label: 'Feed & Inventory' },
   { value: 'employees', label: 'Employees' },
   { value: 'batches', label: 'Batches' }
 ];
 
 const importDatasets = [
-  { value: 'transactions', label: 'Ledger Transactions', accept: '.csv,text/csv' },
+  { value: 'transactions', label: 'Expenses', accept: '.csv,text/csv' },
   { value: 'daily_logs', label: 'Daily Logs', accept: '.csv,text/csv' },
-  { value: 'inventory', label: 'Inventory Movements', accept: '.csv,text/csv' },
+  { value: 'inventory', label: 'Feed & Inventory', accept: '.csv,text/csv' },
   { value: 'employees', label: 'Employees', accept: '.csv,text/csv' },
   { value: 'batch_archive', label: 'Single Batch Archive', accept: '.json,application/json' }
 ];
@@ -118,7 +118,7 @@ export default function DataSync({
       </div>
 
       <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6 font-hanken">
-        <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-4">Import Records</h3>
+        <h3 className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary mb-4">Import Farm Data</h3>
 
         <div className="space-y-4">
           <div>

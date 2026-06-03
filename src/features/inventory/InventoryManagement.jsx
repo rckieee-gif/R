@@ -400,7 +400,7 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
   return (
     <div className="app-page">
       <div className="mb-6 mt-2">
-        <h2 className="text-3xl font-extrabold text-app-text tracking-tight font-hanken">Inventory</h2>
+        <h2 className="text-3xl font-extrabold text-app-text tracking-tight font-hanken">Feed & Inventory</h2>
         <p className="text-app-text-secondary text-sm mt-1">
           {activeBatch?.id ? `Batch ${activeBatch.id}` : 'Farm stock tracker'}
         </p>
@@ -459,7 +459,7 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
         <div className="bg-app-success-bg border border-app-accent rounded-xl p-3 mb-6">
           <p className="text-xs font-black uppercase tracking-wider text-app-accent">Read-only access</p>
           <p className="text-sm font-bold text-app-text-secondary mt-1">
-            You can review stock levels and movement history. Inventory changes are restricted to operation managers and owners.
+            You can review stock levels and movement history. Feed and inventory changes are restricted to operation managers and owners.
           </p>
         </div>
       )}

@@ -1,3 +1,5 @@
+import { getBatchWarningSignals } from './batchSignals';
+
 function dateOffset(daysFromToday) {
   const date = new Date();
   date.setHours(0, 0, 0, 0);
@@ -66,6 +68,8 @@ export const publicViewerLogs = logRows.map((log, index) => ({
   date: dateOffset(log.offset),
   feedItemId: 'preview-feed-grower'
 }));
+
+export const publicViewerBatchSignals = getBatchWarningSignals(publicViewerBatch, publicViewerLogs);
 
 export const publicViewerInventoryItems = [
   {
@@ -152,12 +156,21 @@ export const publicViewerBatches = [
 ];
 
 export const publicViewerData = {
+  batch: publicViewerBatch,
   batches: publicViewerBatches,
   buildings: publicViewerBuildings,
   loadings: publicViewerLoadings,
   assignments: publicViewerAssignments,
+  logs: publicViewerLogs,
   feedItems: publicViewerInventoryItems.filter((item) => item.category === 'Feed'),
   inventoryItems: publicViewerInventoryItems,
   inventoryMovements: publicViewerInventoryMovements,
-  stakeholders: publicViewerStakeholders
+  stakeholders: publicViewerStakeholders,
+  previewSignals: publicViewerBatchSignals,
+  harvestProductionSummary: {
+    hasReport: false,
+    hasActualSales: false,
+    totals: { birds: 0, kilos: 0 },
+    perHarvest: []
+  }
 };

@@ -173,7 +173,7 @@ describe('Business protection coverage', () => {
     );
 
     await screen.findByRole('heading', { name: /^Today$/i });
-    expect(screen.queryByText(/Ledger Entry/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /^Expenses$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /save record/i })).not.toBeInTheDocument();
   });
 

@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 import InventoryManagement from '../features/inventory/InventoryManagement';
 import DailyLog from '../features/dailyLogs/DailyLog';
@@ -95,12 +96,14 @@ describe('Public Viewer Mode Constraints', () => {
 
       render(
         <NotificationProvider>
-          <TodayOperations
-            token={null}
-            activeBatch={mockBatchOnTheWay}
-            logs={[]}
-            setActiveScreen={vi.fn()}
-          />
+          <MemoryRouter initialEntries={['/today']}>
+            <TodayOperations
+              token={null}
+              activeBatch={mockBatchOnTheWay}
+              logs={[]}
+              setActiveScreen={vi.fn()}
+            />
+          </MemoryRouter>
         </NotificationProvider>
       );
 

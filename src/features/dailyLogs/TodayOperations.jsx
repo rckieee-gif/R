@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { apiClient } from '../../shared/utils/apiClient';
 import {
   BAG_WEIGHT_KG,
@@ -286,6 +287,8 @@ const TOOLTIP_DEFINITIONS = {
 
 export default function TodayOperations({ token, activeBatch, logs = [], setActiveScreen, previewData = null }) {
   const activeBatchId = activeBatch?.id ?? null;
+  const location = useLocation();
+  const navigate = useNavigate();
   const previewKey = previewData ? `preview:${previewData.batch?.id || activeBatchId || 'current'}` : null;
   const todayDataKey = token && activeBatchId ? `batch:${activeBatchId}` : previewKey;
   const [todayRequest, setTodayRequest] = useState({
@@ -308,6 +311,11 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     });
   }, [activeBatchId]);
   const [activeTooltip, setActiveTooltip] = useState(null);
+  const [dayOneHandoffBatchId, setDayOneHandoffBatchId] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('handoff') !== 'day-one') return null;
+    return location.state?.dayOneHandoffBatchId ?? 'current';
+  });
 
   const renderTooltipModal = () => {
     if (!activeTooltip) return null;
@@ -413,6 +421,18 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
   const daysUntilArrival = activeBatch?.startDate ? diffDays(activeBatch.startDate, today) : null;
   const isOnTheWay = status === 'ON_THE_WAY' || status === 'ON THE WAY' || (daysUntilArrival !== null && daysUntilArrival > 0);
   const isPostSummaryMode = isPostBatch(activeBatch);
+  const showDayOneHandoff = Boolean(
+    dayOneHandoffBatchId &&
+    (dayOneHandoffBatchId === 'current' || String(dayOneHandoffBatchId) === String(activeBatchId)) &&
+    !isOnTheWay &&
+    !isPostSummaryMode
+  );
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('handoff') !== 'day-one') return;
+    navigate('/today', { replace: true, state: null });
+  }, [location.search, navigate]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -758,10 +778,10 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           ? `Mortality: ${formatNumber(todayTotals.mortality)} head${todayTotals.mortality === 1 ? '' : 's'} recorded`
           : (todayLogs.length > 0 
               ? `Mortality: ${formatNumber(todayTotals.mortality)} head${todayTotals.mortality === 1 ? '' : 's'} recorded` 
-              : 'Mortality: Not recorded'),
+              : 'No mortality logged today.'),
         autoComplete: isMortalityRecorded,
         actionScreen: 'dailyLog',
-        actionLabel: 'Go to Logs'
+        actionLabel: 'Add Mortality'
       },
       {
         key: 'feed',
@@ -1005,7 +1025,130 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     ];
   })();
 
+  const renderDayOneHandoff = () => {
+    const loadedBirds = activeLoadings.reduce((sum, loading) => sum + Number(loading.chicksLoaded || 0), 0) ||
+      Number(activeBatch?.totalChicksLoaded || 0);
+    const plannedFlock = Number(activeBatch?.plannedFlock || 0);
+    const arrivalVariance = loadedBirds - plannedFlock;
+    const hasPlannedFlock = plannedFlock > 0;
+    const varianceDetail = !hasPlannedFlock
+      ? 'Planned flock is not set.'
+      : arrivalVariance < 0
+        ? `${formatNumber(Math.abs(arrivalVariance))} fewer than planned.`
+        : arrivalVariance > 0
+          ? `${formatNumber(arrivalVariance)} above planned.`
+          : 'Arrival count matches plan.';
+    const arrivalCountTone = loadedBirds > 0 && (!hasPlannedFlock || arrivalVariance >= 0)
+      ? 'success'
+      : loadedBirds > 0
+        ? 'warning'
+        : 'danger';
+    const handoffTasks = [
+      {
+        key: 'arrival-counts',
+        label: 'Confirm arrival counts',
+        value: loadedBirds > 0 ? formatNumber(loadedBirds) : 'Missing',
+        detail: loadedBirds > 0 ? varianceDetail : 'Enter actual chicks arrived by building.',
+        tone: arrivalCountTone,
+        actionScreen: 'batches',
+        actionLabel: loadedBirds > 0 ? 'Review counts' : 'Add counts'
+      },
+      {
+        key: 'assignments',
+        label: 'Assign buildings',
+        value: noEmployeeCount > 0 ? `${formatNumber(noEmployeeCount)} open` : 'Ready',
+        detail: noEmployeeCount > 0 ? 'Assign workers before the first log.' : 'Loaded buildings have workers assigned.',
+        tone: noEmployeeCount > 0 ? 'warning' : 'success',
+        actionScreen: 'employees',
+        actionLabel: 'Assign staff'
+      },
+      {
+        key: 'first-log',
+        label: 'Record first daily log',
+        value: missingLogCount > 0 ? `${formatNumber(missingLogCount)} left` : 'Logged',
+        detail: missingLogCount > 0 ? 'Capture feed, mortality, and starting weight today.' : 'All loaded buildings have a log today.',
+        tone: missingLogCount > 0 ? 'warning' : 'success',
+        actionScreen: 'dailyLog',
+        actionLabel: 'Open logs'
+      },
+      {
+        key: 'starter-feed',
+        label: 'Check starter feed',
+        value: lowFeedItems.length > 0 ? `${formatNumber(lowFeedItems.length)} low` : 'Clear',
+        detail: lowFeedItems.length > 0 ? 'Review stock before the first feeding.' : 'Feed stock is above reorder level.',
+        tone: lowFeedItems.length > 0 ? 'warning' : 'success',
+        actionScreen: 'inventory',
+        actionLabel: 'Check stock'
+      }
+    ];
+
+    const toneClass = {
+      success: 'border-app-success/30 bg-app-success-bg text-app-success',
+      warning: 'border-app-warning/30 bg-app-warning-bg text-app-warning',
+      danger: 'border-app-danger/30 bg-app-danger-bg text-app-danger'
+    };
+
+    return (
+      <div className="mb-6 rounded-2xl border border-app-accent/30 bg-app-card p-5 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-wider text-app-accent font-inter">
+              Day-one arrival handoff
+            </p>
+            <h3 className="mt-1 text-xl font-black text-app-text font-hanken">
+              Batch {activeBatch.id} is now active
+            </h3>
+            <p className="mt-1 text-sm font-bold text-app-text-secondary font-inter">
+              Start with arrival checks before the regular daily closeout.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDayOneHandoffBatchId(null)}
+            className="inline-flex h-10 items-center justify-center rounded-lg border border-app-border bg-app-bg px-3 text-xs font-black text-app-text-secondary hover:text-app-text active:scale-[0.98] transition-all cursor-pointer font-inter"
+          >
+            Dismiss
+          </button>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {handoffTasks.map((task) => {
+            const content = (
+              <>
+                <p className="text-[10px] font-black uppercase tracking-wider opacity-85 font-inter">
+                  {task.label}
+                </p>
+                <p className="mt-1 text-xl font-black font-jetbrains">
+                  {isLoading ? '--' : task.value}
+                </p>
+                <p className="mt-1 text-xs font-bold leading-snug opacity-90 font-inter">
+                  {isLoading ? 'Loading arrival data...' : task.detail}
+                </p>
+              </>
+            );
+
+            return (
+              <button
+                key={task.key}
+                type="button"
+                onClick={() => setActiveScreen(task.actionScreen)}
+                className={`rounded-xl border p-4 text-left shadow-sm transition-all duration-200 active:scale-[0.98] hover:border-app-accent cursor-pointer ${toneClass[task.tone]}`}
+              >
+                {content}
+                <span className="mt-3 inline-flex text-[10px] font-black uppercase tracking-wider opacity-90 font-inter">
+                  {task.actionLabel}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const renderFarmChecklist = () => {
+    const needsMortalityLog = farmChecklistItems.some((item) => item.key === 'mortality' && !item.autoComplete);
+
     return (
       <div className="rounded-2xl border border-app-border bg-gradient-to-br from-app-card via-app-card to-app-accent/5 p-6 shadow-sm mb-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-6">
@@ -1038,6 +1181,28 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
             </p>
           </div>
         </div>
+
+        {needsMortalityLog && !isLoading && (
+          <div className="mb-5 rounded-xl border border-app-warning/30 bg-app-warning-bg p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h4 className="text-sm font-black text-app-warning font-hanken">
+                  No mortality logged today.
+                </h4>
+                <p className="mt-1 text-xs font-bold text-app-text-secondary font-inter">
+                  Add today's mortality count to keep your batch records accurate.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveScreen('dailyLog')}
+                className="inline-flex h-10 items-center justify-center rounded-lg bg-app-accent px-4 text-xs font-black text-app-on-accent shadow-sm active:scale-[0.98] transition-all cursor-pointer font-inter whitespace-nowrap"
+              >
+                Add Mortality
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="divide-y divide-app-border/60">
           {farmChecklistItems.map((item) => {
@@ -1234,7 +1399,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
               mobileTab === 'overview' ? 'border-app-accent text-app-accent font-black' : 'border-transparent text-app-text-secondary'
             }`}
           >
-            Overview
+            Batches
           </button>
           <button
             type="button"
@@ -1258,7 +1423,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           )}
         </div>
 
-        {/* Overview Tab Content */}
+        {/* Batches Tab Content */}
         <div className={`md:block ${mobileTab === 'overview' ? 'block' : 'hidden'}`}>
           {/* Hero Card / Countdown Section */}
           <div className="relative overflow-hidden rounded-2xl border border-app-border bg-gradient-to-br from-app-card via-app-card to-app-accent/5 p-6 shadow-sm mb-6">
@@ -1537,7 +1702,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
                 onClick={() => setActiveScreen('analytics')}
                 className="rounded-xl border border-app-border bg-app-card px-3 py-3 text-xs font-black text-app-text-secondary shadow-sm active:scale-[0.98] hover:text-app-text transition-all duration-200 cursor-pointer font-inter"
               >
-                Analytics
+                Open Reports
               </button>
             </div>
           </div>
@@ -1558,7 +1723,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
               mobileTab === 'overview' ? 'border-app-accent text-app-accent font-black' : 'border-transparent text-app-text-secondary'
             }`}
           >
-            Overview
+            Reports
           </button>
           <button
             type="button"
@@ -1580,7 +1745,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           </button>
         </div>
 
-        {/* Overview Tab Content */}
+        {/* Reports Tab Content */}
         <div className={`space-y-6 md:block ${mobileTab === 'overview' ? 'block' : 'hidden'}`}>
           <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
             <SummaryMetric
@@ -1903,7 +2068,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
             mobileTab === 'overview' ? 'border-app-accent text-app-accent font-black' : 'border-transparent text-app-text-secondary'
           }`}
         >
-          Overview
+          Daily Logs
         </button>
         <button
           type="button"
@@ -1929,6 +2094,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
       </div>
 
       <div className={mobileTab === 'overview' ? 'block' : 'hidden md:block'}>
+        {showDayOneHandoff && renderDayOneHandoff()}
         {renderFarmChecklist()}
       </div>
 

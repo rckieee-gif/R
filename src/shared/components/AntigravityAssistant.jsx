@@ -340,9 +340,9 @@ export default function AntigravityAssistant({
 * **Feed equivalent**: ${formatNumber(batchMetrics.totalFeedKg)} kg
 
 **FlockOps read**: ${canOpenInventory
-      ? 'Open **Inventory** to compare these logs against feed stock and movement history.'
+      ? 'Open **Feed & Inventory** to compare these logs against feed stock and movement history.'
       : canOpenAnalytics
-        ? 'Use **Analytics** to compare feed usage against growth trends.'
+        ? 'Use **Reports** to compare feed usage against growth trends.'
         : `Stay within ${availableFlowText} for the current session.`}`;
 
     simulateResponse("Feed & Inventory", response);
@@ -382,7 +382,7 @@ export default function AntigravityAssistant({
 **Next move**: ${canViewFinancial && allowedScreenSet.has('harvest')
       ? 'Open **Harvest** when actual sold birds and kilos are ready to record.'
       : canOpenAnalytics
-        ? 'Review **Analytics** for weight and feed trends before harvest decisions.'
+        ? 'Review **Reports** for weight and feed trends before harvest decisions.'
         : 'Use your available batch views to confirm harvest timing.'}`;
 
     simulateResponse("Harvest Readiness", response);
