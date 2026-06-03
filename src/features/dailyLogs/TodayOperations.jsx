@@ -185,37 +185,29 @@ function getLoadingSharePct(chicksLoaded, totalChicksLoaded) {
   return Number(((Number(chicksLoaded || 0) / total) * 100).toFixed(4));
 }
 
-function buildQuickArrivedDocLoadings(existingLoadings, arrivedDocCount) {
+function buildQuickArrivedDocRows(existingLoadings) {
   const rows = existingLoadings.length
     ? existingLoadings
     : DEFAULT_LOADING_BUILDINGS.map((building) => ({ building, chicksLoaded: 0, loadingSharePct: 0, remarks: '' }));
-  const currentTotal = rows.reduce((sum, row) => sum + Number(row.chicksLoaded || 0), 0);
-  const baseWeight = currentTotal > 0 ? currentTotal : rows.length;
-  const draftRows = rows.map((row) => {
-    const rowWeight = currentTotal > 0 ? Number(row.chicksLoaded || 0) : 1;
-    const rawCount = (rowWeight / baseWeight) * arrivedDocCount;
-    const floorCount = Math.floor(rawCount);
 
-    return {
-      ...row,
-      chicksLoaded: floorCount,
-      fractionalRemainder: rawCount - floorCount
-    };
-  });
-  let remaining = arrivedDocCount - draftRows.reduce((sum, row) => sum + row.chicksLoaded, 0);
-  const remainderOrder = [...draftRows].sort((left, right) => right.fractionalRemainder - left.fractionalRemainder);
-
-  for (let index = 0; remaining > 0 && index < remainderOrder.length; index += 1) {
-    remainderOrder[index].chicksLoaded += 1;
-    remaining -= 1;
-  }
-
-  return draftRows.map((row) => ({
+  return rows.map((row) => ({
     building: row.building,
-    chicksLoaded: row.chicksLoaded,
-    loadingSharePct: getLoadingSharePct(row.chicksLoaded, arrivedDocCount),
+    value: Number(row.chicksLoaded || 0) > 0 ? String(row.chicksLoaded) : '',
     remarks: row.remarks || ''
   }));
+}
+
+function buildQuickArrivedDocLoadings(arrivedDocRows, arrivedDocCount) {
+  return arrivedDocRows.map((row) => {
+    const chicksLoaded = Number.parseInt(String(row.value || '').replace(/,/g, ''), 10) || 0;
+
+    return {
+      building: row.building,
+      chicksLoaded,
+      loadingSharePct: getLoadingSharePct(chicksLoaded, arrivedDocCount),
+      remarks: row.remarks || ''
+    };
+  });
 }
 
 function readPrepChecklist(batchId) {
@@ -426,7 +418,7 @@ export default function TodayOperations({
     isLoading: false
   });
   const [isArrivedDocDialogOpen, setIsArrivedDocDialogOpen] = useState(false);
-  const [arrivedDocInput, setArrivedDocInput] = useState('');
+  const [arrivedDocRows, setArrivedDocRows] = useState([]);
   const [arrivedDocError, setArrivedDocError] = useState('');
   const [isSavingArrivedDoc, setIsSavingArrivedDoc] = useState(false);
 
@@ -486,8 +478,7 @@ export default function TodayOperations({
   };
 
   const openArrivedDocDialog = () => {
-    const suggestedCount = Number(activeBatch?.plannedFlock || activeBatch?.totalChicksLoaded || 0);
-    setArrivedDocInput(suggestedCount > 0 ? String(suggestedCount) : '');
+    setArrivedDocRows(buildQuickArrivedDocRows(loadings));
     setArrivedDocError('');
     setIsArrivedDocDialogOpen(true);
   };
@@ -545,16 +536,31 @@ export default function TodayOperations({
       return;
     }
 
-    const arrivedDocCount = Number.parseInt(String(arrivedDocInput).replace(/,/g, ''), 10);
-    if (!Number.isFinite(arrivedDocCount) || arrivedDocCount <= 0) {
-      setArrivedDocError('Enter the actual DOC head count before saving.');
+    const hasInvalidBuildingCount = arrivedDocRows.some((row) => {
+      const rawValue = String(row.value || '').replace(/,/g, '').trim();
+      if (!rawValue) return false;
+      const parsedValue = Number.parseInt(rawValue, 10);
+      return !Number.isFinite(parsedValue) || parsedValue < 0;
+    });
+
+    if (hasInvalidBuildingCount) {
+      setArrivedDocError('Enter valid DOC counts for each building.');
+      return;
+    }
+
+    const arrivedDocCount = arrivedDocRows.reduce((sum, row) => {
+      return sum + (Number.parseInt(String(row.value || '').replace(/,/g, ''), 10) || 0);
+    }, 0);
+
+    if (arrivedDocCount <= 0) {
+      setArrivedDocError('Enter the arrived DOC count for at least one building.');
       return;
     }
 
     setIsSavingArrivedDoc(true);
     setArrivedDocError('');
 
-    const nextLoadings = buildQuickArrivedDocLoadings(loadings, arrivedDocCount);
+    const nextLoadings = buildQuickArrivedDocLoadings(arrivedDocRows, arrivedDocCount);
     const nextStatus = ['ON_THE_WAY', 'ON THE WAY'].includes(getBatchStatus(activeBatch))
       ? 'ONGOING'
       : (activeBatch.status || 'ONGOING');
@@ -613,12 +619,15 @@ export default function TodayOperations({
     if (!isArrivedDocDialogOpen) return null;
 
     const plannedCount = Number(activeBatch?.plannedFlock || 0);
+    const arrivedDocTotal = arrivedDocRows.reduce((sum, row) => {
+      return sum + (Number.parseInt(String(row.value || '').replace(/,/g, ''), 10) || 0);
+    }, 0);
 
     return (
       <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 sm:items-center sm:p-4 animate-backdrop-in">
         <form
           onSubmit={handleQuickArrivedDocSave}
-          className="w-full max-w-md rounded-xl border border-app-border bg-app-card p-5 shadow-xl animate-modal-in"
+          className="w-full max-w-lg rounded-xl border border-app-border bg-app-card p-5 shadow-xl animate-modal-in"
         >
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -627,7 +636,7 @@ export default function TodayOperations({
               </p>
               <h3 className="mt-1 text-xl font-black text-app-text font-hanken">Record arrived DOC</h3>
               <p className="mt-1 text-sm font-semibold leading-snug text-app-text-secondary font-inter">
-                Enter the actual day-old chicken count received for Batch {activeBatch?.id}.
+                Enter actual day-old chicken received per building for Batch {activeBatch?.id}.
               </p>
             </div>
             <button
@@ -643,27 +652,47 @@ export default function TodayOperations({
             </button>
           </div>
 
-          <label className="mt-5 block text-xs font-black uppercase tracking-wide text-app-text-secondary font-inter" htmlFor="quick-arrived-doc">
-            Arrived DOC
-          </label>
-          <input
-            id="quick-arrived-doc"
-            type="number"
-            inputMode="numeric"
-            min="1"
-            step="1"
-            autoFocus
-            value={arrivedDocInput}
-            onChange={(event) => {
-              setArrivedDocInput(event.target.value);
-              setArrivedDocError('');
-            }}
-            placeholder={plannedCount > 0 ? String(plannedCount) : 'Enter head count'}
-            className="mt-2 min-h-12 w-full rounded-lg border border-app-border bg-app-bg px-4 text-lg font-black text-app-text outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 font-jetbrains"
-          />
-          <div className="mt-2 flex flex-col gap-1 text-xs font-semibold text-app-text-secondary font-inter sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-5 rounded-xl border border-app-border bg-app-bg p-3">
+            <div className="mb-2 grid grid-cols-[minmax(0,1fr)_minmax(8rem,11rem)] gap-3 px-1 text-[10px] font-black uppercase tracking-wide text-app-text-secondary font-inter">
+              <span>Building</span>
+              <span>Arrived DOC</span>
+            </div>
+            <div className="space-y-2">
+              {arrivedDocRows.map((row, index) => (
+                <div key={`${row.building}-${index}`} className="grid grid-cols-[minmax(0,1fr)_minmax(8rem,11rem)] items-center gap-3">
+                  <label
+                    className="min-h-11 rounded-lg border border-app-border bg-app-card px-3 py-2 text-sm font-black text-app-text font-hanken"
+                    htmlFor={`quick-arrived-doc-${index}`}
+                  >
+                    Building {row.building}
+                  </label>
+                  <input
+                    id={`quick-arrived-doc-${index}`}
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    step="1"
+                    autoFocus={index === 0}
+                    value={row.value}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+                      setArrivedDocRows((currentRows) => currentRows.map((currentRow, rowIndex) => (
+                        rowIndex === index ? { ...currentRow, value: nextValue } : currentRow
+                      )));
+                      setArrivedDocError('');
+                    }}
+                    aria-label={`Building ${row.building} arrived DOC`}
+                    placeholder="0"
+                    className="min-h-11 w-full rounded-lg border border-app-border bg-app-card px-3 text-right text-base font-black text-app-text outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 font-jetbrains"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-3 flex flex-col gap-1 text-xs font-semibold text-app-text-secondary font-inter sm:flex-row sm:items-center sm:justify-between">
             <span>{plannedCount > 0 ? `Planned flock: ${formatNumber(plannedCount)} heads` : 'Planned flock not set'}</span>
-            <span>Building shares will update automatically.</span>
+            <span className="font-black text-app-accent">Total arrived: {formatNumber(arrivedDocTotal)} heads</span>
           </div>
 
           {arrivedDocError && (

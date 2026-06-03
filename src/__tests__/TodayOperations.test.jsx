@@ -237,8 +237,10 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Enter DOC/i }));
 
-    const arrivedDocInput = screen.getByLabelText(/^Arrived DOC$/i);
-    fireEvent.change(arrivedDocInput, { target: { value: '44850' } });
+    fireEvent.change(screen.getByLabelText(/Building A arrived DOC/i), { target: { value: '14950' } });
+    fireEvent.change(screen.getByLabelText(/Building B arrived DOC/i), { target: { value: '14950' } });
+    fireEvent.change(screen.getByLabelText(/Building C arrived DOC/i), { target: { value: '14950' } });
+    expect(screen.getByText(/Total arrived: 44,850 heads/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Save DOC/i }));
 
     await waitFor(() => {
@@ -250,6 +252,11 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
     });
     expect(patchPayload.loadings).toHaveLength(3);
     expect(patchPayload.loadings.reduce((sum, row) => sum + row.chicksLoaded, 0)).toBe(44850);
+    expect(patchPayload.loadings).toEqual([
+      expect.objectContaining({ building: 'A', chicksLoaded: 14950 }),
+      expect.objectContaining({ building: 'B', chicksLoaded: 14950 }),
+      expect.objectContaining({ building: 'C', chicksLoaded: 14950 }),
+    ]);
     expect(setActiveBatch).toHaveBeenCalledWith(expect.objectContaining({
       id: 47,
       totalChicksLoaded: 44850,
