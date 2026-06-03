@@ -65,6 +65,14 @@ function apiPath(path) {
   return `*/api${path}`;
 }
 
+function todayInputForTest() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function mockTodayApi() {
   server.use(
     http.get(apiPath('/batches/:batchId/loadings'), () => json([])),
@@ -154,6 +162,42 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
     expect(screen.getByText(/Pre-heat brooding area/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Arrived DOC/i).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: /^Daily Logs$/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps D1 in pre-placement when only planned loading numbers exist', async () => {
+    renderComponent({
+      activeBatch: {
+        ...mockBatchActive,
+        id: 45,
+        startDate: todayInputForTest(),
+        status: 'ONGOING',
+        totalChicksLoaded: 45000,
+        plannedFlock: 45000,
+      },
+    });
+
+    expect(screen.getByRole('heading', { name: /Pre-placement \/ Downtime preparation/i })).toBeInTheDocument();
+    expect(screen.getByText(/No arrived DOC input yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/Enter actual day-old chicken arrivals in Batches once placement is complete/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Daily Logs$/i })).not.toBeInTheDocument();
+  });
+
+  it('shows active operations on D1 when arrived DOC is explicitly recorded', async () => {
+    renderComponent({
+      activeBatch: {
+        ...mockBatchActive,
+        id: 46,
+        startDate: todayInputForTest(),
+        status: 'ONGOING',
+        totalChicksLoaded: 45000,
+        plannedFlock: 45000,
+        actualChicksArrived: 44850,
+      },
+    });
+
+    expect(screen.getByRole('heading', { name: /Today.s Farm Checklist/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Daily Logs$/i })).toBeInTheDocument();
+    expect(screen.queryByText(/No arrived DOC input yet/i)).not.toBeInTheDocument();
   });
 
   it('allows switching mobile tabs in Post Batch mode', async () => {

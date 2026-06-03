@@ -20,6 +20,7 @@ const EMPTY_TODAY_DATA = {
   feedItems: [],
   harvestProductionSummary: null
 };
+const EMPTY_LOGS = [];
 const INITIAL_PREP_CHECKLIST = {
   dungCleanup: false,
   pressureWasher: false,
@@ -30,6 +31,19 @@ const INITIAL_PREP_CHECKLIST = {
   inventory: false,
   prewarm: false
 };
+const ARRIVED_DOC_FIELD_KEYS = [
+  'arrivedDoc',
+  'arrivedDOC',
+  'arrivedDocCount',
+  'arrivedDocHeads',
+  'arrivedDocInput',
+  'docArrived',
+  'docArrivedCount',
+  'actualDocArrived',
+  'actualDocCount',
+  'actualChicksArrived',
+  'actualChicksLoaded'
+];
 
 function todayInput() {
   const now = new Date();
@@ -116,6 +130,31 @@ function buildLogTotals(logRows) {
 
 function getBatchStatus(batch) {
   return String(batch?.status || '').trim().toUpperCase();
+}
+
+function hasOwnField(record, key) {
+  return Boolean(record && Object.prototype.hasOwnProperty.call(record, key));
+}
+
+function hasPositiveNumber(value) {
+  return Number(value || 0) > 0;
+}
+
+function hasArrivedDocInput(batch, logRows, ageDay, today) {
+  if (!batch) return false;
+
+  const hasExplicitArrivedDocField = ARRIVED_DOC_FIELD_KEYS.some((key) => hasOwnField(batch, key));
+  if (hasExplicitArrivedDocField) {
+    return ARRIVED_DOC_FIELD_KEYS.some((key) => hasPositiveNumber(batch[key]));
+  }
+
+  const loadedHeads = Number(batch.totalChicksLoaded || 0);
+  if (loadedHeads <= 0) return false;
+
+  const hasTodayLog = logRows.some((log) => log.date === today);
+  if (ageDay !== null && ageDay <= 1 && !hasTodayLog) return false;
+
+  return true;
 }
 
 function readPrepChecklist(batchId) {
@@ -285,7 +324,7 @@ const TOOLTIP_DEFINITIONS = {
   }
 };
 
-export default function TodayOperations({ token, activeBatch, logs = [], setActiveScreen, previewData = null }) {
+export default function TodayOperations({ token, activeBatch, logs = EMPTY_LOGS, setActiveScreen, previewData = null }) {
   const activeBatchId = activeBatch?.id ?? null;
   const location = useLocation();
   const navigate = useNavigate();
@@ -419,9 +458,9 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
 
   const status = getBatchStatus(activeBatch);
   const daysUntilArrival = activeBatch?.startDate ? diffDays(activeBatch.startDate, today) : null;
-  const hasArrivedDocInput = Number(activeBatch?.totalChicksLoaded || 0) > 0;
+  const arrivedDocInputReady = hasArrivedDocInput(activeBatch, logs, ageDay, today);
   const isPostSummaryMode = isPostBatch(activeBatch);
-  const isPrePlacementMode = !isPostSummaryMode && !hasArrivedDocInput;
+  const isPrePlacementMode = !isPostSummaryMode && !arrivedDocInputReady;
   const isOnTheWay = !isPostSummaryMode && (
     isPrePlacementMode ||
     status === 'ON_THE_WAY' ||
