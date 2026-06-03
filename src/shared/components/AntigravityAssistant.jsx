@@ -1,9 +1,26 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { lazy, Suspense, useState, useEffect, useMemo, useRef } from 'react';
 import { BAG_WEIGHT_KG, getAgeDay } from '../utils/broilerTargets';
 import { apiClient } from '../utils/apiClient';
-import EggModel from './EggModel';
+
+const EggModel = lazy(() => import('./EggModel'));
 
 const quickActionClass = "text-[10px] font-black py-1.5 px-2.5 rounded-full bg-app-card text-app-text border border-app-border hover:bg-app-bg hover:text-app-accent active:scale-95 transition-all cursor-pointer flex items-center space-x-1 shadow-sm";
+
+function EggModelFallback() {
+  return (
+    <div className="flex h-full w-full items-center justify-center rounded-full bg-app-accent/10 text-[10px] font-black text-app-accent font-jetbrains">
+      FO
+    </div>
+  );
+}
+
+function AssistantEgg() {
+  return (
+    <Suspense fallback={<EggModelFallback />}>
+      <EggModel />
+    </Suspense>
+  );
+}
 
 function createParticles() {
   return Array.from({ length: 8 }).map((_, i) => ({
@@ -532,7 +549,7 @@ export default function AntigravityAssistant({
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           ) : (
-            <EggModel />
+            <AssistantEgg />
           )}
         </button>
         {!isOpen && (
@@ -549,7 +566,7 @@ export default function AntigravityAssistant({
           <div className="relative bg-app-accent text-app-on-accent p-4 flex items-center justify-between border-b border-app-border">
             <div className="flex items-center space-x-3">
               <div className="h-9 w-9 flex items-center justify-center overflow-hidden">
-                <EggModel />
+                <AssistantEgg />
               </div>
               <div>
                 <h3 className="text-sm font-black tracking-wider uppercase">FlockOps Assistant</h3>

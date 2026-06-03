@@ -797,3 +797,14 @@ body {
   animation: assistant-dot-pulse 1.2s infinite ease-in-out;
 }
 
+@keyframes eggFloat {
+  0%, 100% { transform: translateY(0) rotate(-6deg); }
+  50% { transform: translateY(-4px) rotate(4deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-\[eggFloat_3\.8s_ease-in-out_infinite\] {
+    animation: none !important;
+  }
+}
+

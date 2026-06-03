@@ -1,69 +1,9 @@
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useGLTF, Center } from '@react-three/drei';
-import { useRef } from 'react';
-import * as THREE from 'three';
-
-function RotatingEgg() {
-  const meshRef = useRef();
-  const { scene } = useGLTF('/Egg.glb');
-
-  // Traverse the scene to clean up helper nodes and style the egg mesh
-  scene.traverse((child) => {
-    // Hide the default exported background panel and lights
-    if (
-      child.name === 'Rectangle' || 
-      child.name.includes('Light') || 
-      child.isLight || 
-      child.isCamera
-    ) {
-      child.visible = false;
-    }
-
-    // Override the material of the egg mesh for a premium eggshell look
-    if (child.isMesh && child.name === 'Egg') {
-      child.material = new THREE.MeshStandardMaterial({
-        color: new THREE.Color('#F0E6D2'), // Warm natural eggshell color
-        roughness: 0.45,                   // Soft matte shell finish
-        metalness: 0.05,                   // Subtle organic response to light
-      });
-    }
-  });
-
-  // Rotate the model around Y axis
-  useFrame((state, delta) => {
-    if (meshRef.current) {
-      meshRef.current.rotation.y += delta * 0.8;
-    }
-  });
-
-  return (
-    <primitive 
-      ref={meshRef} 
-      object={scene} 
-      scale={1.8} 
-      position={[0, 0, 0]} 
-    />
-  );
-}
-
 export default function EggModel() {
   return (
-    <div className="w-full h-full pointer-events-none">
-      <Canvas
-        camera={{ position: [0, 0, 4.5], fov: 45 }}
-        gl={{ alpha: true, antialias: true }}
-        style={{ background: 'transparent' }}
-      >
-        <ambientLight intensity={1.8} />
-        <directionalLight position={[5, 5, 5]} intensity={2.0} />
-        <pointLight position={[-5, 5, -5]} intensity={1.0} />
-        <Center>
-          <RotatingEgg />
-        </Center>
-      </Canvas>
+    <div className="flex h-full w-full items-center justify-center" aria-hidden="true">
+      <div className="relative h-[82%] w-[64%] animate-[eggFloat_3.8s_ease-in-out_infinite] rounded-[52%_52%_46%_46%/60%_60%_42%_42%] bg-[radial-gradient(circle_at_34%_24%,rgba(255,255,255,0.95)_0_11%,rgba(255,255,255,0)_12%),linear-gradient(145deg,#fff7df_0%,#f1d89c_48%,#b88933_100%)] shadow-[inset_-8px_-10px_18px_rgba(111,76,22,0.28),inset_5px_7px_12px_rgba(255,255,255,0.7),0_8px_18px_rgba(0,0,0,0.24)]">
+        <div className="absolute left-[18%] top-[16%] h-2 w-2 rounded-full bg-white/80 blur-[1px]" />
+      </div>
     </div>
   );
 }
-
-// Preload the GLB model to avoid loading delay
-useGLTF.preload('/Egg.glb');

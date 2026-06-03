@@ -1,8 +1,7 @@
-import { useState, useEffect, Suspense } from 'react';
+import { lazy, useState, useEffect, Suspense } from 'react';
 import { Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
 import Login from '../features/auth/Login';
 import IntroPage from '../features/auth/IntroPage';
-import AntigravityAssistant from '../shared/components/AntigravityAssistant';
 
 import Sidebar from './layout/Sidebar';
 import MobileNav from './layout/MobileNav';
@@ -34,6 +33,8 @@ import {
   FinancialStatement,
   Settings
 } from './routes';
+
+const AntigravityAssistant = lazy(() => import('../shared/components/AntigravityAssistant'));
 
 function BatchesRoute({ batches, ...props }) {
   const { batchId } = useParams();
@@ -401,18 +402,20 @@ function App() {
           </Routes>
         </Suspense>
         
-        <AntigravityAssistant
-          activeBatch={batches.visibleActiveBatch}
-          logs={logs}
-          transactions={transactions}
-          user={auth.user}
-          isZeroGravity={isZeroGravity}
-          allowedScreens={allowedScreens}
-          canEnterDaily={canEnterDaily}
-          canViewFinancial={canViewFinancial}
-          isPublicViewer={auth.isPublicViewer}
-          token={auth.apiToken}
-        />
+        <Suspense fallback={null}>
+          <AntigravityAssistant
+            activeBatch={batches.visibleActiveBatch}
+            logs={logs}
+            transactions={transactions}
+            user={auth.user}
+            isZeroGravity={isZeroGravity}
+            allowedScreens={allowedScreens}
+            canEnterDaily={canEnterDaily}
+            canViewFinancial={canViewFinancial}
+            isPublicViewer={auth.isPublicViewer}
+            token={auth.apiToken}
+          />
+        </Suspense>
       </div>
       <SyncDrawer isOpen={isSyncDrawerOpen} onClose={() => setIsSyncDrawerOpen(false)} />
     </AppShell>
