@@ -419,8 +419,15 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
 
   const status = getBatchStatus(activeBatch);
   const daysUntilArrival = activeBatch?.startDate ? diffDays(activeBatch.startDate, today) : null;
-  const isOnTheWay = status === 'ON_THE_WAY' || status === 'ON THE WAY' || (daysUntilArrival !== null && daysUntilArrival > 0);
+  const hasArrivedDocInput = Number(activeBatch?.totalChicksLoaded || 0) > 0;
   const isPostSummaryMode = isPostBatch(activeBatch);
+  const isPrePlacementMode = !isPostSummaryMode && !hasArrivedDocInput;
+  const isOnTheWay = !isPostSummaryMode && (
+    isPrePlacementMode ||
+    status === 'ON_THE_WAY' ||
+    status === 'ON THE WAY' ||
+    (daysUntilArrival !== null && daysUntilArrival > 0)
+  );
   const showDayOneHandoff = Boolean(
     dayOneHandoffBatchId &&
     (dayOneHandoffBatchId === 'current' || String(dayOneHandoffBatchId) === String(activeBatchId)) &&
@@ -1330,16 +1337,27 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
   }
 
   if (isOnTheWay) {
-    const checklistItems = [
-      { key: 'dungCleanup', title: 'Chicken Dung Cleanup', desc: 'Thorough removal and disposal of previous flock\'s dung' },
-      { key: 'pressureWasher', title: 'Pressure Washer Setup', desc: 'Inspect hoses, nozzle, and fuel for the pressure washer' },
-      { key: 'clean', title: 'Sanitize & Disinfect', desc: 'Clean houses and apply virucidal sanitizers' },
-      { key: 'bedding', title: 'Lay Dry Bedding', desc: 'Spread dry wood shavings or rice hulls 2" deep' },
-      { key: 'equipment', title: 'Brooder & Heater Test', desc: 'Ensure all heating lamps and regulators function' },
-      { key: 'feed', title: 'Feed & Water Prep', desc: 'Confirm starter feed is on hand and flush drinker lines' },
-      { key: 'inventory', title: 'Inventory Audit', desc: 'Check and record starter feed, medicine, and vitamins' },
-      { key: 'prewarm', title: '24-Hour Pre-warming', desc: 'Start heaters 24h before arrival to warm concrete to 32°C' }
-    ];
+    const checklistItems = isPrePlacementMode
+      ? [
+          { key: 'dungCleanup', title: 'Remove old litter and manure', desc: 'Clear leftover litter, mortality pits, and manure before the next DOC placement.' },
+          { key: 'pressureWasher', title: 'Pressure wash houses', desc: 'Wash floors, walls, curtains, feeders, and drinker lines during downtime.' },
+          { key: 'clean', title: 'Disinfect and rest the house', desc: 'Apply farm disinfectant and keep the house dry before fresh bedding goes in.' },
+          { key: 'bedding', title: 'Lay dry bedding', desc: 'Spread clean, dry bedding evenly before the day-old chicks arrive.' },
+          { key: 'equipment', title: 'Test brooders and curtains', desc: 'Check heaters, regulators, curtains, lights, and backup power before placement.' },
+          { key: 'feed', title: 'Stage starter feed and water', desc: 'Place starter feed, flush drinker lines, and confirm clean water is available.' },
+          { key: 'inventory', title: 'Check medicines and supplies', desc: 'Confirm vitamins, vaccines, disinfectant, and brooding supplies are ready.' },
+          { key: 'prewarm', title: 'Pre-heat brooding area', desc: 'Warm the house before DOC placement so the floor and bedding are ready.' }
+        ]
+      : [
+          { key: 'dungCleanup', title: 'Chicken Dung Cleanup', desc: 'Thorough removal and disposal of previous flock\'s dung' },
+          { key: 'pressureWasher', title: 'Pressure Washer Setup', desc: 'Inspect hoses, nozzle, and fuel for the pressure washer' },
+          { key: 'clean', title: 'Sanitize & Disinfect', desc: 'Clean houses and apply virucidal sanitizers' },
+          { key: 'bedding', title: 'Lay Dry Bedding', desc: 'Spread dry wood shavings or rice hulls 2" deep' },
+          { key: 'equipment', title: 'Brooder & Heater Test', desc: 'Ensure all heating lamps and regulators function' },
+          { key: 'feed', title: 'Feed & Water Prep', desc: 'Confirm starter feed is on hand and flush drinker lines' },
+          { key: 'inventory', title: 'Inventory Audit', desc: 'Check and record starter feed, medicine, and vitamins' },
+          { key: 'prewarm', title: '24-Hour Pre-warming', desc: 'Start heaters 24h before arrival to warm concrete to 32°C' }
+        ];
 
     const checkedCount = Object.values(prepChecklist).filter(Boolean).length;
     const percentComplete = Math.round((checkedCount / checklistItems.length) * 100);
@@ -1347,6 +1365,13 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
     const arrivalEta = getArrivalEtaStatus(daysUntilArrival, formatDate(activeBatch.startDate));
     const countdownText = arrivalEta.statusText;
     const countdownSubtext = arrivalEta.detailText;
+    const prepTitle = isPrePlacementMode ? 'Pre-placement / Downtime preparation' : 'Pre-Arrival Prep';
+    const prepStatusText = isPrePlacementMode ? 'No arrived DOC input yet' : (activeBatch.status || 'ON THE WAY');
+    const heroModeText = isPrePlacementMode ? 'Downtime preparation mode' : 'Transit & Setup Mode';
+    const progressLabel = isPrePlacementMode ? 'DOWNTIME PROGRESS' : 'PREPARATION PROGRESS';
+    const readinessDetail = isPrePlacementMode
+      ? `${checklistItems.length - checkedCount} downtime tasks remaining before DOC placement.`
+      : `${checklistItems.length - checkedCount} tasks remaining before chicks arrive.`;
 
     const readinessTone = percentComplete === 100
       ? 'success'
@@ -1366,9 +1391,9 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
           <p className="text-xs font-bold uppercase tracking-wider text-app-text-secondary font-inter">Operations</p>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 className="text-3xl font-extrabold text-app-accent tracking-tight font-hanken">Pre-Arrival Prep</h2>
+              <h2 className="text-3xl font-extrabold text-app-accent tracking-tight font-hanken">{prepTitle}</h2>
               <p className="text-sm text-app-text-secondary mt-1 font-inter">
-                Batch {activeBatch.id} • Status: {activeBatch.status || 'ON THE WAY'}
+                Batch {activeBatch.id} • {prepStatusText}
               </p>
             </div>
             
@@ -1434,20 +1459,20 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
               <div className="space-y-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-app-accent/10 px-2.5 py-0.5 text-xs font-semibold text-app-accent">
                   <span className="h-1.5 w-1.5 rounded-full bg-app-accent animate-pulse" />
-                  Transit & Setup Mode
+                  {heroModeText}
                 </span>
                 <h3 className="text-2xl font-black font-hanken tracking-tight">
-                  {countdownText}
+                  {isPrePlacementMode ? 'Awaiting arrived DOC count' : countdownText}
                 </h3>
                 <p className="text-sm text-app-text-secondary font-inter">
-                  {countdownSubtext}
+                  {isPrePlacementMode ? 'Enter actual day-old chicken arrivals in Batches once placement is complete.' : countdownSubtext}
                 </p>
               </div>
 
               {/* Checklist Progress Bar */}
               <div className="w-full md:w-80 shrink-0 space-y-2">
                 <div className="flex justify-between text-xs font-bold font-inter">
-                  <span className="text-app-text-secondary">PREPARATION PROGRESS</span>
+                  <span className="text-app-text-secondary">{progressLabel}</span>
                   <span className="text-app-accent">{percentComplete}% READY</span>
                 </div>
                 <div className="h-3 w-full rounded-full bg-app-bg overflow-hidden border border-app-border">
@@ -1468,13 +1493,21 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
             <SummaryMetric
               label="Arrival Date"
               value={formatDate(activeBatch.startDate)}
-              detail="Scheduled reception day"
+              detail={isPrePlacementMode ? 'Target DOC placement day' : 'Scheduled reception day'}
             />
             <SummaryMetric
               label="Planned Flock"
               value={formatNumber(activeBatch.plannedFlock || activeBatch.totalChicksLoaded)}
               detail="Target flock size"
             />
+            {isPrePlacementMode && (
+              <SummaryMetric
+                label="Arrived DOC"
+                value="Not entered"
+                detail="Daily flock operations start after actual arrivals are recorded."
+                tone="warning"
+              />
+            )}
             <SummaryMetric
               label="Mortality Allowance"
               value={formatNumber(activeBatch.mortalityAllowance || 0)}
@@ -1491,7 +1524,7 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
               <p className="mt-2 text-xs font-bold leading-snug opacity-90 font-inter">
                 {percentComplete === 100 
                   ? 'All systems go! Houses prepped.' 
-                  : `${checklistItems.length - checkedCount} tasks remaining before chicks arrive.`}
+                  : readinessDetail}
               </p>
             </div>
           </div>
@@ -1500,7 +1533,9 @@ export default function TodayOperations({ token, activeBatch, logs = [], setActi
         {/* Interactive Checklist Cards */}
         <section className={`mt-6 md:block ${mobileTab === 'checklist' ? 'block' : 'hidden'}`}>
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent font-hanken">Pre-Arrival Checklist</h3>
+            <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent font-hanken">
+              {isPrePlacementMode ? 'Pre-placement Checklist' : 'Pre-Arrival Checklist'}
+            </h3>
             <span className="text-[10px] font-bold text-app-text-secondary font-inter">
               {checkedCount}/{checklistItems.length} Completed
             </span>

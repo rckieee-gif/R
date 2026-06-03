@@ -21,6 +21,7 @@ const mockBatchActive = {
   batchCode: 'BATCH-01',
   startDate: '2026-05-20',
   status: 'ACTIVE',
+  totalChicksLoaded: 1000,
   targetHarvestDate: '2026-06-25',
 };
 
@@ -133,6 +134,26 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
     fireEvent.keyDown(window, { key: '1' });
     expect(actionsTab).toHaveClass('border-transparent');
     expect(overviewTab).toHaveClass('border-app-accent');
+  });
+
+  it('shows pre-placement downtime preparation while arrived DOC is not entered', async () => {
+    renderComponent({
+      activeBatch: {
+        ...mockBatchActive,
+        id: 44,
+        status: 'ONGOING',
+        totalChicksLoaded: 0,
+        plannedFlock: 1000,
+      },
+    });
+
+    expect(screen.getByRole('heading', { name: /Pre-placement \/ Downtime preparation/i })).toBeInTheDocument();
+    expect(screen.getByText(/No arrived DOC input yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/Awaiting arrived DOC count/i)).toBeInTheDocument();
+    expect(screen.getByText(/Remove old litter and manure/i)).toBeInTheDocument();
+    expect(screen.getByText(/Pre-heat brooding area/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Arrived DOC/i).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: /^Daily Logs$/i })).not.toBeInTheDocument();
   });
 
   it('allows switching mobile tabs in Post Batch mode', async () => {

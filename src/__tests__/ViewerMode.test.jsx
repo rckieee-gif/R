@@ -108,7 +108,7 @@ describe('Public Viewer Mode Constraints', () => {
       );
 
       // Verify checklist items are rendered but disabled
-      const cleanButton = screen.getByRole('button', { name: /chicken dung cleanup/i });
+      const cleanButton = screen.getByRole('button', { name: /remove old litter and manure/i });
       expect(cleanButton).toBeInTheDocument();
       expect(cleanButton).toBeDisabled();
 
