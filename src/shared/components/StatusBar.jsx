@@ -137,21 +137,21 @@ export default function StatusBar({ activeBatch }) {
 
   return (
     <div className="no-print w-full bg-app-card/40 dark:bg-black/20 border-b border-app-border px-4 py-2 flex items-center justify-between text-[11px] font-bold text-app-text-secondary select-none font-jetbrains backdrop-blur-md transition-colors duration-300">
-      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5">
-        {/* Batch Info */}
-        <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2 sm:gap-2.5 flex-nowrap min-w-0">
+        {/* Batch Info - Hidden on mobile to save space (Batch selector is in the top bar) */}
+        <div className="hidden sm:flex items-center gap-1 shrink-0">
           <span className="material-symbols-outlined text-[13px] text-app-text-secondary leading-none">layers</span>
           <span className="text-app-text font-black">
             {activeBatch?.id ? `Batch #${activeBatch.id}` : 'No Active Batch'}
           </span>
         </div>
 
-        <span className="text-app-border/40 select-none">·</span>
+        <span className="hidden sm:inline text-app-border/40 select-none">·</span>
 
         {/* Flock Age */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <span className="material-symbols-outlined text-[13px] text-app-text-secondary leading-none">calendar_today</span>
-          <span>
+          <span className="text-app-text sm:text-app-text-secondary font-black sm:font-bold">
             {ageDay !== null ? `Day ${ageDay}` : 'Day --'}
           </span>
         </div>
@@ -159,13 +159,17 @@ export default function StatusBar({ activeBatch }) {
         <span className="text-app-border/40 select-none">·</span>
 
         {/* Building List */}
-        <div className="flex items-center gap-1">
-          <span className="material-symbols-outlined text-[13px] text-app-text-secondary leading-none">apartment</span>
-          <span>{buildingString}</span>
+        <div className="flex items-center gap-1 min-w-0">
+          <span className="material-symbols-outlined text-[13px] text-app-text-secondary leading-none shrink-0">apartment</span>
+          <span className="truncate">
+            <span className="hidden sm:inline">Building </span>
+            <span className="sm:hidden">Bldg </span>
+            {buildings.length ? buildings.join('/') : 'A/B/C'}
+          </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 flex-nowrap">
         {/* Online / Offline Status */}
         <button
           type="button"

@@ -4,7 +4,7 @@ import { apiClient } from '../utils/apiClient';
 
 const EggModel = lazy(() => import('./EggModel'));
 
-const quickActionClass = "text-[10px] font-black py-1.5 px-2.5 rounded-full bg-app-card text-app-text border border-app-border hover:bg-app-bg hover:text-app-accent active:scale-95 transition-all cursor-pointer flex items-center space-x-1 shadow-sm";
+const quickActionClass = "text-[10px] font-black py-1.5 px-2.5 rounded-full bg-app-card text-app-text border border-app-border hover:bg-app-bg hover:text-app-accent active:scale-95 transition-all duration-200 cursor-pointer flex items-center space-x-1 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-1 focus-visible:ring-offset-app-card";
 
 function EggModelFallback() {
   return (
@@ -534,7 +534,7 @@ export default function AntigravityAssistant({
       <div className="no-print fixed bottom-6 right-6 z-50">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`h-14 w-14 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer overflow-hidden ${
+          className={`h-14 w-14 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-bg ${
             isOpen 
               ? 'bg-app-accent text-app-on-accent shadow-lg border-2 border-app-card rotate-90' 
               : 'bg-transparent text-transparent border-0'
@@ -581,7 +581,7 @@ export default function AntigravityAssistant({
             <button
               type="button"
               onClick={handleGravityStatus}
-              className="flex items-center space-x-2 bg-app-on-accent/10 py-1 px-2.5 rounded-full border border-app-on-accent/20 active:scale-95 transition cursor-pointer"
+              className="flex items-center space-x-2 bg-app-on-accent/10 py-1 px-2.5 rounded-full border border-app-on-accent/20 active:scale-95 transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-on-accent focus-visible:ring-offset-1 focus-visible:ring-offset-app-accent"
             >
               <span
                 className={`h-2 w-2 rounded-full ${
@@ -616,7 +616,7 @@ export default function AntigravityAssistant({
                     {messageText.split('\n').map((line, idx) => {
                       const parts = line.split('**');
                       return (
-                        <p key={idx} className={idx > 0 ? "mt-1.5" : ""}>
+                        <p key={idx} className={`${idx > 0 ? "mt-1.5" : ""} text-pretty`}>
                           {parts.map((part, pIdx) =>
                             pIdx % 2 === 1 ? <strong key={pIdx} className={`font-extrabold ${m.sender === 'user' ? 'text-app-on-accent' : 'text-app-accent'}`}>{part}</strong> : part
                           )}
@@ -664,7 +664,7 @@ export default function AntigravityAssistant({
             <button
               type="submit"
               disabled={!inputValue.trim() || isTyping}
-              className="h-8 w-8 rounded-xl bg-app-accent text-app-on-accent flex items-center justify-center shadow-md active:scale-95 disabled:opacity-40 disabled:scale-100 transition-all cursor-pointer"
+              className="h-8 w-8 rounded-xl bg-app-accent text-app-on-accent flex items-center justify-center shadow-md active:scale-95 disabled:opacity-40 disabled:scale-100 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-1 focus-visible:ring-offset-app-card"
               aria-label="Send message"
             >
               <span className="material-symbols-outlined text-lg" aria-hidden="true">arrow_forward</span>

@@ -182,7 +182,7 @@ export default function DailyLogForm({
                     key={building}
                     type="button"
                     onClick={() => setActiveBuilding(building)}
-                    className={`flex-1 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all border cursor-pointer ${
+                    className={`flex-1 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all border cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-card ${
                       activeBuilding === building
                         ? 'bg-app-accent text-app-on-accent border-app-accent shadow-sm scale-102'
                         : 'bg-app-bg text-app-text-secondary border-app-border hover:bg-app-accent/5 hover:text-app-accent'
@@ -480,7 +480,7 @@ export default function DailyLogForm({
             <button
               type="button"
               onClick={prevStep}
-              className="flex-1 bg-app-bg text-app-text border border-app-border px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-sm hover:bg-app-border active:scale-95 transition-all cursor-pointer"
+              className="flex-1 bg-app-bg text-app-text border border-app-border px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-sm hover:bg-app-border active:scale-95 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-card"
             >
               Back
             </button>
@@ -492,7 +492,7 @@ export default function DailyLogForm({
                   resetForm();
                   setStep(1);
                 }}
-                className="flex-1 bg-app-bg text-app-text border border-app-border px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-sm active:scale-95 transition-all cursor-pointer"
+                className="flex-1 bg-app-bg text-app-text border border-app-border px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-sm active:scale-95 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-card"
               >
                 Cancel
               </button>
@@ -503,14 +503,14 @@ export default function DailyLogForm({
             <button
               type="button"
               onClick={nextStep}
-              className="flex-[2] bg-app-accent text-app-on-accent px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer"
+              className="flex-[2] bg-app-accent text-app-on-accent px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-card"
             >
               Next Step
             </button>
           ) : (
             <button
               type="submit"
-              className="flex-[2] bg-app-accent text-app-on-accent px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer"
+              className="flex-[2] bg-app-accent text-app-on-accent px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-card"
             >
               {editingId ? 'Update Log' : 'Save Log'}
             </button>

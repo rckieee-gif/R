@@ -12,16 +12,16 @@ export default function Button({
   type = 'button',
   ...props
 }) {
-  const baseStyle = 'inline-flex items-center justify-center font-bold tracking-tight rounded-xl transition-all active:scale-[0.98] cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-app-card disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed';
+  const baseStyle = 'inline-flex items-center justify-center font-bold tracking-tight rounded-xl transition-all duration-200 active:scale-[0.98] cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-app-card disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed';
 
   const variants = {
-    primary: 'bg-app-accent text-app-on-accent hover:opacity-90 shadow-sm focus:ring-app-accent',
-    secondary: 'bg-app-card text-app-text border border-app-border hover:bg-app-bg focus:ring-app-accent',
-    danger: 'bg-app-danger text-white hover:opacity-90 shadow-sm focus:ring-app-danger',
-    warning: 'bg-app-warning text-white hover:opacity-90 shadow-sm focus:ring-app-warning',
-    success: 'bg-app-success text-white hover:opacity-90 shadow-sm focus:ring-app-success',
-    outline: 'bg-transparent text-app-accent border border-app-accent hover:bg-app-accent/10 focus:ring-app-accent',
-    ghost: 'bg-transparent text-app-text-secondary hover:bg-app-card hover:text-app-text focus:ring-app-accent',
+    primary: 'bg-app-accent text-app-on-accent hover:brightness-95 hover:shadow-sm focus-visible:ring-app-accent',
+    secondary: 'bg-app-card text-app-text border border-app-border hover:bg-app-bg hover:brightness-98 hover:shadow-sm focus-visible:ring-app-accent',
+    danger: 'bg-app-danger text-white hover:brightness-95 hover:shadow-sm focus-visible:ring-app-danger',
+    warning: 'bg-app-warning text-white hover:brightness-95 hover:shadow-sm focus-visible:ring-app-warning',
+    success: 'bg-app-success text-white hover:brightness-95 hover:shadow-sm focus-visible:ring-app-success',
+    outline: 'bg-transparent text-app-accent border border-app-accent hover:bg-app-accent/10 focus-visible:ring-app-accent',
+    ghost: 'bg-transparent text-app-text-secondary hover:bg-app-card hover:text-app-text focus-visible:ring-app-accent',
   };
 
   const sizes = {

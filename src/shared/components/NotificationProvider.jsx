@@ -84,26 +84,26 @@ export default function NotificationProvider({ children }) {
         return {
           icon: 'check_circle',
           iconClass: 'text-app-success',
-          borderClass: 'border-l-4 border-l-app-success'
+          borderClass: 'border-app-success/40 bg-app-success-bg/15'
         };
       case 'error':
         return {
           icon: 'error',
           iconClass: 'text-app-danger',
-          borderClass: 'border-l-4 border-l-app-danger'
+          borderClass: 'border-app-danger/40 bg-app-danger-bg/15'
         };
       case 'warning':
         return {
           icon: 'warning',
           iconClass: 'text-app-warning',
-          borderClass: 'border-l-4 border-l-app-warning'
+          borderClass: 'border-app-warning/40 bg-app-warning-bg/15'
         };
       case 'info':
       default:
         return {
           icon: 'info',
           iconClass: 'text-app-accent',
-          borderClass: 'border-l-4 border-l-app-accent'
+          borderClass: 'border-app-accent/40 bg-app-accent/10'
         };
     }
   };
@@ -119,7 +119,7 @@ export default function NotificationProvider({ children }) {
           return (
             <div
               key={toast.id}
-              className={`pointer-events-auto flex items-start gap-3 bg-app-card border border-app-border ${styles.borderClass} rounded-xl p-3.5 shadow-lg animate-toast-in backdrop-blur-md bg-opacity-95 dark:bg-opacity-95`}
+              className={`pointer-events-auto flex items-start gap-3 bg-app-card border ${styles.borderClass || 'border-app-border'} rounded-xl p-3.5 shadow-lg animate-toast-in backdrop-blur-md bg-opacity-95 dark:bg-opacity-95`}
             >
               <span className={`material-symbols-outlined shrink-0 text-lg ${styles.iconClass}`} style={{ fontVariationSettings: "'FILL' 1" }}>
                 {styles.icon}

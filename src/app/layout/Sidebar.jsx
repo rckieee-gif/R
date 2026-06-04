@@ -133,7 +133,7 @@ export default function Sidebar({
         
         <button 
           onClick={toggleNavMinimized}
-          className={`rounded hover:bg-white/10 text-white/80 hover:text-white transition-all duration-300 flex items-center justify-center ${
+          className={`rounded hover:bg-white/10 text-white/80 hover:text-white transition-all duration-300 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#70B8F9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A2540] ${
             isNavMinimized ? 'w-full py-1.5' : 'p-1.5 ml-2'
           }`}
           title={isNavMinimized ? "Expand Sidebar" : "Minimize Sidebar"}
@@ -155,7 +155,7 @@ export default function Sidebar({
               return (
                 <button
                   onClick={() => setActiveScreen('dashboard')}
-                  className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 cursor-pointer ${
+                  className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#70B8F9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A2540] ${
                     isNavMinimized ? 'px-4 gap-0 justify-center' : 'px-3.5 gap-3'
                   } ${
                     isActive
@@ -206,7 +206,7 @@ export default function Sidebar({
                   <button
                     key={id}
                     onClick={() => setActiveScreen(id)}
-                    className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 cursor-pointer ${
+                    className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#70B8F9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A2540] ${
                       isNavMinimized ? 'px-4 gap-0 justify-center' : 'px-3.5 gap-3'
                     } ${
                       isActive
@@ -280,7 +280,7 @@ export default function Sidebar({
         <div className="flex flex-col gap-1.5">
           <button
             onClick={() => setIsDarkMode(!isDarkMode)}
-            className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 bg-transparent text-white/90 hover:bg-white/10 hover:text-white cursor-pointer ${
+            className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 bg-transparent text-white/90 hover:bg-white/10 hover:text-white cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#70B8F9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A2540] ${
               isNavMinimized ? 'px-4 gap-0 justify-center' : 'px-3.5 gap-3'
             }`}
             title={isDarkMode ? "Use Light Mode" : "Use Dark Mode"}
@@ -297,7 +297,7 @@ export default function Sidebar({
 
           <button 
             onClick={handleLogout} 
-            className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 bg-transparent text-white/90 hover:bg-white/10 hover:text-white cursor-pointer ${
+            className={`w-full group flex items-center transition-all duration-200 rounded-xl py-2.5 bg-transparent text-white/90 hover:bg-white/10 hover:text-white cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#70B8F9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A2540] ${
               isNavMinimized ? 'px-4 gap-0 justify-center' : 'px-3.5 gap-3'
             }`}
             title={isPublicViewer ? "Exit Preview" : "Logout"}

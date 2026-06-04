@@ -47,7 +47,7 @@ export default function MobileNav({
 
   const getNavLinkClass = (screen) => {
     const isActive = currentScreen === screen;
-    return `h-11 px-4 rounded uppercase tracking-wider font-bold text-[10px] sm:text-xs whitespace-nowrap transition-all duration-200 flex items-center justify-center ${
+    return `h-11 px-4 rounded uppercase tracking-wider font-bold text-[10px] sm:text-xs whitespace-nowrap transition-all duration-200 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-1 focus-visible:ring-offset-app-card ${
       isActive
         ? 'bg-app-accent text-app-on-accent shadow-sm scale-[1.02]'
         : 'bg-app-card text-app-text-secondary border border-app-border hover:bg-app-bg hover:text-app-text'
@@ -126,13 +126,13 @@ export default function MobileNav({
             isBatchListLoading={isBatchListLoading}
             onChange={handleBatchSelectorChange}
             variant="simple"
-            className="h-11 w-24"
+            className="h-11 w-28"
           />
         )}
         <SyncStatusBadge className="h-11" />
         <button
           onClick={() => setIsDarkMode(!isDarkMode)}
-          className="h-11 w-11 inline-flex items-center justify-center rounded bg-app-card text-app-text-secondary border border-app-border transition cursor-pointer"
+          className="h-11 w-11 inline-flex items-center justify-center rounded bg-app-card text-app-text-secondary border border-app-border transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-1 focus-visible:ring-offset-app-card"
           aria-label="Toggle theme"
         >
           <ThemeIcon isDarkMode={isDarkMode} />
