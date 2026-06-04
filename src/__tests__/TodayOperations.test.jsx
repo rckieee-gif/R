@@ -182,6 +182,24 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
     expect(screen.queryByRole('button', { name: /^Daily Logs$/i })).not.toBeInTheDocument();
   });
 
+  it('keeps D1 in pre-placement when arrived DOC field is present but still zero', async () => {
+    renderComponent({
+      activeBatch: {
+        ...mockBatchActive,
+        id: 145,
+        startDate: todayInputForTest(),
+        status: 'ONGOING',
+        totalChicksLoaded: 45000,
+        plannedFlock: 45000,
+        actualChicksArrived: 0,
+      },
+    });
+
+    expect(screen.getByRole('heading', { name: /Pre-placement \/ Downtime preparation/i })).toBeInTheDocument();
+    expect(screen.getByText(/No arrived DOC input yet/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Daily Logs$/i })).not.toBeInTheDocument();
+  });
+
   it('shows active operations on D1 when arrived DOC is explicitly recorded', async () => {
     renderComponent({
       activeBatch: {
