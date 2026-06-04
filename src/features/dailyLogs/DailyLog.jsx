@@ -12,6 +12,8 @@ import { calculateMortalityBuffer, applyMortalityBuffer } from '../../shared/uti
 import DailyLogForm from './components/DailyLogForm';
 import DailyLogHistory from './components/DailyLogHistory';
 import { dailyLogSchema } from './dailyLogSchemas';
+import SuccessBurst from '../../shared/components/SuccessBurst';
+
 
 function todayInput() {
   return new Date().toISOString().split('T')[0];
@@ -100,6 +102,7 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
   const [feedItems, setFeedItems] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [successBurstKey, setSuccessBurstKey] = useState(0);
   const { success, error: toastError, confirm } = useNotification();
   const skipSaveRef = useRef(false);
   const activeBatchId = activeBatch?.id ?? null;
@@ -507,6 +510,7 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
           : [data, ...current]
       ));
       success(editingId ? 'Daily log entry updated!' : 'Daily log entry saved!');
+      setSuccessBurstKey((prev) => prev + 1);
       localStorage.removeItem(`octavioDailyLogDraft:${activeBatch.id}:${activeBuilding}`);
       resetForm();
     } catch (err) {
@@ -558,7 +562,8 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
   };
 
   return (
-    <div className="app-page font-hanken">
+    <div className="app-page font-hanken relative">
+      {successBurstKey > 0 && <SuccessBurst key={successBurstKey} active={true} />}
       <div className="mb-6 mt-2">
         <h2 className="text-3xl font-extrabold text-app-text tracking-tight">
           Daily Logs

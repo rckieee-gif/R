@@ -8,24 +8,24 @@ const CACHE_KEY = 'weather_forecast_cache';
 const CACHE_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
 const WMO_CODES = {
-  0: { label: 'Clear sky', icon: 'clear_day', tone: 'text-dashboard-warning' },
-  1: { label: 'Mainly clear', icon: 'partly_cloudy_day', tone: 'text-dashboard-warning' },
-  2: { label: 'Partly cloudy', icon: 'partly_cloudy_day', tone: 'text-dashboard-text-secondary' },
-  3: { label: 'Overcast', icon: 'cloud', tone: 'text-dashboard-text-secondary' },
-  45: { label: 'Fog', icon: 'foggy', tone: 'text-dashboard-text-secondary' },
-  48: { label: 'Rime fog', icon: 'foggy', tone: 'text-dashboard-text-secondary' },
-  51: { label: 'Light drizzle', icon: 'rainy_light', tone: 'text-dashboard-accent' },
-  53: { label: 'Drizzle', icon: 'rainy_light', tone: 'text-dashboard-accent' },
-  55: { label: 'Dense drizzle', icon: 'rainy', tone: 'text-dashboard-accent' },
-  61: { label: 'Slight rain', icon: 'rainy_light', tone: 'text-dashboard-accent' },
-  63: { label: 'Moderate rain', icon: 'rainy', tone: 'text-dashboard-accent' },
-  65: { label: 'Heavy rain', icon: 'rainy_heavy', tone: 'text-dashboard-accent' },
-  80: { label: 'Light showers', icon: 'rainy_light', tone: 'text-dashboard-accent' },
-  81: { label: 'Showers', icon: 'rainy', tone: 'text-dashboard-accent' },
-  82: { label: 'Heavy showers', icon: 'rainy_heavy', tone: 'text-dashboard-accent' },
-  95: { label: 'Thunderstorm', icon: 'thunderstorm', tone: 'text-dashboard-danger' },
-  96: { label: 'T-storm + hail', icon: 'thunderstorm', tone: 'text-dashboard-danger' },
-  99: { label: 'Severe storm', icon: 'thunderstorm', tone: 'text-dashboard-danger' },
+  0: { label: 'Clear sky', icon: 'clear_day', tone: 'text-dashboard-warning', animationClass: 'animate-weather-sun' },
+  1: { label: 'Mainly clear', icon: 'partly_cloudy_day', tone: 'text-dashboard-warning', animationClass: 'animate-weather-sun' },
+  2: { label: 'Partly cloudy', icon: 'partly_cloudy_day', tone: 'text-dashboard-text-secondary', animationClass: 'animate-weather-cloud' },
+  3: { label: 'Overcast', icon: 'cloud', tone: 'text-dashboard-text-secondary', animationClass: 'animate-weather-cloud' },
+  45: { label: 'Fog', icon: 'foggy', tone: 'text-dashboard-text-secondary', animationClass: 'animate-weather-cloud' },
+  48: { label: 'Rime fog', icon: 'foggy', tone: 'text-dashboard-text-secondary', animationClass: 'animate-weather-cloud' },
+  51: { label: 'Light drizzle', icon: 'rainy_light', tone: 'text-dashboard-accent', animationClass: 'animate-weather-rain' },
+  53: { label: 'Drizzle', icon: 'rainy_light', tone: 'text-dashboard-accent', animationClass: 'animate-weather-rain' },
+  55: { label: 'Dense drizzle', icon: 'rainy', tone: 'text-dashboard-accent', animationClass: 'animate-weather-rain' },
+  61: { label: 'Slight rain', icon: 'rainy_light', tone: 'text-dashboard-accent', animationClass: 'animate-weather-rain' },
+  63: { label: 'Moderate rain', icon: 'rainy', tone: 'text-dashboard-accent', animationClass: 'animate-weather-rain' },
+  65: { label: 'Heavy rain', icon: 'rainy_heavy', tone: 'text-dashboard-accent', animationClass: 'animate-weather-rain' },
+  80: { label: 'Light showers', icon: 'rainy_light', tone: 'text-dashboard-accent', animationClass: 'animate-weather-rain' },
+  81: { label: 'Showers', icon: 'rainy', tone: 'text-dashboard-accent', animationClass: 'animate-weather-rain' },
+  82: { label: 'Heavy showers', icon: 'rainy_heavy', tone: 'text-dashboard-accent', animationClass: 'animate-weather-rain' },
+  95: { label: 'Thunderstorm', icon: 'thunderstorm', tone: 'text-dashboard-danger', animationClass: 'animate-weather-storm' },
+  96: { label: 'T-storm + hail', icon: 'thunderstorm', tone: 'text-dashboard-danger', animationClass: 'animate-weather-storm' },
+  99: { label: 'Severe storm', icon: 'thunderstorm', tone: 'text-dashboard-danger', animationClass: 'animate-weather-storm' },
 };
 
 /* De-duplicated legend entries grouped by category */
@@ -63,7 +63,7 @@ const FORECAST_INSTRUCTIONS = [
 ];
 
 function getWeatherInfo(code) {
-  return WMO_CODES[code] || { label: 'Unknown', icon: 'help', tone: 'text-dashboard-text-secondary' };
+  return WMO_CODES[code] || { label: 'Unknown', icon: 'help', tone: 'text-dashboard-text-secondary', animationClass: '' };
 }
 
 function formatDayShort(dateStr) {
@@ -129,7 +129,7 @@ function ForecastRow({ day }) {
       </span>
 
       {/* Icon */}
-      <span className={`material-symbols-outlined text-xl ${weather.tone} shrink-0`}>
+      <span className={`material-symbols-outlined text-xl ${weather.tone} ${weather.animationClass || ''} shrink-0`}>
         {weather.icon}
       </span>
 
@@ -333,7 +333,7 @@ export default function WeatherForecast() {
         <div className="bg-dashboard-card border border-dashboard-border rounded-xl p-5 relative overflow-hidden group hover:border-dashboard-accent transition-colors">
           {/* Decorative bg icon */}
           <div className="absolute -top-4 -right-4 opacity-[0.06] group-hover:opacity-[0.10] transition-opacity duration-500 pointer-events-none">
-            <span className={`material-symbols-outlined text-[120px] ${todayWeather.tone}`}>
+            <span className={`material-symbols-outlined text-[120px] ${todayWeather.tone} ${todayWeather.animationClass || ''}`}>
               {todayWeather.icon}
             </span>
           </div>
@@ -353,7 +353,7 @@ export default function WeatherForecast() {
 
           {/* Main temperature + icon + condition */}
           <div className="relative z-10 flex items-center gap-4 mb-4">
-            <span className={`material-symbols-outlined text-5xl ${todayWeather.tone} drop-shadow-lg`}>
+            <span className={`material-symbols-outlined text-5xl ${todayWeather.tone} ${todayWeather.animationClass || ''} drop-shadow-lg`}>
               {todayWeather.icon}
             </span>
             <div>

@@ -803,9 +803,103 @@ body {
   50% { transform: translateY(-4px) rotate(4deg); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .animate-\[eggFloat_3\.8s_ease-in-out_infinite\] {
-    animation: none !important;
+/* UI Delight Animations */
+@keyframes weather-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes weather-drift {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(4px) translateY(-1px); }
+}
+
+@keyframes weather-drip {
+  0%, 100% { transform: translateY(0); opacity: 0.9; }
+  50% { transform: translateY(3px); opacity: 1; }
+}
+
+@keyframes weather-flash {
+  0%, 100%, 88%, 92%, 96% { opacity: 1; filter: drop-shadow(0 0 0px transparent); }
+  90%, 94% { opacity: 0.35; filter: drop-shadow(0 0 4px var(--app-accent)); }
+}
+
+@keyframes assistant-pop {
+  0% { transform: scale(0.8) translateY(10px); }
+  70% { transform: scale(1.12) translateY(-2px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+@keyframes avatar-glow {
+  0%, 100% { box-shadow: 0 0 6px 1px color-mix(in srgb, var(--app-accent) 20%, transparent); }
+  50% { box-shadow: 0 0 16px 4px color-mix(in srgb, var(--app-accent) 50%, transparent); }
+}
+
+@keyframes particle-drift {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) scale(0.3);
+    opacity: 0;
   }
 }
+
+.animate-weather-sun {
+  animation: weather-spin 25s linear infinite;
+}
+
+.animate-weather-cloud {
+  animation: weather-drift 6s ease-in-out infinite;
+}
+
+.animate-weather-rain {
+  animation: weather-drip 1.5s ease-in-out infinite;
+}
+
+.animate-weather-storm {
+  animation: weather-flash 4s ease-in-out infinite;
+}
+
+.animate-assistant-pop {
+  animation: assistant-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-avatar-glow {
+  animation: avatar-glow 3s infinite ease-in-out;
+}
+
+.animate-particle-drift {
+  animation: particle-drift 0.8s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+.btn-assistant-spring {
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.btn-assistant-spring:hover {
+  transform: scale(1.1) rotate(-8deg);
+}
+
+.btn-assistant-spring:active {
+  transform: scale(0.92) rotate(4deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-\[eggFloat_3\.8s_ease-in-out_infinite\],
+  .animate-weather-sun,
+  .animate-weather-cloud,
+  .animate-weather-rain,
+  .animate-weather-storm,
+  .animate-assistant-pop,
+  .animate-avatar-glow,
+  .animate-particle-drift,
+  .btn-assistant-spring {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
 
