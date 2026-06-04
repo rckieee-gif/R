@@ -161,7 +161,7 @@ function hasPositiveNumber(value) {
   return Number(value || 0) > 0;
 }
 
-function hasArrivedDocInput(batch, ageDay) {
+function hasArrivedDocInput(batch) {
   if (!batch) return false;
 
   if (readArrivedDocConfirmation(batch.id) > 0) return true;
@@ -171,12 +171,7 @@ function hasArrivedDocInput(batch, ageDay) {
     return ARRIVED_DOC_FIELD_KEYS.some((key) => hasPositiveNumber(batch[key]));
   }
 
-  const loadedHeads = Number(batch.totalChicksLoaded || 0);
-  if (loadedHeads <= 0) return false;
-
-  if (ageDay !== null && ageDay <= 1) return false;
-
-  return true;
+  return false;
 }
 
 function getLoadingSharePct(chicksLoaded, totalChicksLoaded) {
@@ -883,7 +878,7 @@ export default function TodayOperations({
 
   const status = getBatchStatus(activeBatch);
   const daysUntilArrival = activeBatch?.startDate ? diffDays(activeBatch.startDate, today) : null;
-  const arrivedDocInputReady = hasArrivedDocInput(activeBatch, ageDay);
+  const arrivedDocInputReady = hasArrivedDocInput(activeBatch);
   const isPostSummaryMode = isPostBatch(activeBatch);
   const isPrePlacementMode = !isPostSummaryMode && !arrivedDocInputReady;
   const isOnTheWay = !isPostSummaryMode && (

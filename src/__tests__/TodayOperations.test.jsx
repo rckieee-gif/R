@@ -47,7 +47,7 @@ const renderComponent = (props = {}) => {
       <MemoryRouter initialEntries={props.initialEntries || ['/today']}>
         <TodayOperations
           token="test-token"
-          activeBatch={mockBatchActive}
+          activeBatch={{ ...mockBatchActive, actualChicksArrived: mockBatchActive.totalChicksLoaded }}
           logs={[]}
           setActiveScreen={vi.fn()}
           {...props}
@@ -455,7 +455,7 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
     expect(screen.queryByLabelText('Close explanation')).not.toBeInTheDocument();
   });
 
-  it('surfaces day-one arrival tasks first after a cycle handoff', async () => {
+  it('keeps a day-one handoff in pre-placement until arrived DOC is recorded', async () => {
     server.use(
       http.get(apiPath('/batches/:batchId/loadings'), () => json([
         { id: 1, building: 'A', chicksLoaded: 900 }
@@ -485,15 +485,12 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
       }],
     });
 
-    const handoffTitle = await screen.findByText(/Day-one arrival handoff/i);
-    expect(screen.getByText(/Batch 55 is now active/i)).toBeInTheDocument();
-    expect(screen.getByText(/Confirm arrival counts/i)).toBeInTheDocument();
-    expect(screen.getByText(/Record first daily log/i)).toBeInTheDocument();
-
-    const normalChecklist = screen.getByText(/Active Operations Checklist/i);
-    expect(Boolean(
-      handoffTitle.compareDocumentPosition(normalChecklist) & Node.DOCUMENT_POSITION_FOLLOWING
-    )).toBe(true);
+    expect(await screen.findByRole('heading', { name: /Pre-placement \/ Downtime preparation/i })).toBeInTheDocument();
+    expect(screen.getByText(/No arrived DOC input yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/Awaiting arrived DOC count/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Enter DOC/i })).toBeInTheDocument();
+    expect(screen.queryByText(/Day-one arrival handoff/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Active Operations Checklist/i)).not.toBeInTheDocument();
   });
 
   it('shows a usable offline state when current batch and batch list requests fail', async () => {
