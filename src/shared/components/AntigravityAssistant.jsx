@@ -469,6 +469,7 @@ export default function AntigravityAssistant({
       try {
         const payload = await apiClient.post('/api/flockops-chat', {
           message: query,
+          chatHistory: messages.filter(m => m.id !== 'welcome'),
           context: buildFlockOpsContext()
         });
 
