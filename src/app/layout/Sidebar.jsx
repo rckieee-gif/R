@@ -50,7 +50,7 @@ export default function Sidebar({
       employees: { label: 'Employees', icon: 'group' },
       paySummary: { label: 'Pay Summary', icon: 'payments' },
       statement: { label: 'Statement', icon: 'description' },
-      dashboard: { label: 'Home', icon: 'home' }
+      dashboard: { label: 'Farm Overview', icon: 'dashboard' }
     };
     return meta[id] || { label: id, icon: 'link' };
   };
@@ -146,7 +146,7 @@ export default function Sidebar({
 
       {/* Navigation links */}
       <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-4 ag-scrollbar">
-        {/* Standalone Home link if allowed */}
+        {/* Standalone Farm Overview link if allowed */}
         {allowedScreens.includes('dashboard') && (
           <div className="space-y-1">
             {(() => {

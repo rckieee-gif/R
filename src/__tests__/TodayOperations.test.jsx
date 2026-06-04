@@ -255,6 +255,11 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Enter DOC/i }));
 
+    expect(screen.queryByLabelText(/Actual received head count/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Building A')).toBeInTheDocument();
+    expect(screen.getByText('Building B')).toBeInTheDocument();
+    expect(screen.getByText('Building C')).toBeInTheDocument();
+
     fireEvent.change(screen.getByLabelText(/Building A arrived DOC/i), { target: { value: '14950' } });
     fireEvent.change(screen.getByLabelText(/Building B arrived DOC/i), { target: { value: '14950' } });
     fireEvent.change(screen.getByLabelText(/Building C arrived DOC/i), { target: { value: '14950' } });

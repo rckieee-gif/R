@@ -89,12 +89,12 @@ function getWelcomeText({ isZeroGravity, userName, isPublicViewer, canViewFinanc
   const accessLine = isPublicViewer
     ? 'You are in public viewer mode, so I will keep this to read-only flock, log, inventory, and analytics guidance.'
     : canViewFinancial
-      ? 'Your role can review operations and finance, so Finance Pulse is available when a batch is selected.'
+      ? 'Your role can review operations and finance, so Batch Ledger Check is available when a batch is selected.'
       : canEnterDaily
         ? 'Your role can work with daily operations, so I will focus on logs, feed, weather, inventory, and readiness.'
         : 'Your role is read-only, so I will avoid edit-only and finance workflows.';
 
-  return `Good morning, ${userName}. I am **FlockOps Assistant**.\n\n${gravityLine} ${accessLine} Quick actions are limited to ${availableFlowText}.`;
+  return `Good morning, ${userName}. I am your **Farm Assistant**.\n\n${gravityLine} ${accessLine} Farm shortcuts are limited to ${availableFlowText}.`;
 }
 
 export default function AntigravityAssistant({
@@ -122,11 +122,11 @@ export default function AntigravityAssistant({
   const canOpenSettings = allowedScreenSet.has('settings');
   const canRunFinancePulse = canViewFinancial && (allowedScreenSet.has('ledger') || allowedScreenSet.has('statement'));
   const availableFlowText = listToSentence([
-    canOpenAnalytics ? 'analytics' : null,
+    canOpenAnalytics ? 'batch reports' : null,
     canOpenDailyLogs ? (canEnterDaily ? 'daily logs' : 'read-only daily logs') : null,
-    canOpenInventory ? 'inventory' : null,
-    canOpenBatches ? 'batches' : null,
-    canRunFinancePulse ? 'finance' : null
+    canOpenInventory ? 'feed inventory' : null,
+    canOpenBatches ? 'batch records' : null,
+    canRunFinancePulse ? 'ledger review' : null
   ].filter(Boolean));
   const welcomeText = useMemo(() => getWelcomeText({
     isZeroGravity,
@@ -255,7 +255,7 @@ export default function AntigravityAssistant({
     ]);
   };
 
-  const buildFlockOpsContext = () => ({
+  const buildFarmAssistantContext = () => ({
     isZeroGravity,
     availableFlows: quickActions.map((action) => action.label),
     activeBatch: activeBatch
@@ -300,7 +300,7 @@ export default function AntigravityAssistant({
 
   const handleFlockBriefing = () => {
     if (!activeBatch) {
-      pauseForBatch("Flock Briefing");
+      pauseForBatch("Batch Briefing");
       return;
     }
 
@@ -310,7 +310,7 @@ export default function AntigravityAssistant({
         ? 'Watch mortality closely'
         : 'Flock looks steady';
 
-    const response = `🌾 **Flock Briefing**
+    const response = `🌾 **Batch Briefing**
 * **Batch**: ${activeBatch.id}
 * **Age**: Day ${batchMetrics.age || '--'}
 * **Live estimate**: ${formatNumber(batchMetrics.liveBirds)} / ${formatNumber(batchMetrics.loaded)} birds
@@ -319,9 +319,9 @@ export default function AntigravityAssistant({
 * **Latest weight**: ${batchMetrics.latestWeight ? `${formatNumber(batchMetrics.latestWeight)}g on ${formatDate(batchMetrics.latestWeightDate)}` : 'No weigh-in yet'}
 * **FCR**: ${batchMetrics.fcr ? formatNumber(batchMetrics.fcr, 2) : 'Awaiting weight logs'}
 
-**FlockOps read**: ${healthStatus}. ${canOpenDailyLogs ? (canEnterDaily ? 'Keep today’s logs current before evening closeout.' : 'Review the log history for trend changes.') : 'Use analytics for the next trend check.'}`;
+**Farm read**: ${healthStatus}. ${canOpenDailyLogs ? (canEnterDaily ? 'Keep today’s logs current before evening closeout.' : 'Review the log history for trend changes.') : 'Use batch reports for the next trend check.'}`;
 
-    simulateResponse("Flock Briefing", response);
+    simulateResponse("Batch Briefing", response);
   };
 
   const handleTodayChecks = () => {
@@ -356,7 +356,7 @@ export default function AntigravityAssistant({
 * **Feed logged today**: ${formatNumber(batchMetrics.todayFeedBags, 1)} bags
 * **Feed equivalent**: ${formatNumber(batchMetrics.totalFeedKg)} kg
 
-**FlockOps read**: ${canOpenInventory
+**Farm read**: ${canOpenInventory
       ? 'Open **Feed & Inventory** to compare these logs against feed stock and movement history.'
       : canOpenAnalytics
         ? 'Use **Reports** to compare feed usage against growth trends.'
@@ -371,7 +371,7 @@ export default function AntigravityAssistant({
 * **Heavy rain**: check drainage, litter moisture, and access paths.
 * **High humidity**: watch ammonia smell and respiratory comfort.
 
-**FlockOps read**: Keep an eye on the Home weather forecast before assigning field work. Weather may affect ventilation today.`;
+**Farm read**: Keep an eye on the Farm Overview weather forecast before assigning field work. Weather may affect ventilation today.`;
 
     simulateResponse("Weather Watch", response);
   };
@@ -408,14 +408,14 @@ export default function AntigravityAssistant({
   const handleFinancePulse = () => {
     if (!canRunFinancePulse) {
       simulateResponse(
-        "Finance Pulse",
-        `**Access limited**: Finance Pulse is available only to roles that can open financial screens. I can still help with ${availableFlowText}.`
+        "Batch Ledger Check",
+        `**Access limited**: Batch Ledger Check is available only to roles that can open financial screens. I can still help with ${availableFlowText}.`
       );
       return;
     }
 
     if (!activeBatch) {
-      pauseForBatch("Finance Pulse");
+      pauseForBatch("Batch Ledger Check");
       return;
     }
 
@@ -427,15 +427,15 @@ export default function AntigravityAssistant({
       .reduce((sum, t) => sum + Number(t.amount || 0), 0);
     const net = income - expenses;
 
-    const response = `💰 **Finance Pulse**
+    const response = `💰 **Batch Ledger Check**
 * **Batch**: ${activeBatch.id}
 * **Income**: ${formatNumber(income, 2)}
 * **Expenses**: ${formatNumber(expenses, 2)}
 * **Net**: ${formatNumber(net, 2)}
 
-**FlockOps read**: ${net >= 0 ? 'Cash flow is positive for the current ledger view.' : 'Expenses are ahead of income in the current ledger view.'} Review feed purchases and harvest proceeds before final closeout.`;
+**Farm read**: ${net >= 0 ? 'Cash flow is positive for the current ledger view.' : 'Expenses are ahead of income in the current ledger view.'} Review feed purchases and harvest proceeds before final closeout.`;
 
-    simulateResponse("Finance Pulse", response);
+    simulateResponse("Batch Ledger Check", response);
   };
 
   const handleGravityStatus = () => {
@@ -447,12 +447,12 @@ export default function AntigravityAssistant({
   };
 
   const quickActions = [
-    { key: 'briefing', label: 'Flock Briefing', icon: 'egg_alt', onClick: handleFlockBriefing },
-    { key: 'checks', label: "Today's Checks", icon: 'fact_check', onClick: handleTodayChecks },
+    { key: 'briefing', label: 'Batch Briefing', icon: 'egg_alt', onClick: handleFlockBriefing },
+    { key: 'checks', label: "Today's Farm Checks", icon: 'fact_check', onClick: handleTodayChecks },
     { key: 'feed', label: 'Feed & Inventory', icon: 'inventory_2', onClick: handleFeedInventory },
     { key: 'weather', label: 'Weather Watch', icon: 'thermostat', onClick: handleWeatherWatch },
     { key: 'harvest', label: 'Harvest Readiness', icon: 'agriculture', onClick: handleHarvestReadiness },
-    ...(canRunFinancePulse ? [{ key: 'finance', label: 'Finance Pulse', icon: 'payments', onClick: handleFinancePulse }] : [])
+    ...(canRunFinancePulse ? [{ key: 'finance', label: 'Batch Ledger Check', icon: 'payments', onClick: handleFinancePulse }] : [])
   ];
 
   const handleSendMessage = async (e) => {
@@ -470,12 +470,12 @@ export default function AntigravityAssistant({
         const payload = await apiClient.post('/api/flockops-chat', {
           message: query,
           chatHistory: messages.filter(m => m.id !== 'welcome'),
-          context: buildFlockOpsContext()
+          context: buildFarmAssistantContext()
         });
 
-        addAssistantMessage(payload.reply || 'FlockOps is online, but I did not receive a usable reply. Try a shorter farm operations question.');
+        addAssistantMessage(payload.reply || 'The farm assistant is online, but I did not receive a usable reply. Try a shorter batch, feed, or ledger question.');
       } catch (error) {
-        addAssistantMessage(`FlockOps AI is offline right now: ${error.message}\n\nTry the quick actions below for farm-safe guidance while the backend catches up.`);
+        addAssistantMessage(`The farm assistant is offline right now: ${error.message}\n\nTry the farm shortcuts below for batch-safe guidance while the backend catches up.`);
       } finally {
         setIsTyping(false);
       }
@@ -491,14 +491,14 @@ export default function AntigravityAssistant({
     } else if (lowerQuery.includes('weather') || lowerQuery.includes('rain') || lowerQuery.includes('heat') || lowerQuery.includes('humidity')) {
       reply = 'Use **Weather Watch** for farm-specific reminders. For heat, prioritize water and ventilation. For rain, check drainage and litter moisture.';
     } else if (lowerQuery.includes('fcr') || lowerQuery.includes('feed conversion')) {
-      reply = '🌾 **Feed Conversion Ratio (FCR)** is feed consumed in kg divided by estimated live weight in kg. Use **Flock Briefing** to estimate it from the logs available to your role.';
+      reply = '🌾 **Feed Conversion Ratio (FCR)** is feed consumed in kg divided by estimated live weight in kg. Use **Batch Briefing** to estimate it from the logs available to your role.';
     } else if (lowerQuery.includes('mortality') || lowerQuery.includes('die') || lowerQuery.includes('dead')) {
       reply = `⚠️ Mortality is a crucial metric. If you see spikes, check ventilation, heating, water supply, and litter conditions. ${canOpenDailyLogs ? (canEnterDaily ? 'Record unusual mortality in **Daily Logs**.' : 'Review **Daily Logs** for the latest mortality pattern.') : 'Use the flock views available to your role for the latest pattern.'}`;
     } else if (lowerQuery.includes('harvest')) {
       reply = 'Use **Harvest Readiness** to check timing, latest weight, and live estimate. I will only suggest the Harvest screen when your role can open it.';
     } else if (lowerQuery.includes('finance') || lowerQuery.includes('ledger') || lowerQuery.includes('cost')) {
       reply = canRunFinancePulse
-        ? 'Use **Finance Pulse** for a quick income, expense, and net view of the current batch.'
+        ? 'Use **Batch Ledger Check** for a quick income, expense, and net view of the current batch.'
         : `Finance screens are not available to your current role. I can still help with ${availableFlowText}.`;
     } else if (lowerQuery.includes('gravity') || lowerQuery.includes('zero')) {
       reply = canOpenSettings
@@ -539,8 +539,8 @@ export default function AntigravityAssistant({
               ? 'bg-app-accent text-app-on-accent shadow-lg border-2 border-app-card rotate-90 transition-all duration-300 scale-100' 
               : 'bg-transparent text-transparent border-0 btn-assistant-spring shadow-lg'
           }`}
-          title="Toggle FlockOps Assistant"
-          aria-label="FlockOps Assistant"
+          title="Toggle Farm Assistant"
+          aria-label="Farm Assistant"
           style={{
             animationDuration: '3s'
           }}
@@ -570,10 +570,10 @@ export default function AntigravityAssistant({
                 <AssistantEgg />
               </div>
               <div>
-                <h3 className="text-sm font-black tracking-wider uppercase">FlockOps Assistant</h3>
+                <h3 className="text-sm font-black tracking-wider uppercase">Farm Assistant</h3>
                 <div className="flex items-center space-x-1.5 mt-0.5">
                   <span className="h-2 w-2 rounded-full bg-app-success"></span>
-                  <span className="text-[10px] text-app-on-accent/80 font-semibold uppercase">Ops Online</span>
+                  <span className="text-[10px] text-app-on-accent/80 font-semibold uppercase">Farm Desk Online</span>
                 </div>
               </div>
             </div>
@@ -658,7 +658,7 @@ export default function AntigravityAssistant({
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Ask FlockOps..."
+              placeholder="Ask about batches, logs, feed..."
               className="flex-1 bg-app-bg text-xs py-2 px-3 rounded-xl border border-app-border focus:outline-none focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 text-app-text placeholder-app-text-secondary"
             />
             <button

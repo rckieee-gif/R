@@ -63,7 +63,7 @@ export default function useNavigation({ canManageOperations, isPublicViewer, use
 
   const screensMeta = useMemo(() => [
     { id: 'today', label: 'Today', icon: 'today' },
-    { id: 'dashboard', label: 'Home', icon: 'home' },
+    { id: 'dashboard', label: 'Farm Overview', icon: 'dashboard' },
     { id: 'batches', label: 'Batches', icon: 'layers' },
     { id: 'employees', label: 'Employees', icon: 'group' },
     { id: 'paySummary', label: 'Pay Summary', icon: 'payments' },

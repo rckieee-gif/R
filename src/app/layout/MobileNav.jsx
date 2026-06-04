@@ -33,7 +33,7 @@ export default function MobileNav({
 
   // Group tabs dynamically by permissions
   const primaryTabs = [
-    { id: 'dashboard', label: 'Home', icon: 'home' },
+    { id: 'dashboard', label: 'Farm', icon: 'dashboard' },
     { id: 'today', label: 'Today', icon: 'today' },
     { id: 'dailyLog', label: 'Logs', icon: 'edit_note' },
     { id: 'inventory', label: 'Stock', icon: 'inventory' }

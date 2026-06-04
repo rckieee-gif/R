@@ -454,26 +454,26 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
   // 3. Quick Actions visibility filtering
   const quickActions = [
     {
-      label: 'Add Daily Log',
+      label: 'Record Daily Log',
       detail: 'Record daily mortality, feed, and weight',
       screen: 'dailyLog',
       visible: canEnterDaily
     },
     {
-      label: 'Add Expense',
-      detail: 'Record financial expenses in ledger',
+      label: 'Post Farm Expense',
+      detail: 'Record a farm cost in the ledger',
       screen: 'ledger',
       visible: canUseFinancialScreens
     },
     {
-      label: 'Add Feed & Inventory',
-      detail: 'Record stock feed usage or adjustments',
+      label: 'Record Feed Movement',
+      detail: 'Update feed stock usage or adjustments',
       screen: 'inventory',
       visible: canEnterDaily
     },
     {
-      label: 'View Reports',
-      detail: 'Analyze FCR, weight curves and trends',
+      label: 'Review Batch Reports',
+      detail: 'Check FCR, weight curves, and flock trends',
       screen: 'analytics',
       visible: true
     }
@@ -488,20 +488,20 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
       <div className="app-page text-dashboard-text min-h-screen p-6">
         <div className="mb-5 mt-2">
           <p className="text-xs font-bold uppercase tracking-widest text-dashboard-accent font-jetbrains">Octavio Poultry</p>
-          <h2 className="text-3xl font-bold tracking-tight mt-1 font-hanken">Home</h2>
+          <h2 className="text-3xl font-bold tracking-tight mt-1 font-hanken">Farm Overview</h2>
         </div>
 
         <div className="bg-dashboard-card border border-dashboard-border rounded-2xl p-6 shadow-lg max-w-md mx-auto mt-10">
           <p className="text-xl font-bold font-hanken">No active batch selected</p>
           <p className="text-sm text-dashboard-text-secondary mt-3 leading-relaxed">
-            Create or select an active flock batch before daily logging, performance monitoring, and production telemetry can be accessed here.
+            Create or select an active flock batch before daily logs, batch performance, and farm reports can be reviewed here.
           </p>
           <button
             type="button"
             onClick={() => setActiveScreen('batches')}
             className="w-full mt-6 bg-dashboard-accent text-dashboard-on-accent py-3.5 rounded-xl font-extrabold text-base shadow-md active:scale-95 transition-all cursor-pointer hover:opacity-90"
           >
-            Open Batches Portal
+            Open Batch Records
           </button>
         </div>
       </div>
@@ -516,7 +516,7 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
         <p className="text-xs font-bold uppercase tracking-widest text-dashboard-accent font-jetbrains">Octavio Poultry</p>
         <div className="flex items-start justify-between gap-3 mt-1">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-hanken">Home Portal</h2>
+            <h2 className="text-3xl font-bold tracking-tight font-hanken">Farm Overview</h2>
             <p className="text-xs text-dashboard-text-secondary font-jetbrains mt-1 bg-dashboard-card px-2 py-0.5 rounded border border-dashboard-border inline-block">
               Batch #{activeBatch.id}
             </p>
