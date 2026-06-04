@@ -18,6 +18,7 @@ import {
   getAgeDay,
   getLastBroilerTargetDay
 } from '../../shared/utils/broilerTargets';
+import { getArrivalMetrics } from '../../shared/utils/arrivalMetrics';
 
 const CHART_HEIGHT = 256;
 const CHART_INITIAL_DIMENSION = { width: 640, height: CHART_HEIGHT };
@@ -43,6 +44,11 @@ function formatNumber(amount, digits = 2) {
 function formatSignedNumber(amount, digits = 0) {
   if (amount === null || amount === undefined || Number.isNaN(Number(amount))) return '--';
   return `${Number(amount) > 0 ? '+' : ''}${formatNumber(amount, digits)}`;
+}
+
+function formatGrams(amount, digits = 1) {
+  if (amount === null || amount === undefined || Number.isNaN(Number(amount))) return '--';
+  return `${formatNumber(amount, digits)} g`;
 }
 
 function getCurveMaxDay(logs, startDate) {
@@ -206,7 +212,8 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
   const latestFeedPoint = feedCurve[feedCurve.length - 1] || null;
   const latestWeightPoint = [...feedCurve].reverse().find((point) => point.actualWeightGrams);
   const totalMortality = logs.reduce((sum, log) => sum + Number(log.mortality || 0), 0);
-  const actualLoaded = Number(activeBatch?.totalChicksLoaded || 0);
+  const arrivalMetrics = getArrivalMetrics(activeBatch);
+  const actualLoaded = Number(arrivalMetrics.arrivedDoc || activeBatch?.totalChicksLoaded || 0);
   const plannedFlock = Number(activeBatch?.plannedFlock || 0);
   const arrivalVariance = actualLoaded - plannedFlock;
   const hasArrivalPlan = plannedFlock > 0 && actualLoaded > 0;
@@ -273,7 +280,7 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
       </div>
       )}
 
-      <div className="screen-only grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+      <div className="screen-only grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3 mb-6">
         <div className="min-w-0 bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
           <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Feed Target Var.</p>
           <p className={`text-lg font-black mt-1 font-jetbrains ${(latestFeedPoint?.varianceKg || 0) > 0 ? 'text-app-danger' : 'text-app-success'}`}>
@@ -285,6 +292,36 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
           <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Mortality</p>
           <p className={`text-lg font-black mt-1 font-jetbrains ${mortalityToneClass}`}>
             {Number(totalMortality || 0).toLocaleString()} hd
+          </p>
+        </div>
+
+        <div className="min-w-0 bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Arrival DOA</p>
+          <p className="text-lg font-black mt-1 font-jetbrains text-app-danger">
+            {formatNumber(arrivalMetrics.doaCount, 0)}
+          </p>
+          <p className="mt-1 text-[11px] font-semibold leading-snug text-app-text-secondary">
+            Dead on arrival from DOC entry.
+          </p>
+        </div>
+
+        <div className="min-w-0 bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Net Placed</p>
+          <p className="text-lg font-black mt-1 font-jetbrains text-app-success">
+            {formatNumber(arrivalMetrics.netChicksPlaced, 0)}
+          </p>
+          <p className="mt-1 text-[11px] font-semibold leading-snug text-app-text-secondary">
+            Arrived DOC less DOA.
+          </p>
+        </div>
+
+        <div className="min-w-0 bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Arrival Sample Wt</p>
+          <p className="text-lg font-black mt-1 font-jetbrains text-app-text">
+            {formatGrams(arrivalMetrics.arrivalSampleWeightGrams)}
+          </p>
+          <p className="mt-1 text-[11px] font-semibold leading-snug text-app-text-secondary">
+            Weighted by arrived DOC.
           </p>
         </div>
 
@@ -355,6 +392,21 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
               <td>Arrival Variance</td>
               <td className="numeric font-jetbrains">{hasArrivalPlan ? formatSignedNumber(arrivalVariance, 0) : '--'}</td>
               <td>{arrivalVarianceDetail}</td>
+            </tr>
+            <tr>
+              <td>Arrival DOA</td>
+              <td className="numeric font-jetbrains">{formatNumber(arrivalMetrics.doaCount, 0)} heads</td>
+              <td>Dead on arrival from DOC quick-entry</td>
+            </tr>
+            <tr>
+              <td>Net Chicks Placed</td>
+              <td className="numeric font-jetbrains">{formatNumber(arrivalMetrics.netChicksPlaced, 0)} heads</td>
+              <td>Arrived DOC less DOA</td>
+            </tr>
+            <tr>
+              <td>Arrival Sample Weight</td>
+              <td className="numeric font-jetbrains">{formatGrams(arrivalMetrics.arrivalSampleWeightGrams)}</td>
+              <td>Weighted by arrived DOC per building</td>
             </tr>
             <tr>
               <td>{mortalityAllowanceLabel}</td>

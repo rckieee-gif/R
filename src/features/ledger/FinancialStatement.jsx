@@ -1,3 +1,5 @@
+import { getArrivalMetrics } from '../../shared/utils/arrivalMetrics';
+
 // We now receive the live 'transactions' from the App
 export default function FinancialStatement({ transactions = [], activeBatch }) {
   
@@ -62,12 +64,21 @@ export default function FinancialStatement({ transactions = [], activeBatch }) {
   const corpoRollyShare = buildingC_Gross * 0.50;
   const corpoJojitShare = buildingC_Gross * 0.50;
   const buildingC_Net = buildingC_Gross - batch.previousDeficit - batch.capex;
+  const arrivalMetrics = getArrivalMetrics(activeBatch);
 
   const formatMoney = (amount) => {
     return `PHP ${Number(amount || 0).toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     })}`;
+  };
+
+  const formatNumber = (amount, digits = 0) => {
+    if (amount === null || amount === undefined || Number.isNaN(Number(amount))) return '--';
+    return Number(amount).toLocaleString(undefined, {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits
+    });
   };
 
   return (
@@ -89,6 +100,29 @@ export default function FinancialStatement({ transactions = [], activeBatch }) {
       </div>
 
       <div className="print-card bg-app-card p-6 rounded-b-2xl shadow-sm border-x border-b border-app-border space-y-6 font-hanken">
+        <section>
+          <h3 className="text-[10px] font-black text-app-text-secondary uppercase tracking-wider border-b border-app-border/40 pb-1 mb-2.5">Arrival Summary</h3>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="rounded-xl border border-app-border/40 bg-app-bg p-2.5">
+              <p className="text-[10px] font-black uppercase text-app-text-secondary">Arrived DOC</p>
+              <p className="mt-1 font-black text-app-text font-jetbrains">{formatNumber(arrivalMetrics.arrivedDoc)}</p>
+            </div>
+            <div className="rounded-xl border border-app-border/40 bg-app-bg p-2.5">
+              <p className="text-[10px] font-black uppercase text-app-text-secondary">DOA</p>
+              <p className="mt-1 font-black text-app-danger font-jetbrains">{formatNumber(arrivalMetrics.doaCount)}</p>
+            </div>
+            <div className="rounded-xl border border-app-border/40 bg-app-bg p-2.5">
+              <p className="text-[10px] font-black uppercase text-app-text-secondary">Net placed</p>
+              <p className="mt-1 font-black text-app-success font-jetbrains">{formatNumber(arrivalMetrics.netChicksPlaced)}</p>
+            </div>
+            <div className="rounded-xl border border-app-border/40 bg-app-bg p-2.5">
+              <p className="text-[10px] font-black uppercase text-app-text-secondary">Sample wt</p>
+              <p className="mt-1 font-black text-app-text font-jetbrains">
+                {arrivalMetrics.arrivalSampleWeightGrams ? `${formatNumber(arrivalMetrics.arrivalSampleWeightGrams, 1)} g` : '--'}
+              </p>
+            </div>
+          </div>
+        </section>
         
         {/* REVENUE SECTION */}
         <section>

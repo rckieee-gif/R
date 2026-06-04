@@ -307,6 +307,62 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
     expect(overviewTab).toHaveClass('border-app-accent');
   });
 
+  it('shows arrival quick-entry totals in post-summary reports and building closeout', async () => {
+    server.use(
+      http.get(apiPath('/batches/:batchId/loadings'), () => json([
+        {
+          id: 1,
+          building: 'A',
+          chicksLoaded: 600,
+          doaCount: 8,
+          netChicksPlaced: 592,
+          sampleWeightGrams: 42.5,
+          loadingSharePct: 60,
+        },
+        {
+          id: 2,
+          building: 'B',
+          chicksLoaded: 400,
+          doaCount: 4,
+          netChicksPlaced: 396,
+          sampleWeightGrams: 41.5,
+          loadingSharePct: 40,
+        },
+      ]))
+    );
+
+    renderComponent({
+      activeBatch: {
+        ...mockBatchPostSummary,
+        id: 88,
+        totalChicksLoaded: 1000,
+        actualChicksArrived: 1000,
+        plannedFlock: 1000,
+        doaCount: 12,
+        netChicksPlaced: 988,
+        arrivalSampleWeightGrams: 42.1,
+      },
+      logs: [
+        { id: 1, date: '2026-04-02', building: 'A', feed: 2, mortality: 3, averageWeightGrams: 900 },
+        { id: 2, date: '2026-04-02', building: 'B', feed: 1, mortality: 2, averageWeightGrams: 880 },
+      ],
+    });
+
+    expect(await screen.findByText('Arrival Quality')).toBeInTheDocument();
+    expect(screen.getByText('Arrived DOC')).toBeInTheDocument();
+    expect(screen.getAllByText('Net placed').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Sample wt').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('12').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('988').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('42.1 g').length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('button', { name: /^Buildings$/i }));
+    expect(await screen.findByText('592')).toBeInTheDocument();
+    expect(screen.getByText('396')).toBeInTheDocument();
+    expect(screen.getByText('42.5 g')).toBeInTheDocument();
+    expect(screen.getByText('41.5 g')).toBeInTheDocument();
+  });
+
   it('ignores keys when focused on input fields', async () => {
     renderComponent();
 

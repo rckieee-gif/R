@@ -28,6 +28,10 @@ export const publicViewerBatch = {
   startDate,
   targetHarvestDate,
   totalChicksLoaded: 38500,
+  actualChicksArrived: 38500,
+  doaCount: 96,
+  netChicksPlaced: 38404,
+  arrivalSampleWeightGrams: 42.1,
   plannedFlock: 40000,
   mortalityAllowance: 200,
   targetFeedKg: 0,
@@ -35,9 +39,9 @@ export const publicViewerBatch = {
 };
 
 export const publicViewerLoadings = [
-  { building: 'A', owner: 'Rolly', chicksLoaded: 16500, loadingSharePct: 42.8571, remarks: 'Preview loading' },
-  { building: 'B', owner: 'Rodney', chicksLoaded: 8600, loadingSharePct: 22.3377, remarks: 'Preview loading' },
-  { building: 'C', owner: 'Rolly + Rodney', chicksLoaded: 13400, loadingSharePct: 34.8052, remarks: 'Preview loading' }
+  { building: 'A', owner: 'Rolly', chicksLoaded: 16500, doaCount: 41, netChicksPlaced: 16459, sampleWeightGrams: 42, loadingSharePct: 42.8571, remarks: 'Preview loading' },
+  { building: 'B', owner: 'Rodney', chicksLoaded: 8600, doaCount: 20, netChicksPlaced: 8580, sampleWeightGrams: 41.6, loadingSharePct: 22.3377, remarks: 'Preview loading' },
+  { building: 'C', owner: 'Rolly + Rodney', chicksLoaded: 13400, doaCount: 35, netChicksPlaced: 13365, sampleWeightGrams: 42.5, loadingSharePct: 34.8052, remarks: 'Preview loading' }
 ];
 
 export const publicViewerAssignments = [
@@ -149,6 +153,10 @@ export const publicViewerBatches = [
     startDate: dateOffset(-56),
     targetHarvestDate: dateOffset(-23),
     totalChicksLoaded: 37200,
+    actualChicksArrived: 37200,
+    doaCount: 88,
+    netChicksPlaced: 37112,
+    arrivalSampleWeightGrams: 41.8,
     plannedFlock: 38000,
     targetFeedKg: 0,
     notes: 'Previous preview cycle'

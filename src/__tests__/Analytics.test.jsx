@@ -30,6 +30,10 @@ describe('Analytics report context', () => {
           id: 1,
           startDate: '2026-05-20',
           totalChicksLoaded: 900,
+          actualChicksArrived: 900,
+          doaCount: 12,
+          netChicksPlaced: 888,
+          arrivalSampleWeightGrams: 42.5,
           plannedFlock: 1000,
           mortalityAllowance: 50
         }}
@@ -43,6 +47,13 @@ describe('Analytics report context', () => {
     expect(screen.getAllByText('Arrival Variance').length).toBeGreaterThan(0);
     expect(screen.getAllByText('-100').length).toBeGreaterThan(0);
     expect(screen.getAllByText('100 fewer than planned.').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Arrival DOA').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Net Placed').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Arrival Sample Wt').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('12').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('888').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('42.5 g').length).toBeGreaterThan(0);
+    expect(screen.getByText('Net Chicks Placed')).toBeInTheDocument();
     expect(screen.getAllByText('Mortality Allowance').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Allowance exceeded.').length).toBeGreaterThan(0);
 

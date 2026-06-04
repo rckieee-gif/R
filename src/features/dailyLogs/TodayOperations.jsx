@@ -10,6 +10,7 @@ import {
 } from '../../shared/utils/broilerTargets';
 import OfflineStaleBanner from '../../shared/components/OfflineStaleBanner';
 import { useNotification } from '../../shared/hooks/useNotification';
+import { getArrivalMetrics } from '../../shared/utils/arrivalMetrics';
 
 const FEED_VARIANCE_WARNING_PERCENT = 15;
 const MORTALITY_WARNING_RATE = 0.005;
@@ -1344,7 +1345,8 @@ export default function TodayOperations({
     const targetDay = summaryAgeDay ? Math.min(summaryAgeDay, lastTargetDay) : null;
     const batchTotals = buildLogTotals(logs);
     const loadedFromLoadings = activeLoadings.reduce((sum, loading) => sum + Number(loading.chicksLoaded || 0), 0);
-    const loadedBirds = Number(activeBatch.totalChicksLoaded || 0) || loadedFromLoadings;
+    const arrivalMetrics = getArrivalMetrics(activeBatch, activeLoadings);
+    const loadedBirds = Number(arrivalMetrics.arrivedDoc || activeBatch.totalChicksLoaded || 0) || loadedFromLoadings;
     const estimatedLiveBirds = loadedBirds > 0 ? Math.max(loadedBirds - batchTotals.mortality, 0) : 0;
     const mortalityRate = loadedBirds > 0 ? (batchTotals.mortality / loadedBirds) * 100 : null;
     const survivalRate = loadedBirds > 0 ? (estimatedLiveBirds / loadedBirds) * 100 : null;
@@ -1390,6 +1392,9 @@ export default function TodayOperations({
       return {
         building: loading.building,
         loadedBirds: buildingLoaded,
+        doaCount: Number(loading.doaCount || 0),
+        netChicksPlaced: Number(loading.netChicksPlaced || Math.max(buildingLoaded - Number(loading.doaCount || 0), 0)),
+        sampleWeightGrams: Number(loading.sampleWeightGrams || 0) || null,
         estimatedLiveBirds: buildingLiveBirds,
         mortality: buildingTotals.mortality,
         mortalityRate: buildingLoaded > 0 ? (buildingTotals.mortality / buildingLoaded) * 100 : null,
@@ -1421,6 +1426,7 @@ export default function TodayOperations({
       summaryAgeDay,
       latestLogDate,
       loadedBirds,
+      arrival: arrivalMetrics,
       estimatedLiveBirds,
       mortality: batchTotals.mortality,
       mortalityRate,
@@ -2181,7 +2187,7 @@ export default function TodayOperations({
         : 'success';
 
     return (
-      <div className="app-page text-app-text">
+      <div className="print-container app-page text-app-text">
         <div className="mb-5 mt-2">
           <p className="text-xs font-bold uppercase tracking-wider text-app-text-secondary font-inter">Operations</p>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -2191,7 +2197,7 @@ export default function TodayOperations({
                 Batch {activeBatch.id} - {postSummary.status || 'Closed'} - {formatDate(postSummary.summaryDate)}
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:min-w-72">
+            <div className="grid grid-cols-2 gap-2 sm:min-w-72 lg:grid-cols-3">
               <button
                 type="button"
                 onClick={() => setActiveScreen('dailyLog')}
@@ -2205,6 +2211,13 @@ export default function TodayOperations({
                 className="rounded-xl border border-app-border bg-app-card px-3 py-3 text-xs font-black text-app-text-secondary shadow-sm active:scale-[0.98] hover:text-app-text transition-all duration-200 cursor-pointer font-inter"
               >
                 Open Reports
+              </button>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="no-print col-span-2 rounded-xl border border-app-border bg-app-card px-3 py-3 text-xs font-black text-app-text-secondary shadow-sm active:scale-[0.98] hover:text-app-text transition-all duration-200 cursor-pointer font-inter lg:col-span-1"
+              >
+                Print Summary
               </button>
             </div>
           </div>
@@ -2292,6 +2305,44 @@ export default function TodayOperations({
               isLoading={isLoading}
             />
           </div>
+
+          <section className="mt-6">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h3 className="text-sm font-extrabold uppercase tracking-wide text-app-accent font-hanken">Arrival Quality</h3>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary font-inter">
+                From arrived DOC entry
+              </span>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <SummaryMetric
+                label="Arrived DOC"
+                value={formatNumber(postSummary.arrival.arrivedDoc)}
+                detail={`Planned ${formatNumber(activeBatch?.plannedFlock || postSummary.arrival.arrivedDoc)}`}
+                isLoading={isLoading}
+              />
+              <SummaryMetric
+                label="DOA"
+                value={formatNumber(postSummary.arrival.doaCount)}
+                detail="Dead on arrival before placement"
+                tone={postSummary.arrival.doaCount > 0 ? 'warning' : 'success'}
+                isLoading={isLoading}
+              />
+              <SummaryMetric
+                label="Net placed"
+                value={formatNumber(postSummary.arrival.netChicksPlaced)}
+                detail="Arrived DOC less DOA"
+                tone="success"
+                isLoading={isLoading}
+              />
+              <SummaryMetric
+                label="Sample wt"
+                value={postSummary.arrival.arrivalSampleWeightGrams ? `${formatNumber(postSummary.arrival.arrivalSampleWeightGrams, 1)} g` : '--'}
+                detail="Weighted by arrived DOC per building"
+                isLoading={isLoading}
+              />
+            </div>
+          </section>
 
           <section className="mt-6">
             <div className="mb-3 flex items-center justify-between gap-3">
@@ -2388,6 +2439,9 @@ export default function TodayOperations({
                 <tr>
                   <th className="px-4 py-3">Building</th>
                   <th className="px-4 py-3 text-right">Loaded</th>
+                  <th className="px-4 py-3 text-right">DOA</th>
+                  <th className="px-4 py-3 text-right">Net placed</th>
+                  <th className="px-4 py-3 text-right">Sample wt</th>
                   <th className="px-4 py-3 text-right">Est. live</th>
                   <th className="px-4 py-3 text-right">Mortality</th>
                   <th className="px-4 py-3 text-right">Feed</th>
@@ -2401,6 +2455,9 @@ export default function TodayOperations({
                   Array.from({ length: 3 }).map((_, idx) => (
                     <tr key={idx} className="animate-pulse">
                       <td className="px-4 py-3"><div className="h-4 w-24 bg-app-border/40 rounded"></div></td>
+                      <td className="px-4 py-3 text-right"><div className="h-4 w-12 bg-app-border/40 rounded ml-auto"></div></td>
+                      <td className="px-4 py-3 text-right"><div className="h-4 w-12 bg-app-border/40 rounded ml-auto"></div></td>
+                      <td className="px-4 py-3 text-right"><div className="h-4 w-12 bg-app-border/40 rounded ml-auto"></div></td>
                       <td className="px-4 py-3 text-right"><div className="h-4 w-12 bg-app-border/40 rounded ml-auto"></div></td>
                       <td className="px-4 py-3 text-right"><div className="h-4 w-12 bg-app-border/40 rounded ml-auto"></div></td>
                       <td className="px-4 py-3 text-right"><div className="h-4 w-12 bg-app-border/40 rounded ml-auto"></div></td>
@@ -2421,6 +2478,15 @@ export default function TodayOperations({
                       </td>
                       <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
                         {formatNumber(summary.loadedBirds)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-app-danger font-jetbrains">
+                        {formatNumber(summary.doaCount)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-app-success font-jetbrains">
+                        {formatNumber(summary.netChicksPlaced)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
+                        {summary.sampleWeightGrams ? `${formatNumber(summary.sampleWeightGrams, 1)} g` : '--'}
                       </td>
                       <td className="px-4 py-3 text-right font-bold text-app-text font-jetbrains">
                         {formatNumber(summary.estimatedLiveBirds)}
