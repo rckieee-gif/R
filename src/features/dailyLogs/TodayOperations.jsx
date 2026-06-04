@@ -161,8 +161,10 @@ function hasPositiveNumber(value) {
   return Number(value || 0) > 0;
 }
 
-function hasArrivedDocInput(batch, logRows, ageDay, today) {
+function hasArrivedDocInput(batch, ageDay) {
   if (!batch) return false;
+
+  if (readArrivedDocConfirmation(batch.id) > 0) return true;
 
   const hasExplicitArrivedDocField = ARRIVED_DOC_FIELD_KEYS.some((key) => hasOwnField(batch, key));
   if (hasExplicitArrivedDocField) {
@@ -172,10 +174,7 @@ function hasArrivedDocInput(batch, logRows, ageDay, today) {
   const loadedHeads = Number(batch.totalChicksLoaded || 0);
   if (loadedHeads <= 0) return false;
 
-  if (readArrivedDocConfirmation(batch.id) > 0) return true;
-
-  const hasTodayLog = logRows.some((log) => log.date === today);
-  if (ageDay !== null && ageDay <= 1 && !hasTodayLog) return false;
+  if (ageDay !== null && ageDay <= 1) return false;
 
   return true;
 }
@@ -884,7 +883,7 @@ export default function TodayOperations({
 
   const status = getBatchStatus(activeBatch);
   const daysUntilArrival = activeBatch?.startDate ? diffDays(activeBatch.startDate, today) : null;
-  const arrivedDocInputReady = hasArrivedDocInput(activeBatch, logs, ageDay, today);
+  const arrivedDocInputReady = hasArrivedDocInput(activeBatch, ageDay);
   const isPostSummaryMode = isPostBatch(activeBatch);
   const isPrePlacementMode = !isPostSummaryMode && !arrivedDocInputReady;
   const isOnTheWay = !isPostSummaryMode && (
