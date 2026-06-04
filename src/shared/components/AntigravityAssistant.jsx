@@ -531,7 +531,7 @@ export default function AntigravityAssistant({
         </div>
       )}
 
-      <div className="no-print fixed bottom-6 right-6 z-50">
+      <div className="no-print fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50">
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={`h-14 w-14 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-bg ${
@@ -562,7 +562,7 @@ export default function AntigravityAssistant({
       </div>
 
       {isOpen && (
-        <div className="no-print fixed bottom-24 right-6 z-50 w-[92vw] sm:w-[420px] h-[520px] rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 animate-[fadeIn_0.2s_ease-out] border border-app-border bg-app-card/95 backdrop-blur-xl">
+        <div className="no-print fixed bottom-20 md:bottom-24 right-4 md:right-6 z-50 w-[92vw] sm:w-[420px] h-[520px] rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 animate-[fadeIn_0.2s_ease-out] border border-app-border bg-app-card/95 backdrop-blur-xl">
           <div className="absolute inset-0 pointer-events-none opacity-30 bg-app-accent/5" aria-hidden="true" />
           <div className="relative bg-app-accent text-app-on-accent p-4 flex items-center justify-between border-b border-app-border">
             <div className="flex items-center space-x-3">
