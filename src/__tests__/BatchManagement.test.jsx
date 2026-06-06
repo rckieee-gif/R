@@ -40,6 +40,36 @@ describe('BatchManagement', () => {
     expect(screen.queryByText('No batches created yet.')).not.toBeInTheDocument();
   });
 
+  it('keeps batch-history arrival variance neutral until arrived DOC is recorded', () => {
+    const incomingBatch = {
+      id: '20260604-02',
+      startDate: '2026-06-04',
+      status: 'ON_THE_WAY',
+      totalChicksLoaded: 900,
+      actualChicksArrived: 0,
+      plannedFlock: 1000,
+      mortalityAllowance: 50
+    };
+
+    render(
+      <NotificationProvider>
+        <BatchManagement
+          activeBatch={incomingBatch}
+          setActiveBatch={vi.fn()}
+          token={null}
+          readOnly={true}
+          batchList={[incomingBatch]}
+          isBatchListLoading={false}
+        />
+      </NotificationProvider>
+    );
+
+    expect(screen.getByText('Arrival variance')).toBeInTheDocument();
+    expect(screen.getByText('Enter building chick counts when the delivery arrives.')).toBeInTheDocument();
+    expect(screen.queryByText('-100')).not.toBeInTheDocument();
+    expect(screen.queryByText('100 below planned flock (-10%).')).not.toBeInTheDocument();
+  });
+
   it('selects and hands off an incoming batch after starting its cycle', async () => {
     const activeBatch = {
       id: '20260604-01',
@@ -102,6 +132,7 @@ describe('BatchManagement', () => {
     expect(patches[0]).toEqual(expect.objectContaining({
       status: 'ONGOING',
       totalChicksLoaded: 1000,
+      actualChicksArrived: 1000,
       doaCount: 12,
       netChicksPlaced: 988,
       arrivalSampleWeightGrams: 42.5,

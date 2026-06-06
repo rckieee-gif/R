@@ -10,6 +10,7 @@ import { openDatabase, removeFromQueue, updateQueueStatus, getQueue } from '../.
 import { processSyncQueue } from '../../offline/syncQueue';
 import { apiClient } from '../../shared/utils/apiClient';
 import OfflineStaleBanner from '../../shared/components/OfflineStaleBanner';
+import { getArrivalMetrics } from '../../shared/utils/arrivalMetrics';
 
 async function updateQueuePayload(id, nextPayload) {
   const db = await openDatabase();
@@ -92,6 +93,19 @@ function getQueueItemLabel(item) {
   }
 }
 
+function getOperationalHeadCount(batch, arrivalMetrics) {
+  const arrivedDoc = Number(arrivalMetrics?.arrivedDoc || 0);
+  const doaCount = Number(arrivalMetrics?.doaCount || 0);
+  const netChicksPlaced = Number(arrivalMetrics?.netChicksPlaced || 0);
+
+  if (arrivedDoc > 0) {
+    if (netChicksPlaced > 0 || doaCount > 0) return Math.max(netChicksPlaced, 0);
+    return arrivedDoc;
+  }
+
+  return Number(batch?.totalChicksLoaded || 0);
+}
+
 function ActionButton({ label, detail, onClick, primary = false }) {
   return (
     <button
@@ -121,16 +135,22 @@ function ActionButton({ label, detail, onClick, primary = false }) {
 export default function Dashboard({ setActiveScreen, logs = [], activeBatch, user }) {
   const today = todayInput();
   const currentAgeDays = activeBatch?.startDate ? getAgeDay(activeBatch.startDate, today) : null;
-  const actualLoaded = Number(activeBatch?.totalChicksLoaded || 0);
+  const [feedItems, setFeedItems] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [loadings, setLoadings] = useState([]);
+  const [queueItems, setQueueItems] = useState([]);
+  const arrivalMetrics = getArrivalMetrics(activeBatch, loadings);
+  const actualLoaded = Number(arrivalMetrics.arrivedDoc || 0);
+  const operationalHeads = getOperationalHeadCount(activeBatch, arrivalMetrics);
   const plannedFlock = Number(activeBatch?.plannedFlock || 0);
   const arrivalVariance = actualLoaded - plannedFlock;
   const totalMortality = logs.reduce((sum, log) => sum + Number(log.mortality || 0), 0);
-  const liveBirds = Math.max(actualLoaded - totalMortality, 0);
-  const mortalityPercent = actualLoaded > 0 ? (totalMortality / actualLoaded) * 100 : 0;
+  const liveBirds = Math.max(operationalHeads - totalMortality, 0);
+  const mortalityPercent = operationalHeads > 0 ? (totalMortality / operationalHeads) * 100 : 0;
   const configuredMortalityAllowance = Number(activeBatch?.mortalityAllowance || 0);
   const batchThreshold = configuredMortalityAllowance > 0
     ? configuredMortalityAllowance
-    : Math.max(5, Math.ceil(actualLoaded * 0.005));
+    : Math.max(5, Math.ceil(operationalHeads * 0.005));
   const mortalityAllowanceUsedPercent = batchThreshold > 0
     ? Math.min(100, (totalMortality / batchThreshold) * 100)
     : 0;
@@ -142,7 +162,7 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
   const totalFeedBags = logs.reduce((sum, log) => sum + Number(log.feed || 0), 0);
   const totalFeedKg = totalFeedBags * BAG_WEIGHT_KG;
 
-  const feedTarget = calculateTargetFeedForHeads(actualLoaded, currentAgeDays);
+  const feedTarget = calculateTargetFeedForHeads(operationalHeads, currentAgeDays);
 
   const varianceKg = feedTarget ? totalFeedKg - feedTarget.targetKg : null;
   const variancePercent = feedTarget?.targetKg ? (varianceKg / feedTarget.targetKg) * 100 : null;
@@ -151,12 +171,6 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
   const canEnterDaily = hasMinimumRole(user?.role, 'DataEntry');
   const canUseFinancialScreens = hasMinimumRole(user?.role, 'OperationManager');
 
-  // Dashboard API Telemetry and Offline states
-  const [feedItems, setFeedItems] = useState([]);
-  const [transactions, setTransactions] = useState([]);
-  const [loadings, setLoadings] = useState([]);
-  const [queueItems, setQueueItems] = useState([]);
-  
   // JSON payload editor states
   const [editingItem, setEditingItem] = useState(null);
   const [editPayloadStr, setEditPayloadStr] = useState('');

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState, useEffect, useMemo, useRef } from 'react';
 import { BAG_WEIGHT_KG, getAgeDay } from '../utils/broilerTargets';
 import { apiClient } from '../utils/apiClient';
+import { getArrivalMetrics } from '../utils/arrivalMetrics';
 
 const EggModel = lazy(() => import('./EggModel'));
 
@@ -82,6 +83,19 @@ function getLatestWeightLog(logs) {
     .sort((left, right) => String(right.date || '').localeCompare(String(left.date || '')))[0] || null;
 }
 
+function getOperationalHeadCount(batch, arrivalMetrics) {
+  const arrivedDoc = Number(arrivalMetrics?.arrivedDoc || 0);
+  const doaCount = Number(arrivalMetrics?.doaCount || 0);
+  const netChicksPlaced = Number(arrivalMetrics?.netChicksPlaced || 0);
+
+  if (arrivedDoc > 0) {
+    if (netChicksPlaced > 0 || doaCount > 0) return Math.max(netChicksPlaced, 0);
+    return arrivedDoc;
+  }
+
+  return Number(batch?.totalChicksLoaded || 0);
+}
+
 function getWelcomeText({ isZeroGravity, userName, isPublicViewer, canViewFinancial, canEnterDaily, availableFlowText }) {
   const gravityLine = isZeroGravity
     ? 'Floating UI enabled. Farm checks stay grounded.'
@@ -151,7 +165,8 @@ export default function AntigravityAssistant({
   const chatEndRef = useRef(null);
 
   const batchMetrics = useMemo(() => {
-    const loaded = Number(activeBatch?.totalChicksLoaded || 0);
+    const arrival = getArrivalMetrics(activeBatch);
+    const loaded = getOperationalHeadCount(activeBatch, arrival);
     const totalMortality = logs.reduce((sum, log) => sum + Number(log.mortality || 0), 0);
     const liveBirds = Math.max(loaded - totalMortality, 0);
     const mortalityPercent = loaded > 0 ? (totalMortality / loaded) * 100 : 0;
@@ -169,6 +184,7 @@ export default function AntigravityAssistant({
 
     return {
       loaded,
+      arrival,
       totalMortality,
       liveBirds,
       mortalityPercent,
@@ -266,6 +282,9 @@ export default function AntigravityAssistant({
           targetHarvestDate: activeBatch.targetHarvestDate,
           status: activeBatch.status,
           totalChicksLoaded: activeBatch.totalChicksLoaded,
+          actualChicksArrived: activeBatch.actualChicksArrived,
+          doaCount: activeBatch.doaCount,
+          netChicksPlaced: activeBatch.netChicksPlaced,
           plannedFlock: activeBatch.plannedFlock,
           targetFeedKg: activeBatch.targetFeedKg
         }

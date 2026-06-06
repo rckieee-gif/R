@@ -11,6 +11,7 @@ function buildSnapshot(batchOverrides = {}, logs = []) {
       startDate: '2026-06-10',
       targetHarvestDate: '2026-07-15',
       totalChicksLoaded: 900,
+      actualChicksArrived: 900,
       plannedFlock: 1000,
       mortalityAllowance: 20,
       targetFeedKg: 5200,
@@ -53,6 +54,26 @@ describe('IntroPage public preview signals', () => {
     expect(screen.getAllByText('Mortality allowance').length).toBeGreaterThan(0);
     expect(screen.getByText('25 / 20')).toBeInTheDocument();
     expect(screen.getByText('Allowance exceeded.')).toBeInTheDocument();
+  });
+
+  it('keeps pre-arrival warning cards neutral until arrived DOC is recorded', () => {
+    render(
+      <IntroPage
+        onContinueAsViewer={vi.fn()}
+        onMemberLogin={vi.fn()}
+        preloadedSnapshot={buildSnapshot({ actualChicksArrived: 0 }, [
+          { id: 1, date: '2026-06-10', building: 'A', mortality: 25 }
+        ])}
+      />
+    );
+
+    expect(screen.getByText('Pre-Arrival Prep')).toBeInTheDocument();
+    expect(screen.getByText('ARRIVAL VARIANCE')).toBeInTheDocument();
+    expect(screen.getByText('Enter building chick counts when the delivery arrives.')).toBeInTheDocument();
+    expect(screen.getByText('Record arrived DOC to track mortality allowance.')).toBeInTheDocument();
+    expect(screen.queryByText('-100')).not.toBeInTheDocument();
+    expect(screen.queryByText('100 below planned flock (-10%).')).not.toBeInTheDocument();
+    expect(screen.queryByText('Allowance exceeded.')).not.toBeInTheDocument();
   });
 
   it('adds the same batch warnings to the active viewer preview list', () => {

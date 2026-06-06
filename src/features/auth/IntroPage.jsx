@@ -169,21 +169,19 @@ export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerL
     : 980;
 
   const previewSignals = useMemo(() => {
-    const loadedFromBuildings = preloadedSnapshot
-      ? (preloadedSnapshot.loadings || []).reduce((sum, loading) => sum + Number(loading.chicksLoaded || 0), 0)
-      : 0;
     const signalBatch = batch
-      ? {
-          ...batch,
-          totalChicksLoaded: Number(batch.totalChicksLoaded || 0) || loadedFromBuildings
-        }
+      ? { ...batch }
       : {
           totalChicksLoaded: 0,
           plannedFlock: 40000,
           mortalityAllowance: 200
         };
 
-    return preloadedSnapshot?.previewSignals || getBatchWarningSignals(signalBatch, preloadedSnapshot?.logs || []);
+    return preloadedSnapshot?.previewSignals || getBatchWarningSignals(
+      signalBatch,
+      preloadedSnapshot?.logs || [],
+      preloadedSnapshot?.loadings || []
+    );
   }, [batch, preloadedSnapshot]);
   const arrivalSignal = previewSignals.arrival;
   const mortalitySignal = previewSignals.mortality;

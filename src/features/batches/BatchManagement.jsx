@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../shared/utils/apiClient';
 import { useNotification } from '../../shared/hooks/useNotification';
-import { getArrivalVarianceMeta } from '../../shared/utils/batchSignals';
+import { getArrivalVarianceMeta, getBatchWarningSignals } from '../../shared/utils/batchSignals';
 
 function toDateInput(value) {
   return value?.split('T')[0] || value || '';
@@ -309,6 +309,7 @@ export default function BatchManagement({
       startDate,
       targetHarvestDate,
       totalChicksLoaded: loadingTotal,
+      actualChicksArrived: isStartingCycle ? loadingTotal : 0,
       doaCount: doaTotal,
       netChicksPlaced: netPlacedTotal,
       arrivalSampleWeightGrams,
@@ -766,7 +767,7 @@ export default function BatchManagement({
 
         <div className="space-y-3">
           {visibleBatches.map((batch) => {
-            const arrivalVariance = getArrivalVarianceMeta(batch.totalChicksLoaded, batch.plannedFlock);
+            const arrivalVariance = getBatchWarningSignals(batch).arrival;
 
             return (
               <div

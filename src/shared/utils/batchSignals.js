@@ -1,3 +1,5 @@
+import { getArrivalMetrics } from './arrivalMetrics';
+
 export const MORTALITY_WARNING_RATE = 0.005;
 export const MORTALITY_WARNING_HEADS = 5;
 
@@ -15,9 +17,10 @@ function formatPercent(value) {
   return Number.isInteger(numberValue) ? String(numberValue) : numberValue.toFixed(2);
 }
 
-export function getArrivalVarianceMeta(actualChicks, plannedChicks) {
+export function getArrivalVarianceMeta(actualChicks, plannedChicks, options = {}) {
   const actual = Number(actualChicks || 0);
   const planned = Number(plannedChicks || 0);
+  const hasArrivalData = options.hasArrivalData ?? actual > 0;
 
   if (planned <= 0) {
     return {
@@ -31,7 +34,7 @@ export function getArrivalVarianceMeta(actualChicks, plannedChicks) {
     };
   }
 
-  if (actual <= 0) {
+  if (!hasArrivalData || actual <= 0) {
     return {
       value: '--',
       detail: 'Enter building chick counts when the delivery arrives.',
@@ -71,13 +74,32 @@ export function getArrivalVarianceMeta(actualChicks, plannedChicks) {
   };
 }
 
-export function getMortalityAllowanceMeta(batch, logs = []) {
+export function getMortalityAllowanceMeta(batch, logs = [], loadings = []) {
   const totalMortality = logs.reduce((sum, log) => sum + Number(log.mortality || 0), 0);
-  const loadedBirds = Number(batch?.totalChicksLoaded || 0);
+  const arrivalMetrics = getArrivalMetrics(batch, loadings);
+  const loadedBirds = Number(arrivalMetrics.arrivedDoc || 0);
   const configuredAllowance = Number(batch?.mortalityAllowance || 0);
   const allowanceLimit = configuredAllowance > 0
     ? configuredAllowance
     : Math.max(MORTALITY_WARNING_HEADS, Math.ceil(loadedBirds * MORTALITY_WARNING_RATE));
+  const label = configuredAllowance > 0 ? 'Mortality allowance' : 'Mortality warning limit';
+
+  if (loadedBirds <= 0) {
+    return {
+      label,
+      value: `-- / ${formatSignalNumber(allowanceLimit)}`,
+      detail: 'Record arrived DOC to track mortality allowance.',
+      severity: 'neutral',
+      hasWarning: false,
+      totalMortality,
+      configuredAllowance,
+      allowanceLimit,
+      usedPercent: 0,
+      remaining: allowanceLimit,
+      mortalityRate: null
+    };
+  }
+
   const usedPercent = allowanceLimit > 0
     ? Math.min(100, (totalMortality / allowanceLimit) * 100)
     : 0;
@@ -88,7 +110,6 @@ export function getMortalityAllowanceMeta(batch, logs = []) {
     : totalMortality <= allowanceLimit * 2
       ? 'warning'
       : 'danger';
-  const label = configuredAllowance > 0 ? 'Mortality allowance' : 'Mortality warning limit';
   const detail = remaining > 0
     ? `${formatSignalNumber(remaining)} heads remaining before alert.`
     : `${configuredAllowance > 0 ? 'Allowance' : 'Warning limit'} exceeded.`;
@@ -108,9 +129,12 @@ export function getMortalityAllowanceMeta(batch, logs = []) {
   };
 }
 
-export function getBatchWarningSignals(batch, logs = []) {
-  const arrival = getArrivalVarianceMeta(batch?.totalChicksLoaded, batch?.plannedFlock);
-  const mortality = getMortalityAllowanceMeta(batch, logs);
+export function getBatchWarningSignals(batch, logs = [], loadings = []) {
+  const arrivalMetrics = getArrivalMetrics(batch, loadings);
+  const arrival = getArrivalVarianceMeta(arrivalMetrics.arrivedDoc, batch?.plannedFlock, {
+    hasArrivalData: arrivalMetrics.arrivedDoc > 0
+  });
+  const mortality = getMortalityAllowanceMeta(batch, logs, loadings);
   const warnings = [];
 
   if (arrival.hasWarning) {
@@ -135,6 +159,7 @@ export function getBatchWarningSignals(batch, logs = []) {
 
   return {
     arrival,
+    arrivalMetrics,
     mortality,
     warnings
   };

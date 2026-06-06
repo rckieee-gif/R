@@ -1,5 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
-import { vi } from 'vitest';
+import { afterEach, vi } from 'vitest';
 import Analytics from '../features/analytics/Analytics';
 
 vi.mock('recharts', () => {
@@ -18,6 +18,10 @@ vi.mock('recharts', () => {
     Tooltip: ChartPart,
     Legend: ChartPart
   };
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('Analytics report context', () => {
@@ -90,5 +94,34 @@ describe('Analytics report context', () => {
       .find((element) => element.tagName === 'P');
     const limitCard = limitCardLabel.closest('div');
     expect(within(limitCard).getByText('12 / 5')).toHaveClass('text-app-danger');
+  });
+
+  it('uses net placed heads for feed targets and mortality limits after DOA is recorded', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-06T00:00:00Z'));
+
+    render(
+      <Analytics
+        showFinancials={false}
+        transactions={[]}
+        activeBatch={{
+          id: 3,
+          startDate: '2026-06-06',
+          totalChicksLoaded: 1000,
+          actualChicksArrived: 1000,
+          doaCount: 100,
+          netChicksPlaced: 900,
+          plannedFlock: 1000,
+          mortalityAllowance: 0
+        }}
+        logs={[
+          { id: 1, date: '2026-06-06', feed: 1, mortality: 6 }
+        ]}
+      />
+    );
+
+    expect(screen.getAllByText('+37 kg').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('6 / 5').length).toBeGreaterThan(0);
+    expect(screen.queryByText('6 / 10')).not.toBeInTheDocument();
   });
 });

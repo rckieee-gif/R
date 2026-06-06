@@ -119,10 +119,27 @@ function buildFeedCurveForHeads(logs, startDate, headCount) {
   });
 }
 
-function buildFeedCurve(logs, activeBatch) {
-  if (!activeBatch?.startDate || !activeBatch?.totalChicksLoaded) return [];
+function getOperationalHeadCount(batch, arrivalMetrics) {
+  const arrivedDoc = Number(arrivalMetrics?.arrivedDoc || 0);
+  const doaCount = Number(arrivalMetrics?.doaCount || 0);
+  const netChicksPlaced = Number(arrivalMetrics?.netChicksPlaced || 0);
 
-  return buildFeedCurveForHeads(logs, activeBatch.startDate, activeBatch.totalChicksLoaded);
+  if (arrivedDoc > 0) {
+    if (netChicksPlaced > 0 || doaCount > 0) return Math.max(netChicksPlaced, 0);
+    return arrivedDoc;
+  }
+
+  return Number(batch?.totalChicksLoaded || 0);
+}
+
+function buildFeedCurve(logs, activeBatch) {
+  if (!activeBatch?.startDate) return [];
+
+  const arrivalMetrics = getArrivalMetrics(activeBatch);
+  const operationalHeads = getOperationalHeadCount(activeBatch, arrivalMetrics);
+  if (!operationalHeads) return [];
+
+  return buildFeedCurveForHeads(logs, activeBatch.startDate, operationalHeads);
 }
 
 function buildEmployeeFeedCurves(logs, activeBatch) {
@@ -213,7 +230,8 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
   const latestWeightPoint = [...feedCurve].reverse().find((point) => point.actualWeightGrams);
   const totalMortality = logs.reduce((sum, log) => sum + Number(log.mortality || 0), 0);
   const arrivalMetrics = getArrivalMetrics(activeBatch);
-  const actualLoaded = Number(arrivalMetrics.arrivedDoc || activeBatch?.totalChicksLoaded || 0);
+  const actualLoaded = Number(arrivalMetrics.arrivedDoc || 0);
+  const operationalHeads = getOperationalHeadCount(activeBatch, arrivalMetrics);
   const plannedFlock = Number(activeBatch?.plannedFlock || 0);
   const arrivalVariance = actualLoaded - plannedFlock;
   const hasArrivalPlan = plannedFlock > 0 && actualLoaded > 0;
@@ -228,7 +246,7 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
   const configuredMortalityAllowance = Number(activeBatch?.mortalityAllowance || 0);
   const batchThreshold = configuredMortalityAllowance > 0
     ? configuredMortalityAllowance
-    : Math.max(MORTALITY_WARNING_HEADS, Math.ceil(actualLoaded * MORTALITY_WARNING_RATE));
+    : Math.max(MORTALITY_WARNING_HEADS, Math.ceil(operationalHeads * MORTALITY_WARNING_RATE));
   const mortalityAllowanceUsedPercent = batchThreshold > 0
     ? Math.min(100, (totalMortality / batchThreshold) * 100)
     : 0;
