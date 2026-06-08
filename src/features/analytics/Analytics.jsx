@@ -119,7 +119,7 @@ function buildFeedCurveForHeads(logs, startDate, headCount) {
   });
 }
 
-function getOperationalHeadCount(batch, arrivalMetrics) {
+function getOperationalHeadCount(arrivalMetrics) {
   const arrivedDoc = Number(arrivalMetrics?.arrivedDoc || 0);
   const doaCount = Number(arrivalMetrics?.doaCount || 0);
   const netChicksPlaced = Number(arrivalMetrics?.netChicksPlaced || 0);
@@ -129,14 +129,14 @@ function getOperationalHeadCount(batch, arrivalMetrics) {
     return arrivedDoc;
   }
 
-  return Number(batch?.totalChicksLoaded || 0);
+  return 0;
 }
 
 function buildFeedCurve(logs, activeBatch) {
   if (!activeBatch?.startDate) return [];
 
-  const arrivalMetrics = getArrivalMetrics(activeBatch);
-  const operationalHeads = getOperationalHeadCount(activeBatch, arrivalMetrics);
+  const arrivalMetrics = getArrivalMetrics(activeBatch, [], { requireExplicitArrival: true });
+  const operationalHeads = getOperationalHeadCount(arrivalMetrics);
   if (!operationalHeads) return [];
 
   return buildFeedCurveForHeads(logs, activeBatch.startDate, operationalHeads);
@@ -229,15 +229,18 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
   const latestFeedPoint = feedCurve[feedCurve.length - 1] || null;
   const latestWeightPoint = [...feedCurve].reverse().find((point) => point.actualWeightGrams);
   const totalMortality = logs.reduce((sum, log) => sum + Number(log.mortality || 0), 0);
-  const arrivalMetrics = getArrivalMetrics(activeBatch);
+  const arrivalMetrics = getArrivalMetrics(activeBatch, [], { requireExplicitArrival: true });
   const actualLoaded = Number(arrivalMetrics.arrivedDoc || 0);
-  const operationalHeads = getOperationalHeadCount(activeBatch, arrivalMetrics);
+  const hasConfirmedArrival = Boolean(arrivalMetrics.hasConfirmedArrival);
+  const operationalHeads = getOperationalHeadCount(arrivalMetrics);
   const plannedFlock = Number(activeBatch?.plannedFlock || 0);
   const arrivalVariance = actualLoaded - plannedFlock;
-  const hasArrivalPlan = plannedFlock > 0 && actualLoaded > 0;
+  const hasArrivalPlan = plannedFlock > 0 && hasConfirmedArrival;
   const arrivalVarianceTone = hasArrivalPlan && arrivalVariance < 0 ? 'text-app-warning' : 'text-app-success';
-  const arrivalVarianceDetail = !hasArrivalPlan
-    ? 'Set planned and loaded flock counts.'
+  const arrivalVarianceDetail = plannedFlock <= 0
+    ? 'Set planned flock to track variance.'
+    : !hasConfirmedArrival
+      ? 'Enter building chick counts when the delivery arrives.'
     : arrivalVariance < 0
       ? `${formatNumber(Math.abs(arrivalVariance), 0)} fewer than planned.`
       : arrivalVariance > 0
@@ -247,18 +250,31 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
   const batchThreshold = configuredMortalityAllowance > 0
     ? configuredMortalityAllowance
     : Math.max(MORTALITY_WARNING_HEADS, Math.ceil(operationalHeads * MORTALITY_WARNING_RATE));
-  const mortalityAllowanceUsedPercent = batchThreshold > 0
+  const mortalityAllowanceUsedPercent = hasConfirmedArrival && batchThreshold > 0
     ? Math.min(100, (totalMortality / batchThreshold) * 100)
     : 0;
   const mortalityAllowanceRemaining = Math.max(batchThreshold - totalMortality, 0);
   const mortalityAllowanceLabel = configuredMortalityAllowance > 0 ? 'Mortality Allowance' : 'Warning Limit Used';
-  const mortalityToneClass = totalMortality <= batchThreshold ? 'text-app-success' :
+  const mortalityToneClass = !hasConfirmedArrival ? 'text-app-text' :
+    totalMortality <= batchThreshold ? 'text-app-success' :
     totalMortality <= batchThreshold * 2 ? 'text-app-warning' : 'text-app-danger';
-  const mortalityBarClass = totalMortality <= batchThreshold ? 'bg-app-success' :
+  const mortalityBarClass = !hasConfirmedArrival ? 'bg-app-border' :
+    totalMortality <= batchThreshold ? 'bg-app-success' :
     totalMortality <= batchThreshold * 2 ? 'bg-app-warning' : 'bg-app-danger';
-  const mortalityAllowanceDetail = mortalityAllowanceRemaining > 0
+  const mortalityAllowanceDetail = !hasConfirmedArrival
+    ? 'Record arrived DOC to track mortality allowance.'
+    : mortalityAllowanceRemaining > 0
     ? `${formatNumber(mortalityAllowanceRemaining, 0)} heads remaining.`
     : `${configuredMortalityAllowance > 0 ? 'Allowance' : 'Limit'} exceeded.`;
+  const mortalityAllowanceValue = hasConfirmedArrival
+    ? `${formatNumber(totalMortality, 0)} / ${formatNumber(batchThreshold, 0)}`
+    : `-- / ${formatNumber(batchThreshold, 0)}`;
+  const formatConfirmedArrivalNumber = (value, digits = 0) => (
+    hasConfirmedArrival ? formatNumber(value, digits) : '--'
+  );
+  const arrivalSampleWeightText = hasConfirmedArrival
+    ? formatGrams(arrivalMetrics.arrivalSampleWeightGrams)
+    : '--';
 
   return (
     <div className="print-container report-page">
@@ -316,7 +332,7 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
         <div className="min-w-0 bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
           <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Arrival DOA</p>
           <p className="text-lg font-black mt-1 font-jetbrains text-app-danger">
-            {formatNumber(arrivalMetrics.doaCount, 0)}
+            {formatConfirmedArrivalNumber(arrivalMetrics.doaCount, 0)}
           </p>
           <p className="mt-1 text-[11px] font-semibold leading-snug text-app-text-secondary">
             Dead on arrival from DOC entry.
@@ -326,7 +342,7 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
         <div className="min-w-0 bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
           <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Net Placed</p>
           <p className="text-lg font-black mt-1 font-jetbrains text-app-success">
-            {formatNumber(arrivalMetrics.netChicksPlaced, 0)}
+            {formatConfirmedArrivalNumber(arrivalMetrics.netChicksPlaced, 0)}
           </p>
           <p className="mt-1 text-[11px] font-semibold leading-snug text-app-text-secondary">
             Arrived DOC less DOA.
@@ -336,7 +352,7 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
         <div className="min-w-0 bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
           <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Arrival Sample Wt</p>
           <p className="text-lg font-black mt-1 font-jetbrains text-app-text">
-            {formatGrams(arrivalMetrics.arrivalSampleWeightGrams)}
+            {arrivalSampleWeightText}
           </p>
           <p className="mt-1 text-[11px] font-semibold leading-snug text-app-text-secondary">
             Weighted by arrived DOC.
@@ -356,7 +372,7 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
         <div className="min-w-0 bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
           <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">{mortalityAllowanceLabel}</p>
           <p className={`text-lg font-black mt-1 font-jetbrains ${mortalityToneClass}`}>
-            {formatNumber(totalMortality, 0)} / {formatNumber(batchThreshold, 0)}
+            {mortalityAllowanceValue}
           </p>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-app-border/40">
             <div
@@ -413,23 +429,23 @@ export default function Analytics({ transactions = [], logs = [], activeBatch, s
             </tr>
             <tr>
               <td>Arrival DOA</td>
-              <td className="numeric font-jetbrains">{formatNumber(arrivalMetrics.doaCount, 0)} heads</td>
+              <td className="numeric font-jetbrains">{formatConfirmedArrivalNumber(arrivalMetrics.doaCount, 0)} heads</td>
               <td>Dead on arrival from DOC quick-entry</td>
             </tr>
             <tr>
               <td>Net Chicks Placed</td>
-              <td className="numeric font-jetbrains">{formatNumber(arrivalMetrics.netChicksPlaced, 0)} heads</td>
+              <td className="numeric font-jetbrains">{formatConfirmedArrivalNumber(arrivalMetrics.netChicksPlaced, 0)} heads</td>
               <td>Arrived DOC less DOA</td>
             </tr>
             <tr>
               <td>Arrival Sample Weight</td>
-              <td className="numeric font-jetbrains">{formatGrams(arrivalMetrics.arrivalSampleWeightGrams)}</td>
+              <td className="numeric font-jetbrains">{arrivalSampleWeightText}</td>
               <td>Weighted by arrived DOC per building</td>
             </tr>
             <tr>
               <td>{mortalityAllowanceLabel}</td>
               <td className="numeric font-jetbrains">
-                {formatNumber(totalMortality, 0)} / {formatNumber(batchThreshold, 0)}
+                {mortalityAllowanceValue}
               </td>
               <td>{mortalityAllowanceDetail}</td>
             </tr>

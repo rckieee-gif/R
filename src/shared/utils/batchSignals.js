@@ -76,7 +76,7 @@ export function getArrivalVarianceMeta(actualChicks, plannedChicks, options = {}
 
 export function getMortalityAllowanceMeta(batch, logs = [], loadings = []) {
   const totalMortality = logs.reduce((sum, log) => sum + Number(log.mortality || 0), 0);
-  const arrivalMetrics = getArrivalMetrics(batch, loadings);
+  const arrivalMetrics = getArrivalMetrics(batch, loadings, { requireExplicitArrival: true });
   const loadedBirds = Number(arrivalMetrics.arrivedDoc || 0);
   const configuredAllowance = Number(batch?.mortalityAllowance || 0);
   const allowanceLimit = configuredAllowance > 0
@@ -130,7 +130,7 @@ export function getMortalityAllowanceMeta(batch, logs = [], loadings = []) {
 }
 
 export function getBatchWarningSignals(batch, logs = [], loadings = []) {
-  const arrivalMetrics = getArrivalMetrics(batch, loadings);
+  const arrivalMetrics = getArrivalMetrics(batch, loadings, { requireExplicitArrival: true });
   const arrival = getArrivalVarianceMeta(arrivalMetrics.arrivedDoc, batch?.plannedFlock, {
     hasArrivalData: arrivalMetrics.arrivedDoc > 0
   });

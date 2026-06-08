@@ -83,7 +83,7 @@ function getLatestWeightLog(logs) {
     .sort((left, right) => String(right.date || '').localeCompare(String(left.date || '')))[0] || null;
 }
 
-function getOperationalHeadCount(batch, arrivalMetrics) {
+function getOperationalHeadCount(arrivalMetrics) {
   const arrivedDoc = Number(arrivalMetrics?.arrivedDoc || 0);
   const doaCount = Number(arrivalMetrics?.doaCount || 0);
   const netChicksPlaced = Number(arrivalMetrics?.netChicksPlaced || 0);
@@ -93,7 +93,7 @@ function getOperationalHeadCount(batch, arrivalMetrics) {
     return arrivedDoc;
   }
 
-  return Number(batch?.totalChicksLoaded || 0);
+  return 0;
 }
 
 function getWelcomeText({ isZeroGravity, userName, isPublicViewer, canViewFinancial, canEnterDaily, availableFlowText }) {
@@ -165,8 +165,9 @@ export default function AntigravityAssistant({
   const chatEndRef = useRef(null);
 
   const batchMetrics = useMemo(() => {
-    const arrival = getArrivalMetrics(activeBatch);
-    const loaded = getOperationalHeadCount(activeBatch, arrival);
+    const arrival = getArrivalMetrics(activeBatch, [], { requireExplicitArrival: true });
+    const loaded = getOperationalHeadCount(arrival);
+    const hasConfirmedArrival = Boolean(arrival.hasConfirmedArrival);
     const totalMortality = logs.reduce((sum, log) => sum + Number(log.mortality || 0), 0);
     const liveBirds = Math.max(loaded - totalMortality, 0);
     const mortalityPercent = loaded > 0 ? (totalMortality / loaded) * 100 : 0;
@@ -185,6 +186,7 @@ export default function AntigravityAssistant({
     return {
       loaded,
       arrival,
+      hasConfirmedArrival,
       totalMortality,
       liveBirds,
       mortalityPercent,
@@ -281,10 +283,11 @@ export default function AntigravityAssistant({
           startDate: activeBatch.startDate,
           targetHarvestDate: activeBatch.targetHarvestDate,
           status: activeBatch.status,
-          totalChicksLoaded: activeBatch.totalChicksLoaded,
-          actualChicksArrived: activeBatch.actualChicksArrived,
-          doaCount: activeBatch.doaCount,
-          netChicksPlaced: activeBatch.netChicksPlaced,
+          totalChicksLoaded: batchMetrics.hasConfirmedArrival ? batchMetrics.arrival.arrivedDoc : null,
+          actualChicksArrived: batchMetrics.hasConfirmedArrival ? batchMetrics.arrival.arrivedDoc : null,
+          doaCount: batchMetrics.hasConfirmedArrival ? batchMetrics.arrival.doaCount : null,
+          netChicksPlaced: batchMetrics.hasConfirmedArrival ? batchMetrics.arrival.netChicksPlaced : null,
+          hasConfirmedArrival: batchMetrics.hasConfirmedArrival,
           plannedFlock: activeBatch.plannedFlock,
           targetFeedKg: activeBatch.targetFeedKg
         }
@@ -323,16 +326,21 @@ export default function AntigravityAssistant({
       return;
     }
 
-    const healthStatus = batchMetrics.mortalityPercent > 10
-      ? 'Critical mortality pressure'
-      : batchMetrics.mortalityPercent > 5
-        ? 'Watch mortality closely'
-        : 'Flock looks steady';
+    const healthStatus = !batchMetrics.hasConfirmedArrival
+      ? 'Awaiting arrived DOC before flock health is scored'
+      : batchMetrics.mortalityPercent > 10
+        ? 'Critical mortality pressure'
+        : batchMetrics.mortalityPercent > 5
+          ? 'Watch mortality closely'
+          : 'Flock looks steady';
+    const liveEstimate = batchMetrics.hasConfirmedArrival
+      ? `${formatNumber(batchMetrics.liveBirds)} / ${formatNumber(batchMetrics.loaded)} birds`
+      : 'Awaiting arrived DOC';
 
     const response = `🌾 **Batch Briefing**
 * **Batch**: ${activeBatch.id}
 * **Age**: Day ${batchMetrics.age || '--'}
-* **Live estimate**: ${formatNumber(batchMetrics.liveBirds)} / ${formatNumber(batchMetrics.loaded)} birds
+* **Live estimate**: ${liveEstimate}
 * **Mortality**: ${formatNumber(batchMetrics.totalMortality)} total (${formatNumber(batchMetrics.mortalityPercent, 2)}%)
 * **Feed used**: ${formatNumber(batchMetrics.totalFeedBags, 1)} bags / ${formatNumber(batchMetrics.totalFeedKg)} kg
 * **Latest weight**: ${batchMetrics.latestWeight ? `${formatNumber(batchMetrics.latestWeight)}g on ${formatDate(batchMetrics.latestWeightDate)}` : 'No weigh-in yet'}
@@ -412,7 +420,7 @@ export default function AntigravityAssistant({
     const response = `🌽 **Harvest Readiness**
 * **Batch**: ${activeBatch.id}
 * **Harvest timing**: ${harvestLine}
-* **Live estimate**: ${formatNumber(batchMetrics.liveBirds)}
+* **Live estimate**: ${batchMetrics.hasConfirmedArrival ? formatNumber(batchMetrics.liveBirds) : 'Awaiting arrived DOC'}
 * **Latest weight**: ${batchMetrics.latestWeight ? `${formatNumber(batchMetrics.latestWeight)}g` : 'No weigh-in yet'}
 
 **Next move**: ${canViewFinancial && allowedScreenSet.has('harvest')

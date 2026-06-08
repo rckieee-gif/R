@@ -64,7 +64,8 @@ export default function FinancialStatement({ transactions = [], activeBatch }) {
   const corpoRollyShare = buildingC_Gross * 0.50;
   const corpoJojitShare = buildingC_Gross * 0.50;
   const buildingC_Net = buildingC_Gross - batch.previousDeficit - batch.capex;
-  const arrivalMetrics = getArrivalMetrics(activeBatch);
+  const arrivalMetrics = getArrivalMetrics(activeBatch, [], { requireExplicitArrival: true });
+  const hasConfirmedArrival = Boolean(arrivalMetrics.hasConfirmedArrival);
 
   const formatMoney = (amount) => {
     return `PHP ${Number(amount || 0).toLocaleString(undefined, {
@@ -80,6 +81,9 @@ export default function FinancialStatement({ transactions = [], activeBatch }) {
       maximumFractionDigits: digits
     });
   };
+  const formatArrivalNumber = (amount, digits = 0) => (
+    hasConfirmedArrival ? formatNumber(amount, digits) : '--'
+  );
 
   return (
     <div className="print-container app-page">
@@ -105,20 +109,20 @@ export default function FinancialStatement({ transactions = [], activeBatch }) {
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <div className="rounded-xl border border-app-border/40 bg-app-bg p-2.5">
               <p className="text-[10px] font-black uppercase text-app-text-secondary">Arrived DOC</p>
-              <p className="mt-1 font-black text-app-text font-jetbrains">{formatNumber(arrivalMetrics.arrivedDoc)}</p>
+              <p className="mt-1 font-black text-app-text font-jetbrains">{formatArrivalNumber(arrivalMetrics.arrivedDoc)}</p>
             </div>
             <div className="rounded-xl border border-app-border/40 bg-app-bg p-2.5">
               <p className="text-[10px] font-black uppercase text-app-text-secondary">DOA</p>
-              <p className="mt-1 font-black text-app-danger font-jetbrains">{formatNumber(arrivalMetrics.doaCount)}</p>
+              <p className="mt-1 font-black text-app-danger font-jetbrains">{formatArrivalNumber(arrivalMetrics.doaCount)}</p>
             </div>
             <div className="rounded-xl border border-app-border/40 bg-app-bg p-2.5">
               <p className="text-[10px] font-black uppercase text-app-text-secondary">Net placed</p>
-              <p className="mt-1 font-black text-app-success font-jetbrains">{formatNumber(arrivalMetrics.netChicksPlaced)}</p>
+              <p className="mt-1 font-black text-app-success font-jetbrains">{formatArrivalNumber(arrivalMetrics.netChicksPlaced)}</p>
             </div>
             <div className="rounded-xl border border-app-border/40 bg-app-bg p-2.5">
               <p className="text-[10px] font-black uppercase text-app-text-secondary">Sample wt</p>
               <p className="mt-1 font-black text-app-text font-jetbrains">
-                {arrivalMetrics.arrivalSampleWeightGrams ? `${formatNumber(arrivalMetrics.arrivalSampleWeightGrams, 1)} g` : '--'}
+                {hasConfirmedArrival && arrivalMetrics.arrivalSampleWeightGrams ? `${formatNumber(arrivalMetrics.arrivalSampleWeightGrams, 1)} g` : '--'}
               </p>
             </div>
           </div>

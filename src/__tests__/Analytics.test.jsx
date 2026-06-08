@@ -77,6 +77,7 @@ describe('Analytics report context', () => {
           id: 2,
           startDate: '2026-05-20',
           totalChicksLoaded: 900,
+          actualChicksArrived: 900,
           plannedFlock: 900,
           mortalityAllowance: 0
         }}
@@ -94,6 +95,42 @@ describe('Analytics report context', () => {
       .find((element) => element.tagName === 'P');
     const limitCard = limitCardLabel.closest('div');
     expect(within(limitCard).getByText('12 / 5')).toHaveClass('text-app-danger');
+  });
+
+  it('keeps planned totalChicksLoaded neutral until arrived DOC is explicitly recorded', () => {
+    render(
+      <Analytics
+        showFinancials={false}
+        transactions={[]}
+        activeBatch={{
+          id: 4,
+          startDate: '2026-05-20',
+          totalChicksLoaded: 900,
+          plannedFlock: 1000,
+          mortalityAllowance: 0
+        }}
+        logs={[
+          { id: 1, date: '2026-05-20', feed: 1, mortality: 12 }
+        ]}
+      />
+    );
+
+    expect(screen.getAllByText('Enter building chick counts when the delivery arrives.').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Record arrived DOC to track mortality allowance.').length).toBeGreaterThan(0);
+    expect(screen.queryByText('-100')).not.toBeInTheDocument();
+    expect(screen.queryByText('100 fewer than planned.')).not.toBeInTheDocument();
+
+    const limitCardLabel = screen
+      .getAllByText('Warning Limit Used')
+      .find((element) => element.tagName === 'P');
+    const limitCard = limitCardLabel.closest('div');
+    expect(within(limitCard).getByText('-- / 5')).toHaveClass('text-app-text');
+
+    const netPlacedCardLabel = screen
+      .getAllByText('Net Placed')
+      .find((element) => element.tagName === 'P');
+    const netPlacedCard = netPlacedCardLabel.closest('div');
+    expect(within(netPlacedCard).getByText('--')).toBeInTheDocument();
   });
 
   it('uses net placed heads for feed targets and mortality limits after DOA is recorded', () => {

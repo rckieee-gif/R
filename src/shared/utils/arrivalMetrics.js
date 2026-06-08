@@ -8,6 +8,32 @@ function firstFiniteNumber(...values) {
   return values.map(toFiniteNumber).find((value) => value !== null);
 }
 
+export const ARRIVED_DOC_FIELD_KEYS = [
+  'arrivedDoc',
+  'arrivedDOC',
+  'arrivedDocCount',
+  'arrivedDocHeads',
+  'arrivedDocInput',
+  'docArrived',
+  'docArrivedCount',
+  'actualDocArrived',
+  'actualDocCount',
+  'actualChicksArrived',
+  'actualChicksLoaded'
+];
+
+function hasOwnField(record, key) {
+  return Boolean(record && Object.prototype.hasOwnProperty.call(record, key));
+}
+
+function getExplicitArrivedDocValue(batch) {
+  const hasExplicitField = ARRIVED_DOC_FIELD_KEYS.some((key) => hasOwnField(batch, key));
+  if (!hasExplicitField) return { hasExplicitField: false, value: null };
+
+  const value = firstFiniteNumber(...ARRIVED_DOC_FIELD_KEYS.map((key) => batch?.[key]));
+  return { hasExplicitField: true, value: value ?? 0 };
+}
+
 function sumLoadingField(loadings, keys) {
   return loadings.reduce((sum, loading) => {
     const value = firstFiniteNumber(...keys.map((key) => loading?.[key]));
@@ -37,16 +63,20 @@ export function getWeightedArrivalSampleWeight(loadings = []) {
   return Number((weightedTotal / sampledHeads).toFixed(2));
 }
 
-export function getArrivalMetrics(batch, loadings = []) {
+export function getArrivalMetrics(batch, loadings = [], options = {}) {
   const arrivedFromLoadings = sumLoadingField(loadings, ['chicksLoaded', 'chicks_loaded']);
   const doaFromLoadings = sumLoadingField(loadings, ['doaCount', 'doa', 'deadOnArrival', 'deadOnArrivalCount']);
+  const requireExplicitArrival = Boolean(options.requireExplicitArrival);
+  const explicitArrivedDoc = getExplicitArrivedDocValue(batch);
 
-  const arrivedDoc = firstFiniteNumber(
-    batch?.actualChicksArrived,
-    batch?.arrivedDocCount,
-    batch?.totalChicksLoaded,
-    arrivedFromLoadings
-  ) || 0;
+  const arrivedDoc = requireExplicitArrival
+    ? (explicitArrivedDoc.hasExplicitField ? explicitArrivedDoc.value : arrivedFromLoadings)
+    : firstFiniteNumber(
+      batch?.actualChicksArrived,
+      batch?.arrivedDocCount,
+      batch?.totalChicksLoaded,
+      arrivedFromLoadings
+    ) || 0;
   const doaCount = firstFiniteNumber(batch?.doaCount, batch?.doa, doaFromLoadings) || 0;
   const netChicksPlaced = firstFiniteNumber(batch?.netChicksPlaced)
     ?? Math.max(arrivedDoc - doaCount, 0);
@@ -58,6 +88,7 @@ export function getArrivalMetrics(batch, loadings = []) {
     doaCount,
     netChicksPlaced,
     arrivalSampleWeightGrams,
-    hasArrivalData: arrivedDoc > 0 || doaCount > 0 || netChicksPlaced > 0 || Number(arrivalSampleWeightGrams || 0) > 0
+    hasArrivalData: arrivedDoc > 0 || doaCount > 0 || netChicksPlaced > 0 || Number(arrivalSampleWeightGrams || 0) > 0,
+    hasConfirmedArrival: arrivedDoc > 0
   };
 }
