@@ -4,6 +4,27 @@ import { enqueueRequest, processSyncQueue } from '../../offline/syncQueue';
 
 let onAuthFailureHandler = null;
 
+function isLocalDevApiPath(path) {
+  return import.meta.env.DEV && API_BASE === '' && typeof path === 'string' && path.startsWith('/api/');
+}
+
+export function isBackendUnavailableError(error) {
+  return Boolean(error?.isBackendUnavailable);
+}
+
+function markBackendUnavailable(error, path) {
+  if (!isLocalDevApiPath(path)) return error;
+
+  const isProxyFailure = error?.status === 502 || error?.status === 504;
+  const isNetworkFailure = error instanceof TypeError || /fetch|network/i.test(error?.message || '');
+
+  if (isProxyFailure || isNetworkFailure) {
+    error.isBackendUnavailable = true;
+  }
+
+  return error;
+}
+
 /**
  * Register a callback to be executed when a 401 Unauthorized response is received.
  * Used to log the user out and clean up session state.
@@ -55,6 +76,8 @@ export async function request(path, options = {}) {
     authToken,
     bearerToken,
     suppressAuthFailure = false,
+    quietOnBackendUnavailable = false,
+    backendUnavailableFallback = null,
     retries,
     returnResponse,
     expectArray,
@@ -141,7 +164,7 @@ export async function request(path, options = {}) {
         const errorMessage = (data && data.error) || `Request failed with status ${response.status}`;
         const error = new Error(errorMessage);
         error.status = response.status;
-        throw error;
+        throw markBackendUnavailable(error, path);
       }
 
       if (returnResponse) {
@@ -170,10 +193,12 @@ export async function request(path, options = {}) {
 
       return data;
     } catch (error) {
+      markBackendUnavailable(error, path);
       attempt++;
       // Don't retry if it's an authorization/permission failure or if we've exhausted our retry budget
       if (
         attempt > maxRetries ||
+        isBackendUnavailableError(error) ||
         error.message.includes('expired') ||
         error.message.includes('denied')
       ) {
@@ -187,12 +212,16 @@ export async function request(path, options = {}) {
         }
 
         // Handle offline fallback queueing for POST/PUT/PATCH/DELETE mutations
-        const isConnectionError = error instanceof TypeError || error.message.includes('fetch') || !navigator.onLine;
+        const isConnectionError = isBackendUnavailableError(error) || error instanceof TypeError || error.message.includes('fetch') || !navigator.onLine;
         if (isMutationMethod && !isQueueRequest && isConnectionError && isQueueablePath(path)) {
           console.log(`Offline connection error: queuing request for ${path}`);
           const bodyParsed = options.body ? JSON.parse(options.body) : null;
           await enqueueRequest(getSyncType(path, method), path, method, bodyParsed);
           return generateMockResponse(path, method, bodyParsed);
+        }
+
+        if (quietOnBackendUnavailable && isBackendUnavailableError(error)) {
+          return backendUnavailableFallback;
         }
 
         throw error;

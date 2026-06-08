@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { apiClient } from '../shared/utils/apiClient';
+import { apiClient, isBackendUnavailableError } from '../shared/utils/apiClient';
 
 vi.mock('../offline/db', () => ({
   saveCache: vi.fn(),
@@ -58,5 +58,32 @@ describe('apiClient auth transport', () => {
         }),
       })
     );
+  });
+
+  it('tags local dev proxy failures as backend unavailable without retrying', async () => {
+    globalThis.fetch = vi.fn(async () => new Response('Proxy unavailable', { status: 502 }));
+
+    let caughtError;
+    try {
+      await apiClient.get('/api/auth/me');
+    } catch (error) {
+      caughtError = error;
+    }
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(caughtError).toMatchObject({ status: 502 });
+    expect(isBackendUnavailableError(caughtError)).toBe(true);
+  });
+
+  it('allows optional startup reads to quietly fall back when the backend is unavailable', async () => {
+    globalThis.fetch = vi.fn(async () => new Response('Proxy unavailable', { status: 502 }));
+
+    const data = await apiClient.get('/api/public/current-batch', {
+      quietOnBackendUnavailable: true,
+      backendUnavailableFallback: null,
+    });
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(data).toBeNull();
   });
 });

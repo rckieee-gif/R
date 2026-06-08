@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { publicViewerUser } from '../../shared/utils/publicViewerData';
-import { apiClient, registerAuthFailureHandler } from '../../shared/utils/apiClient';
+import { apiClient, isBackendUnavailableError, registerAuthFailureHandler } from '../../shared/utils/apiClient';
 
 const COOKIE_SESSION_MARKER = 'cookie-session';
+
+let startupSessionCheck = null;
+let startupViewerSnapshotPreload = null;
 
 function readStoredUser() {
   const savedUser = localStorage.getItem('octavioUser');
@@ -22,6 +25,33 @@ function clearStoredSession() {
   localStorage.removeItem('octavioToken');
 }
 
+function checkStartupSession() {
+  if (!startupSessionCheck) {
+    startupSessionCheck = apiClient.get('/api/auth/me', {
+      retries: 0,
+      suppressAuthFailure: true,
+    }).finally(() => {
+      startupSessionCheck = null;
+    });
+  }
+
+  return startupSessionCheck;
+}
+
+function preloadStartupViewerSnapshot() {
+  if (!startupViewerSnapshotPreload) {
+    startupViewerSnapshotPreload = apiClient.get('/api/public/current-batch', {
+      retries: 0,
+      quietOnBackendUnavailable: true,
+      backendUnavailableFallback: null,
+    }).finally(() => {
+      startupViewerSnapshotPreload = null;
+    });
+  }
+
+  return startupViewerSnapshotPreload;
+}
+
 export default function useAuth() {
   const [user, setUser] = useState(() => readStoredUser());
   const [token, setToken] = useState(() => (readStoredUser() ? COOKIE_SESSION_MARKER : null));
@@ -38,10 +68,7 @@ export default function useAuth() {
       const hadStoredUser = Boolean(localStorage.getItem('octavioUser'));
 
       try {
-        const data = await apiClient.get('/api/auth/me', {
-          retries: 0,
-          suppressAuthFailure: true,
-        });
+        const data = await checkStartupSession();
         if (data && data.user) {
           setUser(data.user);
           setToken(COOKIE_SESSION_MARKER);
@@ -54,6 +81,13 @@ export default function useAuth() {
           clearStoredSession();
         }
       } catch (err) {
+        if (isBackendUnavailableError(err)) {
+          setUser(null);
+          setToken(null);
+          setSessionError('');
+          return;
+        }
+
         if (err.status !== 401) {
           console.error("Session verification failed:", err);
         }
@@ -74,12 +108,14 @@ export default function useAuth() {
     let isMounted = true;
     const preloadSnapshot = async () => {
       try {
-        const data = await apiClient.get('/api/public/current-batch');
-        if (isMounted) {
+        const data = await preloadStartupViewerSnapshot();
+        if (isMounted && data) {
           setPreloadedSnapshot(data);
         }
       } catch (err) {
-        console.error("Failed to preload public current batch snapshot:", err);
+        if (!isBackendUnavailableError(err)) {
+          console.error("Failed to preload public current batch snapshot:", err);
+        }
       }
     };
     preloadSnapshot();
@@ -121,13 +157,22 @@ export default function useAuth() {
 
   const handleViewerAccess = useCallback(async () => {
     setIsViewerLoading(true);
-      setViewerError('');
-      setSessionError('');
+    setViewerError('');
+    setSessionError('');
 
     try {
       let data = preloadedSnapshot;
       if (!data) {
-        data = await apiClient.get('/api/public/current-batch');
+        data = await apiClient.get('/api/public/current-batch', {
+          retries: 0,
+          quietOnBackendUnavailable: true,
+          backendUnavailableFallback: null,
+        });
+      }
+
+      if (!data) {
+        setViewerError('Cannot open the current batch right now.');
+        return;
       }
 
       const liveBatch = data.batch || data.batches?.[0] || null;
@@ -153,7 +198,9 @@ export default function useAuth() {
       localStorage.removeItem('octavioUser');
       localStorage.removeItem('octavioToken');
     } catch (error) {
-      console.error('Failed to open viewer mode:', error);
+      if (!isBackendUnavailableError(error)) {
+        console.error('Failed to open viewer mode:', error);
+      }
       setViewerError(error.message || 'Cannot open the current batch right now.');
     } finally {
       setIsViewerLoading(false);
