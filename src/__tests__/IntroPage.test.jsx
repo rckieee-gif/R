@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { vi } from 'vitest';
+import { render, screen, within } from '@testing-library/react';
+import { afterEach, vi } from 'vitest';
 import IntroPage from '../features/auth/IntroPage';
 import { publicViewerData } from '../shared/utils/publicViewerData';
 
@@ -34,6 +34,10 @@ function buildSnapshot(batchOverrides = {}, logs = []) {
     }
   };
 }
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('IntroPage public preview signals', () => {
   it('shows arrival variance and mortality allowance in the pre-arrival preview', () => {
@@ -81,15 +85,39 @@ describe('IntroPage public preview signals', () => {
       <IntroPage
         onContinueAsViewer={vi.fn()}
         onMemberLogin={vi.fn()}
-        preloadedSnapshot={buildSnapshot({ status: 'ONGOING', startDate: '2026-05-20' }, [
+        preloadedSnapshot={buildSnapshot({ status: 'ONGOING', startDate: '2026-05-20', totalChicksLoaded: 1000 }, [
           { id: 1, date: '2026-05-20', building: 'A', mortality: 25 }
         ])}
       />
     );
 
     expect(screen.getByText('Today at a glance')).toBeInTheDocument();
+    const liveBirdsCard = screen.getByText('LIVE BIRDS').closest('div');
+    expect(within(liveBirdsCard).getByText('875')).toBeInTheDocument();
     expect(screen.getByText('100 fewer chicks arrived than the planned flock of 1,000.')).toBeInTheDocument();
     expect(screen.getByText('25 total mortality recorded; allowance is 20 heads.')).toBeInTheDocument();
+  });
+
+  it('keeps active viewer live birds neutral until arrived DOC is recorded', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-09T00:00:00Z'));
+
+    render(
+      <IntroPage
+        onContinueAsViewer={vi.fn()}
+        onMemberLogin={vi.fn()}
+        preloadedSnapshot={buildSnapshot({ status: 'ONGOING', startDate: '2026-05-20', actualChicksArrived: 0 }, [
+          { id: 1, date: '2026-06-09', building: 'A', mortality: 25 }
+        ])}
+      />
+    );
+
+    expect(screen.getByText('Today at a glance')).toBeInTheDocument();
+    const liveBirdsCard = screen.getByText('LIVE BIRDS').closest('div');
+    expect(within(liveBirdsCard).getByText('--')).toHaveClass('text-app-text');
+    expect(screen.queryByText('875')).not.toBeInTheDocument();
+    expect(screen.queryByText('Arrival variance')).not.toBeInTheDocument();
+    expect(screen.queryByText('25 total mortality recorded; allowance is 20 heads.')).not.toBeInTheDocument();
   });
 
   it('ships public viewer fixture data with batch signals for previews', () => {

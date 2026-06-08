@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { getBatchWarningSignals } from '../../shared/utils/batchSignals';
+import { getArrivalMetrics } from '../../shared/utils/arrivalMetrics';
 
 function getTodayDateString() {
   const d = new Date();
@@ -12,6 +13,19 @@ function getTodayDateString() {
 function formatNumber(num) {
   if (num === null || num === undefined || Number.isNaN(Number(num))) return '--';
   return Number(num).toLocaleString();
+}
+
+function getOperationalHeadCount(arrivalMetrics) {
+  const arrivedDoc = Number(arrivalMetrics?.arrivedDoc || 0);
+  const doaCount = Number(arrivalMetrics?.doaCount || 0);
+  const netChicksPlaced = Number(arrivalMetrics?.netChicksPlaced || 0);
+
+  if (arrivedDoc > 0) {
+    if (netChicksPlaced > 0 || doaCount > 0) return Math.max(netChicksPlaced, 0);
+    return arrivedDoc;
+  }
+
+  return 0;
 }
 
 function formatDateStr(value) {
@@ -149,13 +163,20 @@ export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerL
   const countdownText = arrivalEta.statusText;
   const countdownSubtext = arrivalEta.detailText;
 
+  const previewArrivalMetrics = useMemo(() => {
+    if (!preloadedSnapshot) return null;
+    return getArrivalMetrics(batch, preloadedSnapshot.loadings || [], { requireExplicitArrival: true });
+  }, [batch, preloadedSnapshot]);
+  const previewOperationalHeads = getOperationalHeadCount(previewArrivalMetrics);
+  const totalMortalityValue = preloadedSnapshot
+    ? (preloadedSnapshot.logs || []).reduce((sum, log) => sum + Number(log.mortality || 0), 0)
+    : 0;
+  const harvestedBirdsValue = Number(preloadedSnapshot?.harvestProductionSummary?.totals?.birds || 0);
+  const hasConfirmedArrival = Boolean(previewArrivalMetrics?.hasConfirmedArrival);
   const liveBirdsValue = preloadedSnapshot
-    ? Math.max(
-        Number(preloadedSnapshot.batch?.totalChicksLoaded || 0) -
-        (preloadedSnapshot.logs || []).reduce((sum, log) => sum + Number(log.mortality || 0), 0) -
-        Number(preloadedSnapshot.harvestProductionSummary?.totals?.birds || 0),
-        0
-      )
+    ? hasConfirmedArrival
+      ? Math.max(previewOperationalHeads - totalMortalityValue - harvestedBirdsValue, 0)
+      : null
     : 38474;
 
   const logsTodayValue = preloadedSnapshot
@@ -460,7 +481,11 @@ export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerL
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  <PreviewStat label="LIVE BIRDS" value={formatNumber(liveBirdsValue)} tone="text-app-success" />
+                  <PreviewStat
+                    label="LIVE BIRDS"
+                    value={formatNumber(liveBirdsValue)}
+                    tone={preloadedSnapshot && !hasConfirmedArrival ? 'text-app-text' : 'text-app-success'}
+                  />
                   <PreviewStat label="LOGS TODAY" value={formatNumber(logsTodayValue)} tone="text-app-accent" />
                   <PreviewStat label="FEED STOCK" value={formatNumber(feedStockValue)} suffix="sx" />
                   <PreviewStat label="LOW ALERTS" value={formatNumber(lowAlertsValue)} isAlert={lowAlertsValue > 0} />

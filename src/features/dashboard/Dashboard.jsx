@@ -93,7 +93,7 @@ function getQueueItemLabel(item) {
   }
 }
 
-function getOperationalHeadCount(batch, arrivalMetrics) {
+function getOperationalHeadCount(arrivalMetrics) {
   const arrivedDoc = Number(arrivalMetrics?.arrivedDoc || 0);
   const doaCount = Number(arrivalMetrics?.doaCount || 0);
   const netChicksPlaced = Number(arrivalMetrics?.netChicksPlaced || 0);
@@ -103,7 +103,7 @@ function getOperationalHeadCount(batch, arrivalMetrics) {
     return arrivedDoc;
   }
 
-  return Number(batch?.totalChicksLoaded || 0);
+  return 0;
 }
 
 function ActionButton({ label, detail, onClick, primary = false }) {
@@ -139,26 +139,39 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
   const [transactions, setTransactions] = useState([]);
   const [loadings, setLoadings] = useState([]);
   const [queueItems, setQueueItems] = useState([]);
-  const arrivalMetrics = getArrivalMetrics(activeBatch, loadings);
+  const arrivalMetrics = getArrivalMetrics(activeBatch, loadings, { requireExplicitArrival: true });
   const actualLoaded = Number(arrivalMetrics.arrivedDoc || 0);
-  const operationalHeads = getOperationalHeadCount(activeBatch, arrivalMetrics);
+  const hasConfirmedArrival = Boolean(arrivalMetrics.hasConfirmedArrival);
+  const operationalHeads = getOperationalHeadCount(arrivalMetrics);
   const plannedFlock = Number(activeBatch?.plannedFlock || 0);
   const arrivalVariance = actualLoaded - plannedFlock;
   const totalMortality = logs.reduce((sum, log) => sum + Number(log.mortality || 0), 0);
-  const liveBirds = Math.max(operationalHeads - totalMortality, 0);
-  const mortalityPercent = operationalHeads > 0 ? (totalMortality / operationalHeads) * 100 : 0;
+  const liveBirds = hasConfirmedArrival ? Math.max(operationalHeads - totalMortality, 0) : null;
+  const mortalityPercent = hasConfirmedArrival && operationalHeads > 0 ? (totalMortality / operationalHeads) * 100 : null;
   const configuredMortalityAllowance = Number(activeBatch?.mortalityAllowance || 0);
   const batchThreshold = configuredMortalityAllowance > 0
     ? configuredMortalityAllowance
     : Math.max(5, Math.ceil(operationalHeads * 0.005));
-  const mortalityAllowanceUsedPercent = batchThreshold > 0
+  const mortalityAllowanceUsedPercent = hasConfirmedArrival && batchThreshold > 0
     ? Math.min(100, (totalMortality / batchThreshold) * 100)
     : 0;
   const mortalityAllowanceRemaining = Math.max(batchThreshold - totalMortality, 0);
   const mortalityAllowanceLabel = configuredMortalityAllowance > 0 ? 'Allowance Used' : 'Warning Limit Used';
-  const mortalityTone = totalMortality <= batchThreshold ? 'text-dashboard-success' :
+  const mortalityTone = !hasConfirmedArrival ? 'text-dashboard-text' :
+    totalMortality <= batchThreshold ? 'text-dashboard-success' :
     totalMortality <= batchThreshold * 2 ? 'text-dashboard-warning' : 'text-dashboard-danger';
-  const yieldVsPlanPercent = plannedFlock > 0 ? (liveBirds / plannedFlock) * 100 : null;
+  const mortalityBarClass = !hasConfirmedArrival ? 'bg-dashboard-border' :
+    totalMortality <= batchThreshold ? 'bg-dashboard-success' :
+    totalMortality <= batchThreshold * 2 ? 'bg-dashboard-warning' : 'bg-dashboard-danger';
+  const mortalityAllowanceValue = hasConfirmedArrival
+    ? `${formatNumber(totalMortality)} / ${formatNumber(batchThreshold)}`
+    : `-- / ${formatNumber(batchThreshold)}`;
+  const mortalityAllowanceDetail = !hasConfirmedArrival
+    ? 'Record arrived DOC to track mortality allowance.'
+    : mortalityAllowanceRemaining > 0
+      ? `${formatNumber(mortalityAllowanceRemaining)} heads remaining`
+      : 'Allowance exceeded';
+  const yieldVsPlanPercent = hasConfirmedArrival && plannedFlock > 0 ? (liveBirds / plannedFlock) * 100 : null;
   const totalFeedBags = logs.reduce((sum, log) => sum + Number(log.feed || 0), 0);
   const totalFeedKg = totalFeedBags * BAG_WEIGHT_KG;
 
@@ -273,14 +286,14 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
   const healthDeductions = [];
 
   // A. Mortality Threshold Exceedance
-  if (totalMortality > batchThreshold * 2) {
+  if (hasConfirmedArrival && totalMortality > batchThreshold * 2) {
     healthScore -= 30;
     healthDeductions.push({
       label: 'Severe Mortality Exceedance',
       value: '-30 pts',
       detail: `Total mortality is ${formatNumber(totalMortality)} (allowance: ${formatNumber(batchThreshold)})`
     });
-  } else if (totalMortality > batchThreshold) {
+  } else if (hasConfirmedArrival && totalMortality > batchThreshold) {
     healthScore -= 15;
     healthDeductions.push({
       label: 'Mortality Exceeds Guidelines',
@@ -290,7 +303,7 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
   }
 
   // B. Mortality Rate above 1%
-  if (mortalityPercent > 1) {
+  if (hasConfirmedArrival && mortalityPercent > 1) {
     const excessRate = mortalityPercent - 1;
     const rateDeduction = Math.min(20, Number((excessRate * 5).toFixed(1)));
     if (rateDeduction > 0) {
@@ -428,7 +441,7 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
   }
 
   // High Mortality
-  if (totalMortality > batchThreshold) {
+  if (hasConfirmedArrival && totalMortality > batchThreshold) {
     warningsList.push({
       type: 'high_mortality',
       severity: 'danger',
@@ -650,13 +663,15 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
             <span className="text-[9px] font-bold uppercase tracking-wider text-dashboard-text-secondary font-jetbrains">Live Birds</span>
             <p className="text-lg font-black font-jetbrains text-dashboard-text mt-1">{formatNumber(liveBirds)}</p>
             <span className="text-[8px] font-bold text-dashboard-text-secondary font-inter mt-1.5 leading-none">
-              {yieldVsPlanPercent === null ? 'No planned flock' : `${formatNumber(yieldVsPlanPercent, 1)}% of plan`}
+              {!hasConfirmedArrival ? 'Awaiting arrived DOC' : yieldVsPlanPercent === null ? 'No planned flock' : `${formatNumber(yieldVsPlanPercent, 1)}% of plan`}
             </span>
           </div>
 
           <div className="bg-dashboard-bg/50 border border-dashboard-border/40 rounded-xl p-3 flex flex-col justify-between">
             <span className="text-[9px] font-bold uppercase tracking-wider text-dashboard-text-secondary font-jetbrains">Mortality Rate</span>
-            <p className={`text-lg font-black font-jetbrains mt-1 ${mortalityTone}`}>{formatNumber(mortalityPercent, 2)}%</p>
+            <p className={`text-lg font-black font-jetbrains mt-1 ${mortalityTone}`}>
+              {hasConfirmedArrival ? `${formatNumber(mortalityPercent, 2)}%` : '--'}
+            </p>
             <span className="text-[8px] font-bold text-dashboard-text-secondary font-inter mt-1.5 leading-none">
               {formatNumber(totalMortality)} total lost
             </span>
@@ -665,22 +680,16 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
           <div className="bg-dashboard-bg/50 border border-dashboard-border/40 rounded-xl p-3 flex flex-col justify-between">
             <span className="text-[9px] font-bold uppercase tracking-wider text-dashboard-text-secondary font-jetbrains">{mortalityAllowanceLabel}</span>
             <p className={`text-lg font-black font-jetbrains mt-1 ${mortalityTone}`}>
-              {formatNumber(totalMortality)} / {formatNumber(batchThreshold)}
+              {mortalityAllowanceValue}
             </p>
             <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-dashboard-border/40">
               <div
-                className={`h-full rounded-full ${
-                  totalMortality <= batchThreshold
-                    ? 'bg-dashboard-success'
-                    : totalMortality <= batchThreshold * 2
-                      ? 'bg-dashboard-warning'
-                      : 'bg-dashboard-danger'
-                }`}
+                className={`h-full rounded-full ${mortalityBarClass}`}
                 style={{ width: `${mortalityAllowanceUsedPercent}%` }}
               />
             </div>
             <span className="text-[8px] font-bold text-dashboard-text-secondary font-inter mt-1.5 leading-none">
-              {mortalityAllowanceRemaining > 0 ? `${formatNumber(mortalityAllowanceRemaining)} heads remaining` : 'Allowance exceeded'}
+              {mortalityAllowanceDetail}
             </span>
           </div>
 
