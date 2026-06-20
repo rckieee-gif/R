@@ -83,8 +83,6 @@ export default function useBatches(token, user, viewerSnapshot) {
       });
     } catch (error) {
       console.error("Failed to fetch batches:", error);
-      setBatchesState([]);
-      setActiveBatch(null);
       setBatchListError('Batch list is unavailable. Try refreshing or open Batches after the connection recovers.');
     } finally {
       setIsBatchListLoading(false);
@@ -120,8 +118,6 @@ export default function useBatches(token, user, viewerSnapshot) {
       } catch (error) {
         if (isCancelled) return;
         console.error("Failed to fetch batches:", error);
-        setBatchesState([]);
-        setActiveBatch(null);
         setBatchListError('Batch list is unavailable. Try refreshing or open Batches after the connection recovers.');
       } finally {
         if (!isCancelled) {

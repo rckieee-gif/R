@@ -245,6 +245,107 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
     expect(screen.queryByText(/No arrived DOC input yet/i)).not.toBeInTheDocument();
   });
 
+  it('keeps day-one operational targets and warnings neutral while explicit arrived DOC is zero', async () => {
+    const batchId = 246;
+    localStorage.setItem(`octavioArrivedDocConfirmed:${batchId}`, '1000');
+
+    server.use(
+      http.get(apiPath('/batches/:batchId/loadings'), () => json([
+        { id: 1, building: 'A', chicksLoaded: 1000 },
+      ])),
+      http.get(apiPath('/inventory/items'), () => json([
+        { id: 10, name: 'Starter Feed', category: 'Feed', currentStock: 1, reorderLevel: 0, unit: 'sacks' },
+      ]))
+    );
+
+    renderComponent({
+      activeBatch: {
+        ...mockBatchActive,
+        id: batchId,
+        startDate: todayInputForTest(),
+        status: 'ONGOING',
+        totalChicksLoaded: 1000,
+        actualChicksArrived: 0,
+        plannedFlock: 1000,
+        mortalityAllowance: 8,
+      },
+      logs: [{
+        id: 501,
+        date: todayInputForTest(),
+        building: 'A',
+        handledBirds: 1000,
+        feed: 0,
+        mortality: 10,
+      }],
+      initialEntries: [{
+        pathname: '/today',
+        search: '?handoff=day-one',
+        state: { dayOneHandoffBatchId: batchId },
+      }],
+    });
+
+    expect(await screen.findByRole('heading', { name: /Today.s Farm Checklist/i })).toBeInTheDocument();
+    expect(screen.getByText('Awaiting DOC')).toBeInTheDocument();
+    expect(screen.getByText('Record arrived DOC before evaluating the arrival count.')).toBeInTheDocument();
+    expect(screen.getByText('Record arrived DOC to start mortality tracking.')).toBeInTheDocument();
+    expect(screen.getByText('Record arrived DOC before evaluating operational warnings.')).toBeInTheDocument();
+    expect(screen.getByText('Operational warnings are waiting')).toBeInTheDocument();
+    expect(screen.getByText('Record arrived DOC before evaluating feed, mortality, and arrival variance.')).toBeInTheDocument();
+    expect(screen.getByText('Waiting for arrived DOC')).toBeInTheDocument();
+    expect(screen.queryByText(/Actual arrival is below plan/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Low Feed Stock:/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Cumulative mortality is above allowance/i)).not.toBeInTheDocument();
+  });
+
+  it('uses confirmed arrived DOC for feed coverage, mortality allowance, and abnormal warnings', async () => {
+    server.use(
+      http.get(apiPath('/batches/:batchId/loadings'), () => json([
+        { id: 1, building: 'A', chicksLoaded: 800 },
+      ])),
+      http.get(apiPath('/batches/:batchId/employee-assignments'), () => json([
+        { employeeId: 20, employeeName: 'Worker A', assignedBuilding: 'A', handledBirds: 800 },
+      ])),
+      http.get(apiPath('/inventory/items'), () => json([
+        { id: 10, name: 'Starter Feed', category: 'Feed', currentStock: 1, reorderLevel: 0, unit: 'sacks' },
+      ]))
+    );
+
+    renderComponent({
+      activeBatch: {
+        ...mockBatchActive,
+        id: 247,
+        startDate: todayInputForTest(),
+        status: 'ONGOING',
+        totalChicksLoaded: 1000,
+        actualChicksArrived: 800,
+        plannedFlock: 1000,
+        mortalityAllowance: 8,
+      },
+      logs: [{
+        id: 502,
+        date: todayInputForTest(),
+        building: 'A',
+        employeeName: 'Worker A',
+        handledBirds: 800,
+        feed: 0,
+        mortality: 10,
+      }],
+      initialEntries: [{
+        pathname: '/today',
+        search: '?handoff=day-one',
+        state: { dayOneHandoffBatchId: 247 },
+      }],
+    });
+
+    expect(await screen.findByText('Actual arrival is below plan')).toBeInTheDocument();
+    expect(screen.getByText('200 fewer than planned.')).toBeInTheDocument();
+    expect(screen.getByText('200 fewer chicks arrived than the planned flock of 1,000.')).toBeInTheDocument();
+    expect(screen.getByText('Cumulative mortality is above allowance')).toBeInTheDocument();
+    expect(screen.getAllByText('10 / 8').length).toBeGreaterThan(0);
+    expect(await screen.findByText('Low Feed Stock: 4.2 days left')).toBeInTheDocument();
+    expect(screen.queryByText('Operational warnings are waiting')).not.toBeInTheDocument();
+  });
+
   it('records arrived DOC from the pre-placement quick popup', async () => {
     const setActiveBatch = vi.fn();
     const onBatchesChanged = vi.fn();
@@ -411,6 +512,34 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
     expect(screen.getByText('396')).toBeInTheDocument();
     expect(screen.getByText('42.5 g')).toBeInTheDocument();
     expect(screen.getByText('41.5 g')).toBeInTheDocument();
+  });
+
+  it('keeps a closed batch summary neutral when loading rows exist but explicit arrival is zero', async () => {
+    server.use(
+      http.get(apiPath('/batches/:batchId/loadings'), () => json([
+        { id: 1, building: 'A', chicksLoaded: 600 },
+        { id: 2, building: 'B', chicksLoaded: 400 },
+      ]))
+    );
+
+    renderComponent({
+      activeBatch: {
+        ...mockBatchPostSummary,
+        id: 89,
+        totalChicksLoaded: 1000,
+        actualChicksArrived: 0,
+        plannedFlock: 1000,
+      },
+      logs: [
+        { id: 1, date: '2026-04-02', building: 'A', feed: 2, mortality: 3, averageWeightGrams: 900 },
+      ],
+    });
+
+    expect(await screen.findByText('No explicit arrived DOC recorded.')).toBeInTheDocument();
+    expect(screen.getByText('Record arrived DOC to confirm loaded birds.')).toBeInTheDocument();
+    expect(screen.getByText('Rate waits for arrived DOC.')).toBeInTheDocument();
+    expect(screen.getByText('Record arrived DOC to confirm building totals.')).toBeInTheDocument();
+    expect(screen.queryByText('1,000')).not.toBeInTheDocument();
   });
 
   it('ignores keys when focused on input fields', async () => {

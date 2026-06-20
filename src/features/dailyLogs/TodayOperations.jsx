@@ -1014,7 +1014,15 @@ export default function TodayOperations({
     [loadings]
   );
 
-  const buildingChecks = activeLoadings.map((loading) => {
+  const arrivalMetrics = useMemo(
+    () => getArrivalMetrics(activeBatch, activeLoadings, { requireExplicitArrival: true }),
+    [activeBatch, activeLoadings]
+  );
+  const hasConfirmedArrival = arrivalMetrics.hasConfirmedArrival;
+  const operationalHeads = hasConfirmedArrival ? Number(arrivalMetrics.arrivedDoc || 0) : 0;
+  const operationalLoadings = hasConfirmedArrival ? activeLoadings : [];
+
+  const buildingChecks = operationalLoadings.map((loading) => {
     const buildingKey = getBuildingKey(loading.building);
     const todaysBuildingLogs = todayLogs.filter((log) => getBuildingKey(log.building) === buildingKey);
     const buildingLogsToDate = logs.filter((log) => getBuildingKey(log.building) === buildingKey && log.date <= today);
@@ -1046,7 +1054,7 @@ export default function TodayOperations({
     Number(item.reorderLevel || 0) > 0 && Number(item.currentStock || 0) < Number(item.reorderLevel || 0)
   ));
 
-  const dailyFeedTarget = calculateTargetFeedForHeads(activeBatch?.totalChicksLoaded, ageDay);
+  const dailyFeedTarget = calculateTargetFeedForHeads(operationalHeads, ageDay);
 
   const totalFeedStock = feedItems.reduce((sum, item) => sum + Number(item.currentStock || 0), 0);
 
@@ -1057,24 +1065,30 @@ export default function TodayOperations({
   const mortalityAllowance = Number(activeBatch?.mortalityAllowance || 0);
   const mortalityAllowanceLimit = mortalityAllowance > 0
     ? mortalityAllowance
-    : Math.max(MORTALITY_WARNING_HEADS, Math.ceil(Number(activeBatch?.totalChicksLoaded || 0) * MORTALITY_WARNING_RATE));
-  const mortalityAllowanceUsedPercent = mortalityAllowanceLimit > 0
+    : hasConfirmedArrival
+      ? Math.max(MORTALITY_WARNING_HEADS, Math.ceil(operationalHeads * MORTALITY_WARNING_RATE))
+      : 0;
+  const mortalityAllowanceUsedPercent = hasConfirmedArrival && mortalityAllowanceLimit > 0
     ? Math.min(100, (totalMortalityToDate / mortalityAllowanceLimit) * 100)
     : 0;
-  const mortalityAllowanceRemaining = Math.max(mortalityAllowanceLimit - totalMortalityToDate, 0);
-  const mortalityAllowanceTone = totalMortalityToDate <= mortalityAllowanceLimit
-    ? 'success'
-    : totalMortalityToDate <= mortalityAllowanceLimit * 2
-      ? 'warning'
-      : 'danger';
+  const mortalityAllowanceRemaining = hasConfirmedArrival
+    ? Math.max(mortalityAllowanceLimit - totalMortalityToDate, 0)
+    : null;
+  const mortalityAllowanceTone = !hasConfirmedArrival
+    ? 'neutral'
+    : totalMortalityToDate <= mortalityAllowanceLimit
+      ? 'success'
+      : totalMortalityToDate <= mortalityAllowanceLimit * 2
+        ? 'warning'
+        : 'danger';
 
   const abnormalWarnings = (() => {
     const warnings = [];
     const plannedFlock = Number(activeBatch?.plannedFlock || 0);
-    const actualLoaded = Number(activeBatch?.totalChicksLoaded || 0);
+    const actualLoaded = operationalHeads;
     const arrivalVariance = actualLoaded - plannedFlock;
 
-    if (plannedFlock > 0 && actualLoaded > 0 && arrivalVariance < 0) {
+    if (hasConfirmedArrival && plannedFlock > 0 && arrivalVariance < 0) {
       warnings.push({
         key: 'arrival-variance',
         label: 'Arrival variance',
@@ -1084,7 +1098,7 @@ export default function TodayOperations({
       });
     }
 
-    if (mortalityAllowance > 0 && totalMortalityToDate > mortalityAllowance) {
+    if (hasConfirmedArrival && mortalityAllowance > 0 && totalMortalityToDate > mortalityAllowance) {
       warnings.push({
         key: 'mortality-allowance',
         label: 'Mortality allowance',
@@ -1131,7 +1145,7 @@ export default function TodayOperations({
       const mortality = Number(log.mortality || 0);
       const threshold = Math.max(MORTALITY_WARNING_HEADS, Math.ceil(handledBirds * MORTALITY_WARNING_RATE));
 
-      if (mortality > threshold) {
+      if (hasConfirmedArrival && mortality > threshold) {
         const isSevere = mortality > threshold * 2;
         warnings.push({
           key: `mortality-${log.id}`,
@@ -1145,15 +1159,17 @@ export default function TodayOperations({
       }
     });
 
-    lowFeedItems.forEach((item) => {
-      warnings.push({
-        key: `feed-low-${item.id}`,
-        label: 'Feed reorder',
-        severity: 'warning',
-        title: `${item.name} is below reorder level`,
-        detail: `${formatNumber(item.currentStock, 2)} ${item.unit} on hand; reorder level is ${formatNumber(item.reorderLevel, 2)} ${item.unit}.`
+    if (hasConfirmedArrival) {
+      lowFeedItems.forEach((item) => {
+        warnings.push({
+          key: `feed-low-${item.id}`,
+          label: 'Feed reorder',
+          severity: 'warning',
+          title: `${item.name} is below reorder level`,
+          detail: `${formatNumber(item.currentStock, 2)} ${item.unit} on hand; reorder level is ${formatNumber(item.reorderLevel, 2)} ${item.unit}.`
+        });
       });
-    });
+    }
 
     if (daysOfFeedRemaining !== null) {
       if (daysOfFeedRemaining < 3) {
@@ -1175,7 +1191,7 @@ export default function TodayOperations({
       }
     }
 
-    if (daysToHarvest !== null && daysToHarvest < 0) {
+    if (hasConfirmedArrival && daysToHarvest !== null && daysToHarvest < 0) {
       warnings.push({
         key: 'harvest-overdue',
         label: 'Harvest date',
@@ -1183,7 +1199,7 @@ export default function TodayOperations({
         title: 'Target harvest date has passed',
         detail: `Target harvest was ${formatDate(activeBatch?.targetHarvestDate)}.`
       });
-    } else if (daysToHarvest !== null && daysToHarvest <= HARVEST_SOON_DAYS) {
+    } else if (hasConfirmedArrival && daysToHarvest !== null && daysToHarvest <= HARVEST_SOON_DAYS) {
       warnings.push({
         key: 'harvest-soon',
         label: 'Harvest date',
@@ -1193,7 +1209,7 @@ export default function TodayOperations({
       });
     }
 
-    if (ageDay && ageDay > lastTargetDay) {
+    if (hasConfirmedArrival && ageDay && ageDay > lastTargetDay) {
       warnings.push({
         key: 'age-over-target',
         label: 'Batch age',
@@ -1224,9 +1240,9 @@ export default function TodayOperations({
       check.hasLogToday && check.todaysLogs.some(log => Number(log.averageWeightGrams || 0) > 0)
     );
 
-    const isFeedStockOk = lowFeedItems.length === 0 && (daysOfFeedRemaining === null || daysOfFeedRemaining >= 7);
+    const isFeedStockOk = hasConfirmedArrival && lowFeedItems.length === 0 && daysOfFeedRemaining !== null && daysOfFeedRemaining >= 7;
 
-    const isWarningsClear = dangerCount === 0 && abnormalWarnings.length === 0;
+    const isWarningsClear = hasConfirmedArrival && dangerCount === 0 && abnormalWarnings.length === 0;
 
     const isAssignmentsConfirmed = buildingChecks.length > 0 && noEmployeeCount === 0;
 
@@ -1277,7 +1293,9 @@ export default function TodayOperations({
         key: 'feedStock',
         title: 'Check feed stock',
         desc: 'Verify if current feed inventory is above safety thresholds.',
-        statusLabel: daysOfFeedRemaining !== null 
+        statusLabel: !hasConfirmedArrival
+          ? 'Inventory: Awaiting arrived DOC'
+          : daysOfFeedRemaining !== null
           ? `Inventory: Feed will last ${Math.round(daysOfFeedRemaining)} day${Math.round(daysOfFeedRemaining) === 1 ? '' : 's'}` 
           : 'Inventory: Feed levels unknown',
         autoComplete: isFeedStockOk,
@@ -1288,7 +1306,9 @@ export default function TodayOperations({
         key: 'warnings',
         title: 'Check abnormal warnings',
         desc: 'Review any feed, mortality, or age variance warning alerts.',
-        statusLabel: abnormalWarnings.length > 0 
+        statusLabel: !hasConfirmedArrival
+          ? 'Warnings: Awaiting arrived DOC'
+          : abnormalWarnings.length > 0
           ? `Warnings: ${abnormalWarnings.length} active warning${abnormalWarnings.length === 1 ? '' : 's'}` 
           : 'Warnings: Clear',
         autoComplete: isWarningsClear,
@@ -1338,9 +1358,10 @@ export default function TodayOperations({
     const summaryAgeDay = activeBatch.startDate ? getAgeDay(activeBatch.startDate, summaryDate) : null;
     const targetDay = summaryAgeDay ? Math.min(summaryAgeDay, lastTargetDay) : null;
     const batchTotals = buildLogTotals(logs);
-    const loadedFromLoadings = activeLoadings.reduce((sum, loading) => sum + Number(loading.chicksLoaded || 0), 0);
-    const arrivalMetrics = getArrivalMetrics(activeBatch, activeLoadings);
-    const loadedBirds = Number(arrivalMetrics.arrivedDoc || activeBatch.totalChicksLoaded || 0) || loadedFromLoadings;
+    const summaryArrivalMetrics = getArrivalMetrics(activeBatch, activeLoadings, { requireExplicitArrival: true });
+    const loadedBirds = summaryArrivalMetrics.hasConfirmedArrival
+      ? Number(summaryArrivalMetrics.arrivedDoc || 0)
+      : 0;
     const estimatedLiveBirds = loadedBirds > 0 ? Math.max(loadedBirds - batchTotals.mortality, 0) : 0;
     const mortalityRate = loadedBirds > 0 ? (batchTotals.mortality / loadedBirds) * 100 : null;
     const survivalRate = loadedBirds > 0 ? (estimatedLiveBirds / loadedBirds) * 100 : null;
@@ -1357,7 +1378,9 @@ export default function TodayOperations({
       ? (harvestSoldBirds / loadedBirds) * 100
       : null;
     const harvestFcr = harvestKilos && harvestKilos > 0 ? totalFeedKg / harvestKilos : null;
-    const estimatedVsSoldGap = harvestSoldBirds !== null ? estimatedLiveBirds - harvestSoldBirds : null;
+    const estimatedVsSoldGap = summaryArrivalMetrics.hasConfirmedArrival && harvestSoldBirds !== null
+      ? estimatedLiveBirds - harvestSoldBirds
+      : null;
 
     [...logs]
       .filter((log) => Number(log.averageWeightGrams || 0) > 0)
@@ -1369,7 +1392,7 @@ export default function TodayOperations({
         }
       });
 
-    const buildingSummaries = activeLoadings.map((loading) => {
+    const buildingSummaries = summaryArrivalMetrics.hasConfirmedArrival ? activeLoadings.map((loading) => {
       const buildingKey = getBuildingKey(loading.building);
       const buildingLogs = logs.filter((log) => getBuildingKey(log.building) === buildingKey);
       const buildingTotals = buildLogTotals(buildingLogs);
@@ -1400,7 +1423,7 @@ export default function TodayOperations({
         fcr,
         employeeCount: assignedEmployees.length
       };
-    });
+    }) : [];
 
     const weightedWeightSources = buildingSummaries.filter((summary) => (
       summary.averageWeightGrams && summary.estimatedLiveBirds > 0
@@ -1416,11 +1439,12 @@ export default function TodayOperations({
 
     return {
       status: getBatchStatus(activeBatch),
+      hasConfirmedArrival: summaryArrivalMetrics.hasConfirmedArrival,
       summaryDate,
       summaryAgeDay,
       latestLogDate,
       loadedBirds,
-      arrival: arrivalMetrics,
+      arrival: summaryArrivalMetrics,
       estimatedLiveBirds,
       mortality: batchTotals.mortality,
       mortalityRate,
@@ -1471,9 +1495,11 @@ export default function TodayOperations({
       {
         key: 'building-loadings',
         label: 'Buildings',
-        value: activeLoadings.length ? `${activeLoadings.length} loaded` : 'None',
-        detail: `${formatNumber(postSummary.loadedBirds)} birds loaded`,
-        tone: activeLoadings.length ? 'success' : 'warning'
+        value: postSummary.hasConfirmedArrival ? `${activeLoadings.length} loaded` : 'Awaiting DOC',
+        detail: postSummary.hasConfirmedArrival
+          ? `${formatNumber(postSummary.loadedBirds)} arrived DOC`
+          : 'Record arrived DOC to confirm building totals.',
+        tone: postSummary.hasConfirmedArrival ? 'success' : 'neutral'
       },
       {
         key: 'harvest-report',
@@ -1497,8 +1523,7 @@ export default function TodayOperations({
   })();
 
   const renderDayOneHandoff = () => {
-    const loadedBirds = activeLoadings.reduce((sum, loading) => sum + Number(loading.chicksLoaded || 0), 0) ||
-      Number(activeBatch?.totalChicksLoaded || 0);
+    const loadedBirds = operationalHeads;
     const plannedFlock = Number(activeBatch?.plannedFlock || 0);
     const arrivalVariance = loadedBirds - plannedFlock;
     const hasPlannedFlock = plannedFlock > 0;
@@ -1509,7 +1534,9 @@ export default function TodayOperations({
         : arrivalVariance > 0
           ? `${formatNumber(arrivalVariance)} above planned.`
           : 'Arrival count matches plan.';
-    const arrivalCountTone = loadedBirds > 0 && (!hasPlannedFlock || arrivalVariance >= 0)
+    const arrivalCountTone = !hasConfirmedArrival
+      ? 'neutral'
+      : loadedBirds > 0 && (!hasPlannedFlock || arrivalVariance >= 0)
       ? 'success'
       : loadedBirds > 0
         ? 'warning'
@@ -1518,11 +1545,11 @@ export default function TodayOperations({
       {
         key: 'arrival-counts',
         label: 'Confirm arrival counts',
-        value: loadedBirds > 0 ? formatNumber(loadedBirds) : 'Missing',
-        detail: loadedBirds > 0 ? varianceDetail : 'Enter actual chicks arrived by building.',
+        value: hasConfirmedArrival ? formatNumber(loadedBirds) : 'Awaiting DOC',
+        detail: hasConfirmedArrival ? varianceDetail : 'Record arrived DOC before evaluating the arrival count.',
         tone: arrivalCountTone,
         actionScreen: 'batches',
-        actionLabel: loadedBirds > 0 ? 'Review counts' : 'Add counts'
+        actionLabel: hasConfirmedArrival ? 'Review counts' : 'Add counts'
       },
       {
         key: 'assignments',
@@ -1554,6 +1581,7 @@ export default function TodayOperations({
     ];
 
     const toneClass = {
+      neutral: 'border-app-border bg-app-card text-app-text',
       success: 'border-app-success/30 bg-app-success-bg text-app-success',
       warning: 'border-app-warning/30 bg-app-warning-bg text-app-warning',
       danger: 'border-app-danger/30 bg-app-danger-bg text-app-danger'
@@ -2259,21 +2287,32 @@ export default function TodayOperations({
           <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
             <SummaryMetric
               label="Loaded"
-              value={formatNumber(postSummary.loadedBirds)}
-              detail={`${postSummary.buildingSummaries.length} building${postSummary.buildingSummaries.length === 1 ? '' : 's'}`}
+              value={postSummary.hasConfirmedArrival ? formatNumber(postSummary.loadedBirds) : '--'}
+              detail={postSummary.hasConfirmedArrival
+                ? `${postSummary.buildingSummaries.length} building${postSummary.buildingSummaries.length === 1 ? '' : 's'}`
+                : 'Record arrived DOC to confirm loaded birds.'}
+              tone={postSummary.hasConfirmedArrival ? 'success' : 'neutral'}
               isLoading={isLoading}
             />
             <SummaryMetric
               label="Est. live"
-              value={formatNumber(postSummary.estimatedLiveBirds)}
-              detail={`${formatPercent(postSummary.survivalRate)} survival`}
-              tone={postSummary.survivalRate !== null && postSummary.survivalRate < 95 ? 'warning' : 'success'}
+              value={postSummary.hasConfirmedArrival ? formatNumber(postSummary.estimatedLiveBirds) : '--'}
+              detail={postSummary.hasConfirmedArrival
+                ? `${formatPercent(postSummary.survivalRate)} survival`
+                : 'Waiting for arrived DOC.'}
+              tone={!postSummary.hasConfirmedArrival
+                ? 'neutral'
+                : postSummary.survivalRate !== null && postSummary.survivalRate < 95
+                  ? 'warning'
+                  : 'success'}
               isLoading={isLoading}
             />
             <SummaryMetric
               label="Mortality"
               value={formatNumber(postSummary.mortality)}
-              detail={`${formatPercent(postSummary.mortalityRate)} of loaded birds`}
+              detail={postSummary.hasConfirmedArrival
+                ? `${formatPercent(postSummary.mortalityRate)} of loaded birds`
+                : 'Rate waits for arrived DOC.'}
               tone={mortalityTone}
               isLoading={isLoading}
             />
@@ -2311,28 +2350,38 @@ export default function TodayOperations({
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <SummaryMetric
                 label="Arrived DOC"
-                value={formatNumber(postSummary.arrival.arrivedDoc)}
-                detail={`Planned ${formatNumber(activeBatch?.plannedFlock || postSummary.arrival.arrivedDoc)}`}
+                value={postSummary.hasConfirmedArrival ? formatNumber(postSummary.arrival.arrivedDoc) : '--'}
+                detail={postSummary.hasConfirmedArrival
+                  ? `Planned ${formatNumber(activeBatch?.plannedFlock || postSummary.arrival.arrivedDoc)}`
+                  : 'No explicit arrived DOC recorded.'}
+                tone={postSummary.hasConfirmedArrival ? 'success' : 'neutral'}
                 isLoading={isLoading}
               />
               <SummaryMetric
                 label="DOA"
-                value={formatNumber(postSummary.arrival.doaCount)}
-                detail="Dead on arrival before placement"
-                tone={postSummary.arrival.doaCount > 0 ? 'warning' : 'success'}
+                value={postSummary.hasConfirmedArrival ? formatNumber(postSummary.arrival.doaCount) : '--'}
+                detail={postSummary.hasConfirmedArrival ? 'Dead on arrival before placement' : 'Waiting for arrived DOC.'}
+                tone={!postSummary.hasConfirmedArrival
+                  ? 'neutral'
+                  : postSummary.arrival.doaCount > 0
+                    ? 'warning'
+                    : 'success'}
                 isLoading={isLoading}
               />
               <SummaryMetric
                 label="Net placed"
-                value={formatNumber(postSummary.arrival.netChicksPlaced)}
-                detail="Arrived DOC less DOA"
-                tone="success"
+                value={postSummary.hasConfirmedArrival ? formatNumber(postSummary.arrival.netChicksPlaced) : '--'}
+                detail={postSummary.hasConfirmedArrival ? 'Arrived DOC less DOA' : 'Waiting for arrived DOC.'}
+                tone={postSummary.hasConfirmedArrival ? 'success' : 'neutral'}
                 isLoading={isLoading}
               />
               <SummaryMetric
                 label="Sample wt"
-                value={postSummary.arrival.arrivalSampleWeightGrams ? `${formatNumber(postSummary.arrival.arrivalSampleWeightGrams, 1)} g` : '--'}
-                detail="Weighted by arrived DOC per building"
+                value={postSummary.hasConfirmedArrival && postSummary.arrival.arrivalSampleWeightGrams
+                  ? `${formatNumber(postSummary.arrival.arrivalSampleWeightGrams, 1)} g`
+                  : '--'}
+                detail={postSummary.hasConfirmedArrival ? 'Weighted by arrived DOC per building' : 'Waiting for arrived DOC.'}
+                tone={postSummary.hasConfirmedArrival ? 'success' : 'neutral'}
                 isLoading={isLoading}
               />
             </div>
@@ -2679,8 +2728,12 @@ export default function TodayOperations({
         />
         <AttentionCard
           label={mortalityAllowance > 0 ? 'Allowance used' : 'Mortality limit used'}
-          value={`${formatNumber(totalMortalityToDate)} / ${formatNumber(mortalityAllowanceLimit)}`}
-          detail={mortalityAllowanceRemaining > 0
+          value={hasConfirmedArrival
+            ? `${formatNumber(totalMortalityToDate)} / ${formatNumber(mortalityAllowanceLimit)}`
+            : `-- / ${mortalityAllowanceLimit > 0 ? formatNumber(mortalityAllowanceLimit) : '--'}`}
+          detail={!hasConfirmedArrival
+            ? 'Record arrived DOC to start mortality tracking.'
+            : mortalityAllowanceRemaining > 0
             ? `${formatNumber(mortalityAllowanceRemaining)} heads remaining before alert.`
             : 'Allowance has been exceeded.'}
           tone={mortalityAllowanceTone}
@@ -2689,9 +2742,13 @@ export default function TodayOperations({
         />
         <AttentionCard
           label="Abnormal warnings"
-          value={abnormalWarnings.length}
-          detail={dangerCount ? `${dangerCount} need urgent review.` : 'No urgent abnormal value detected.'}
-          tone={dangerCount ? 'danger' : abnormalWarnings.length ? 'warning' : 'success'}
+          value={hasConfirmedArrival ? abnormalWarnings.length : '--'}
+          detail={!hasConfirmedArrival
+            ? 'Record arrived DOC before evaluating operational warnings.'
+            : dangerCount
+              ? `${dangerCount} need urgent review.`
+              : 'No urgent abnormal value detected.'}
+          tone={!hasConfirmedArrival ? 'neutral' : dangerCount ? 'danger' : abnormalWarnings.length ? 'warning' : 'success'}
           onClick={() => setActiveScreen('dailyLog')}
           isLoading={isLoading}
         />
@@ -2849,10 +2906,18 @@ export default function TodayOperations({
               )}
 
               {!abnormalWarnings.length && !isLoading && (
-                <div className="rounded-xl border border-app-success/30 bg-app-success-bg p-4 shadow-sm text-app-success">
-                  <p className="text-sm font-black">No abnormal values today</p>
+                <div className={`rounded-xl border p-4 shadow-sm ${
+                  hasConfirmedArrival
+                    ? 'border-app-success/30 bg-app-success-bg text-app-success'
+                    : 'border-app-border bg-app-card text-app-text'
+                }`}>
+                  <p className="text-sm font-black">
+                    {hasConfirmedArrival ? 'No abnormal values today' : 'Operational warnings are waiting'}
+                  </p>
                   <p className="mt-1 text-xs font-bold opacity-90 font-inter">
-                    Logs, feed stock, employee assignment, age, and harvest checks look clear.
+                    {hasConfirmedArrival
+                      ? 'Logs, feed stock, employee assignment, age, and harvest checks look clear.'
+                      : 'Record arrived DOC before evaluating feed, mortality, and arrival variance.'}
                   </p>
                 </div>
               )}
@@ -2871,7 +2936,8 @@ export default function TodayOperations({
                     buildingChecks.reduce((sum, check) => sum + check.chicksLoaded, 0)
                   );
                   const todayTotalsThreshold = Math.max(5, Math.ceil(todayTotalsHandled * 0.005));
-                  const todayMortalityColor = todayTotals.mortality <= todayTotalsThreshold ? 'text-app-success' :
+                  const todayMortalityColor = !hasConfirmedArrival ? 'text-app-text-secondary' :
+                    todayTotals.mortality <= todayTotalsThreshold ? 'text-app-success' :
                     todayTotals.mortality <= todayTotalsThreshold * 2 ? 'text-app-warning' : 'text-app-danger';
                   return (
                     <p className={`text-sm font-black font-jetbrains ${todayMortalityColor}`}>
@@ -2895,18 +2961,24 @@ export default function TodayOperations({
                   {mortalityAllowance > 0 ? 'Allowance used' : 'Mortality limit'}
                 </p>
                 <p className={`mt-1 font-black font-jetbrains ${
-                  mortalityAllowanceTone === 'success'
+                  mortalityAllowanceTone === 'neutral'
+                    ? 'text-app-text-secondary'
+                    : mortalityAllowanceTone === 'success'
                     ? 'text-app-success'
                     : mortalityAllowanceTone === 'warning'
                       ? 'text-app-warning'
                       : 'text-app-danger'
                 }`}>
-                  {formatNumber(totalMortalityToDate)} / {formatNumber(mortalityAllowanceLimit)}
+                  {hasConfirmedArrival
+                    ? `${formatNumber(totalMortalityToDate)} / ${formatNumber(mortalityAllowanceLimit)}`
+                    : `-- / ${mortalityAllowanceLimit > 0 ? formatNumber(mortalityAllowanceLimit) : '--'}`}
                 </p>
                 <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-app-border/40">
                   <div
                     className={`h-full rounded-full ${
-                      mortalityAllowanceTone === 'success'
+                      mortalityAllowanceTone === 'neutral'
+                        ? 'bg-app-border'
+                        : mortalityAllowanceTone === 'success'
                         ? 'bg-app-success'
                         : mortalityAllowanceTone === 'warning'
                           ? 'bg-app-warning'
@@ -2916,7 +2988,11 @@ export default function TodayOperations({
                   />
                 </div>
                 <p className="mt-1 text-[10px] font-bold text-app-text-secondary">
-                  {mortalityAllowanceRemaining > 0 ? `${formatNumber(mortalityAllowanceRemaining)} heads remaining` : 'Allowance exceeded'}
+                  {!hasConfirmedArrival
+                    ? 'Waiting for arrived DOC'
+                    : mortalityAllowanceRemaining > 0
+                      ? `${formatNumber(mortalityAllowanceRemaining)} heads remaining`
+                      : 'Allowance exceeded'}
                 </p>
               </div>
               <div className="rounded-lg bg-app-bg p-3">
