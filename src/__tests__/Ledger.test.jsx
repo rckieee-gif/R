@@ -13,7 +13,7 @@ vi.mock('../shared/utils/apiClient', () => ({
 }));
 
 const mockTransactions = [
-  { id: 1, date: '2026-05-29', building: 'All', type: 'Expense', category: 'Feed', amount: 1500, paidBy: 'Rolly', paidTo: 'Supplier Feed', remarks: '5 bags', status: 'PAID', description: 'Bought Starter Feed' },
+  { id: 1, date: '2026-05-29', building: 'All', type: 'Expense', fundingNature: 'OPEX', category: 'Feed', quantity: 5, unitCost: 300, amount: 1500, paidBy: 'Rolly', paidTo: 'Supplier Feed', remarks: '5 bags', status: 'PAID', description: 'Bought Starter Feed', feedItemId: 10 },
 ];
 
 const mockBuildings = [{ id: 1, name: 'A' }];
@@ -39,7 +39,7 @@ describe('TransactionLedger Component', () => {
         <TransactionLedger
           transactions={mockTransactions}
           setTransactions={vi.fn()}
-          activeBatch={{ id: 1 }}
+          activeBatch={{ id: '20260604-02' }}
           token="test-token"
         />
       </NotificationProvider>
@@ -71,7 +71,7 @@ describe('TransactionLedger Component', () => {
         <TransactionLedger
           transactions={mockTransactions}
           setTransactions={vi.fn()}
-          activeBatch={{ id: 1 }}
+          activeBatch={{ id: '20260604-02' }}
           token="test-token"
           canEditOrDelete={true}
         />
@@ -97,10 +97,47 @@ describe('TransactionLedger Component', () => {
 
     await waitFor(() => {
       expect(apiClient.post).toHaveBeenCalledWith(
-        '/api/batches/1/transactions',
+        '/api/batches/20260604-02/transactions',
         expect.objectContaining({
           amount: 2000,
           paidTo: 'Supplier Feed',
+        })
+      );
+    });
+  });
+
+  it('updates a transaction for a hyphenated batch ID', async () => {
+    apiClient.patch.mockResolvedValueOnce({
+      ...mockTransactions[0],
+      description: 'Updated Starter Feed',
+    });
+
+    render(
+      <NotificationProvider>
+        <TransactionLedger
+          transactions={mockTransactions}
+          setTransactions={vi.fn()}
+          activeBatch={{ id: '20260604-02' }}
+          token="test-token"
+          canEditOrDelete={true}
+        />
+      </NotificationProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /edit/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /edit/i }));
+    fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'Updated Starter Feed' } });
+    fireEvent.click(screen.getByRole('button', { name: /update record/i }));
+
+    await waitFor(() => {
+      expect(apiClient.patch).toHaveBeenCalledWith(
+        '/api/batches/20260604-02/transactions/1',
+        expect.objectContaining({
+          batchId: '20260604-02',
+          description: 'Updated Starter Feed',
         })
       );
     });

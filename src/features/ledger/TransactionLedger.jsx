@@ -578,7 +578,7 @@ export default function TransactionLedger({ transactions, setTransactions, activ
 
     const result = transactionSchema.safeParse(newTxData);
     if (!result.success) {
-      const errorMsg = result.error.errors.map(err => err.message).join('. ');
+      const errorMsg = result.error.issues.map(err => err.message).join('. ');
       toastError(errorMsg);
       return;
     }

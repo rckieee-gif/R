@@ -1,14 +1,17 @@
 import { z } from 'zod';
 
 export const transactionSchema = z.object({
-  batchId: z.coerce.number().int().positive("Batch ID must be positive"),
+  batchId: z.preprocess(
+    (value) => (value === null || value === undefined ? '' : String(value).trim()),
+    z.string().min(1, "Batch ID is required")
+  ),
   date: z.string().min(1, "Date is required"),
   building: z.string().optional().nullable(),
   type: z.enum(['Income', 'Expense', 'Adjustment', 'Reimbursement', 'Payment'], {
     errorMap: () => ({ message: "Transaction type must be one of: Income, Expense, Adjustment, Reimbursement, Payment" })
   }),
-  fundingNature: z.enum(['OPEX', 'CAPEX', 'CAPEX-Recoverable', 'Revenue'], {
-    errorMap: () => ({ message: "Funding nature must be one of: OPEX, CAPEX, CAPEX-Recoverable, Revenue" })
+  fundingNature: z.enum(['OPEX', 'CAPEX', 'CAPEX-Recoverable', 'Receivable', 'Payable', 'Revenue', 'Other Revenue'], {
+    errorMap: () => ({ message: "Select a valid funding nature" })
   }),
   category: z.string().min(1, "Category is required"),
   description: z.string().min(1, "Description is required"),
