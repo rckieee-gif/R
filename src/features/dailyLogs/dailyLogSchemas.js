@@ -1,7 +1,10 @@
 import { z } from 'zod';
 
 export const dailyLogSchema = z.object({
-  batchId: z.coerce.number().int().positive("Batch ID must be positive"),
+  batchId: z.preprocess(
+    (val) => (val === null || val === undefined ? undefined : String(val).trim()),
+    z.string().min(1, "Batch ID is required")
+  ),
   date: z.string().min(1, "Date is required"),
   building: z.string().min(1, "Building is required"),
   employeeId: z.coerce.number().int().positive("Employee ID is required"),

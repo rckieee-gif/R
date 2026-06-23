@@ -195,4 +195,68 @@ describe('DailyLog Component', () => {
       expect(screen.getByText(/1.00/i)).toBeInTheDocument();
     });
   });
+
+  it('saves a daily log for string batch IDs', async () => {
+    const setLogs = vi.fn();
+    apiClient.post.mockResolvedValue({
+      id: 100,
+      batchId: '20260604-02',
+      date: '2026-06-21',
+      building: 'A',
+      employeeId: 20,
+      employeeName: 'Worker Rolly',
+      handledBirds: 5000,
+      feedItemId: 10,
+      feedItemName: 'Starter Feed',
+      feed: 2,
+      mortality: 0,
+      averageWeightGrams: null,
+      remarks: '',
+    });
+
+    renderComponent({
+      setLogs,
+      activeBatch: {
+        ...mockBatch,
+        id: '20260604-02',
+        batchCode: '20260604-02',
+        startDate: '2026-06-21',
+      },
+    });
+
+    await screen.findByText(/Bldg A/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /next step/i }));
+    await screen.findByText(/2. Worker/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /next step/i }));
+    await screen.findByText(/3. Feed/i);
+    fireEvent.change(screen.getByPlaceholderText('0.00'), { target: { value: '2' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /next step/i }));
+    await screen.findByText(/4. Mortality/i);
+    fireEvent.change(screen.getByPlaceholderText('0'), { target: { value: '0' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /next step/i }));
+    await screen.findByText(/5. Weight/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /next step/i }));
+    await screen.findByText(/6. Warnings/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /next step/i }));
+    await screen.findByText(/Verify Log Details/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /save log/i }));
+
+    await waitFor(() => {
+      expect(apiClient.post).toHaveBeenCalledWith('/api/logs', expect.objectContaining({
+        batchId: '20260604-02',
+        building: 'A',
+        employeeId: 20,
+        feed: 2,
+        mortality: 0,
+      }));
+    });
+    expect(setLogs).toHaveBeenCalled();
+  });
 });

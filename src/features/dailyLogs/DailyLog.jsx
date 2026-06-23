@@ -494,7 +494,7 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
 
     const result = dailyLogSchema.safeParse(newLogData);
     if (!result.success) {
-      const errorMsg = result.error.errors.map(err => err.message).join('. ');
+      const errorMsg = result.error.issues.map(err => err.message).join('. ');
       toastError(errorMsg);
       return;
     }
