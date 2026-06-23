@@ -116,6 +116,11 @@ function formatNumber(value, digits = 0) {
   });
 }
 
+function formatAgeDay(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return '--';
+  return String(Number(value));
+}
+
 function getAssignmentBuilding(assignment) {
   return String(assignment.assignedBuilding || '').trim().toUpperCase();
 }
@@ -435,7 +440,7 @@ const TOOLTIP_DEFINITIONS = {
   },
   age: {
     title: 'Batch Age',
-    desc: 'The current age of the broiler batch in days. Day 1 starts when the chicks are unloaded in the building. Feed targets and mortality thresholds are determined dynamically based on this age.',
+    desc: 'The current age of the broiler batch in days. Day 0 starts when the chicks are unloaded in the building. Feed targets and mortality thresholds are determined dynamically based on this age.',
   }
 };
 
@@ -1135,7 +1140,7 @@ export default function TodayOperations({
           label: 'Feed variance',
           severity: Math.abs(check.variancePercent) >= 25 ? 'danger' : 'warning',
           title: `Building ${check.building} feed is ${check.variancePercent > 0 ? 'above' : 'below'} target`,
-          detail: `${check.variancePercent > 0 ? '+' : ''}${formatNumber(check.variancePercent, 1)}% versus the day ${ageDay || '--'} target curve.`
+          detail: `${check.variancePercent > 0 ? '+' : ''}${formatNumber(check.variancePercent, 1)}% versus the day ${formatAgeDay(ageDay)} target curve.`
         });
       }
     });
@@ -1209,7 +1214,7 @@ export default function TodayOperations({
       });
     }
 
-    if (hasConfirmedArrival && ageDay && ageDay > lastTargetDay) {
+    if (hasConfirmedArrival && ageDay !== null && ageDay > lastTargetDay) {
       warnings.push({
         key: 'age-over-target',
         label: 'Batch age',
@@ -1356,7 +1361,7 @@ export default function TodayOperations({
     const latestLogDate = getLatestLogDate(logs);
     const summaryDate = activeBatch.actualHarvestEndDate || latestLogDate || today;
     const summaryAgeDay = activeBatch.startDate ? getAgeDay(activeBatch.startDate, summaryDate) : null;
-    const targetDay = summaryAgeDay ? Math.min(summaryAgeDay, lastTargetDay) : null;
+    const targetDay = summaryAgeDay === null ? null : Math.min(summaryAgeDay, lastTargetDay);
     const batchTotals = buildLogTotals(logs);
     const summaryArrivalMetrics = getArrivalMetrics(activeBatch, activeLoadings, { requireExplicitArrival: true });
     const loadedBirds = summaryArrivalMetrics.hasConfirmedArrival
@@ -1435,7 +1440,7 @@ export default function TodayOperations({
       ), 0) / weightedLiveBirds
       : Number(latestBatchWeightLog?.averageWeightGrams || 0) || null;
     const actualFcr = calculateActualFcr(totalFeedKg, estimatedLiveBirds, averageWeightGrams);
-    const targetFeed = targetDay ? calculateTargetFeedForHeads(loadedBirds, targetDay) : null;
+    const targetFeed = targetDay === null ? null : calculateTargetFeedForHeads(loadedBirds, targetDay);
 
     return {
       status: getBatchStatus(activeBatch),
@@ -1592,7 +1597,7 @@ export default function TodayOperations({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-[10px] font-black uppercase tracking-wider text-app-accent font-inter">
-              Day-one arrival handoff
+              Day-zero arrival handoff
             </p>
             <h3 className="mt-1 text-xl font-black text-app-text font-hanken">
               Batch {activeBatch.id} is now active
@@ -1660,7 +1665,7 @@ export default function TodayOperations({
               Today’s Farm Checklist
             </h3>
             <p className="text-xs text-app-text-secondary font-inter">
-              Operator page tasks for Batch #{activeBatch.id} • D{ageDay || '--'}.
+              Operator page tasks for Batch #{activeBatch.id} • D{formatAgeDay(ageDay)}.
             </p>
           </div>
 
@@ -2649,7 +2654,7 @@ export default function TodayOperations({
             <div className="rounded-xl border border-app-border bg-app-card px-3 py-2 text-right shadow-sm">
               <p className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-inter">Age <InfoButton term="age" setActiveTooltip={setActiveTooltip} /></p>
               <p className={`text-xl font-black font-jetbrains ${ageDay > lastTargetDay ? 'text-app-warning' : 'text-app-accent'}`}>
-                D{ageDay || '--'}
+                D{formatAgeDay(ageDay)}
               </p>
             </div>
             <div className="rounded-xl border border-app-border bg-app-card px-3 py-2 text-right shadow-sm">

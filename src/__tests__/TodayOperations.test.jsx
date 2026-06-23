@@ -164,7 +164,7 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
     expect(screen.queryByRole('button', { name: /^Daily Logs$/i })).not.toBeInTheDocument();
   });
 
-  it('keeps D1 in pre-placement when only planned loading numbers exist', async () => {
+  it('keeps D0 in pre-placement when only planned loading numbers exist', async () => {
     renderComponent({
       activeBatch: {
         ...mockBatchActive,
@@ -182,7 +182,7 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
     expect(screen.queryByRole('button', { name: /^Daily Logs$/i })).not.toBeInTheDocument();
   });
 
-  it('keeps D1 in pre-placement even when today has log rows but no arrived DOC input', async () => {
+  it('keeps D0 in pre-placement even when today has log rows but no arrived DOC input', async () => {
     renderComponent({
       activeBatch: {
         ...mockBatchActive,
@@ -209,7 +209,7 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
     expect(screen.queryByRole('heading', { name: /Today.s Farm Checklist/i })).not.toBeInTheDocument();
   });
 
-  it('keeps D1 in pre-placement when arrived DOC field is present but still zero', async () => {
+  it('keeps D0 in pre-placement when arrived DOC field is present but still zero', async () => {
     renderComponent({
       activeBatch: {
         ...mockBatchActive,
@@ -227,7 +227,7 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
     expect(screen.queryByRole('button', { name: /^Daily Logs$/i })).not.toBeInTheDocument();
   });
 
-  it('shows active operations on D1 when arrived DOC is explicitly recorded', async () => {
+  it('shows active operations on D0 when arrived DOC is explicitly recorded', async () => {
     renderComponent({
       activeBatch: {
         ...mockBatchActive,
@@ -245,7 +245,7 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
     expect(screen.queryByText(/No arrived DOC input yet/i)).not.toBeInTheDocument();
   });
 
-  it('keeps day-one operational targets and warnings neutral while explicit arrived DOC is zero', async () => {
+  it('keeps day-zero operational targets and warnings neutral while explicit arrived DOC is zero', async () => {
     const batchId = 246;
     localStorage.setItem(`octavioArrivedDocConfirmed:${batchId}`, '1000');
 
@@ -584,7 +584,7 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
     expect(screen.queryByLabelText('Close explanation')).not.toBeInTheDocument();
   });
 
-  it('keeps a day-one handoff in pre-placement until arrived DOC is recorded', async () => {
+  it('keeps a day-zero handoff in pre-placement until arrived DOC is recorded', async () => {
     server.use(
       http.get(apiPath('/batches/:batchId/loadings'), () => json([
         { id: 1, building: 'A', chicksLoaded: 900 }
@@ -618,7 +618,7 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
     expect(screen.getByText(/No arrived DOC input yet/i)).toBeInTheDocument();
     expect(screen.getByText(/Awaiting arrived DOC count/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Enter DOC/i })).toBeInTheDocument();
-    expect(screen.queryByText(/Day-one arrival handoff/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Day-zero arrival handoff/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Active Operations Checklist/i)).not.toBeInTheDocument();
   });
 

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { getBatchWarningSignals } from '../../shared/utils/batchSignals';
 import { getArrivalMetrics } from '../../shared/utils/arrivalMetrics';
+import { getAgeDay } from '../../shared/utils/broilerTargets';
 
 function getTodayDateString() {
   const d = new Date();
@@ -276,15 +277,8 @@ export default function IntroPage({ onContinueAsViewer, onMemberLogin, isViewerL
     if (preloadedSnapshot.batch) {
       const start = preloadedSnapshot.batch.startDate;
       if (start) {
-        const parseDateOnly = (val) => {
-          if (!val) return null;
-          const [year, month, day] = String(val).split('T')[0].split('-').map(Number);
-          return new Date(year, month - 1, day);
-        };
-        const startD = parseDateOnly(start);
-        const todayD = parseDateOnly(todayStr);
-        if (startD && todayD) {
-          const ageDays = Math.round((todayD - startD) / (24 * 60 * 60 * 1000));
+        const ageDays = getAgeDay(start, todayStr);
+        if (ageDays !== null) {
           items.push({
             key: 'batch-age',
             label: `Batch ${preloadedSnapshot.batch.id}: Day ${ageDays}`,

@@ -49,17 +49,20 @@ export function getAgeDay(startDate, logDate) {
   const start = parseDateOnly(startDate);
   const current = parseDateOnly(logDate);
   if (start === null || current === null) return null;
-  return Math.max(1, Math.floor((current - start) / MS_PER_DAY) + 1);
+  if (current < start) return null;
+  return Math.floor((current - start) / MS_PER_DAY);
 }
 
 export function getBroilerTarget(day) {
-  const numericDay = Number(day || 0);
-  if (!numericDay) return null;
-  return BROILER_TARGETS.find((target) => target.day === numericDay) || null;
+  const numericDay = Number(day);
+  if (!Number.isFinite(numericDay) || numericDay < 0) return null;
+
+  const curveRow = BROILER_TARGETS[Math.floor(numericDay)];
+  return curveRow ? { ...curveRow, day: Math.floor(numericDay) } : null;
 }
 
 export function getLastBroilerTargetDay() {
-  return BROILER_TARGETS[BROILER_TARGETS.length - 1].day;
+  return BROILER_TARGETS.length - 1;
 }
 
 export function calculateTargetFeedForHeads(heads, day) {

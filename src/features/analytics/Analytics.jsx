@@ -53,13 +53,13 @@ function formatGrams(amount, digits = 1) {
 
 function getCurveMaxDay(logs, startDate) {
   const lastTargetDay = getLastBroilerTargetDay();
-  const todayDay = getAgeDay(startDate, new Date().toISOString().split('T')[0]) || 1;
+  const todayDay = getAgeDay(startDate, new Date().toISOString().split('T')[0]) ?? 0;
   const maxLoggedDay = logs.reduce((maxDay, log) => {
     const ageDay = getAgeDay(startDate, log.date);
-    return ageDay ? Math.max(maxDay, ageDay) : maxDay;
+    return ageDay === null ? maxDay : Math.max(maxDay, ageDay);
   }, 0);
 
-  return Math.min(lastTargetDay, Math.max(todayDay, maxLoggedDay, 1));
+  return Math.min(lastTargetDay, Math.max(todayDay, maxLoggedDay, 0));
 }
 
 function buildFeedCurveForHeads(logs, startDate, headCount) {
@@ -72,7 +72,7 @@ function buildFeedCurveForHeads(logs, startDate, headCount) {
 
   logs.forEach((log) => {
     const ageDay = getAgeDay(startDate, log.date);
-    if (!ageDay || ageDay > maxDay) return;
+    if (ageDay === null || ageDay > maxDay) return;
 
     feedByDay.set(ageDay, (feedByDay.get(ageDay) || 0) + Number(log.feed || 0));
     mortalityByDay.set(ageDay, (mortalityByDay.get(ageDay) || 0) + Number(log.mortality || 0));
@@ -87,8 +87,8 @@ function buildFeedCurveForHeads(logs, startDate, headCount) {
   let cumulativeFeedBags = 0;
   let cumulativeMortality = 0;
 
-  return Array.from({ length: maxDay }, (_, index) => {
-    const day = index + 1;
+  return Array.from({ length: maxDay + 1 }, (_, index) => {
+    const day = index;
     cumulativeFeedBags += feedByDay.get(day) || 0;
     cumulativeMortality += mortalityByDay.get(day) || 0;
 

@@ -69,6 +69,11 @@ function formatNumber(value, digits = 0) {
   });
 }
 
+function formatAgeDay(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return '--';
+  return String(Number(value));
+}
+
 function listToSentence(items) {
   if (!items.length) return 'the screens available to your role';
   if (items.length === 1) return items[0];
@@ -339,7 +344,7 @@ export default function AntigravityAssistant({
 
     const response = `🌾 **Batch Briefing**
 * **Batch**: ${activeBatch.id}
-* **Age**: Day ${batchMetrics.age || '--'}
+* **Age**: Day ${formatAgeDay(batchMetrics.age)}
 * **Live estimate**: ${liveEstimate}
 * **Mortality**: ${formatNumber(batchMetrics.totalMortality)} total (${formatNumber(batchMetrics.mortalityPercent, 2)}%)
 * **Feed used**: ${formatNumber(batchMetrics.totalFeedBags, 1)} bags / ${formatNumber(batchMetrics.totalFeedKg)} kg
@@ -361,7 +366,7 @@ export default function AntigravityAssistant({
 * **Logs today**: ${batchMetrics.todayLogs.length}
 * **Feed today**: ${formatNumber(batchMetrics.todayFeedBags, 1)} bags
 * **Mortality today**: ${formatNumber(batchMetrics.todayMortality)}
-* **Batch age**: Day ${batchMetrics.age || '--'}
+* **Batch age**: Day ${formatAgeDay(batchMetrics.age)}
 
 **Next move**: ${batchMetrics.todayLogs.length
       ? 'Feed and mortality entries are coming in. Scan for unusual spikes before closeout.'

@@ -62,6 +62,11 @@ function formatNumber(value, digits = 0) {
   });
 }
 
+function formatAgeDay(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return '--';
+  return String(Number(value));
+}
+
 function formatLedgerMoney(amount) {
   if (amount === null || amount === undefined || Number.isNaN(Number(amount))) return '₱0.00';
   return `₱${Number(amount).toLocaleString(undefined, {
@@ -550,7 +555,7 @@ export default function Dashboard({ setActiveScreen, logs = [], activeBatch, use
           </div>
           <div className="text-right bg-dashboard-card border border-dashboard-border rounded-xl px-4 py-2 shadow-sm">
             <p className="text-[9px] font-bold text-dashboard-text-secondary uppercase tracking-widest font-jetbrains">Flock Age</p>
-            <p className="text-xl font-black text-dashboard-success font-jetbrains mt-0.5">D{currentAgeDays || '--'}</p>
+            <p className="text-xl font-black text-dashboard-success font-jetbrains mt-0.5">D{formatAgeDay(currentAgeDays)}</p>
           </div>
         </div>
       </div>

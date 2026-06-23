@@ -39,6 +39,11 @@ function formatDecimal(value, digits = 2) {
   });
 }
 
+function formatAgeDay(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return '--';
+  return String(Number(value));
+}
+
 function getAssignmentBuilding(assignment) {
   return String(assignment.assignedBuilding || '').toUpperCase();
 }
@@ -311,10 +316,10 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
       const variancePercent = (targetVarianceKg / feedTarget.targetKg) * 100;
 
       if (Math.abs(variancePercent) >= FEED_VARIANCE_WARNING_PERCENT) {
-        warnings.push({
-          label: `Feed usage far ${variancePercent > 0 ? 'above' : 'below'} target`,
-          detail: `${variancePercent > 0 ? '+' : ''}${formatDecimal(variancePercent, 1)}% versus the day ${ageDay || '--'} employee target curve.`
-        });
+      warnings.push({
+        label: `Feed usage far ${variancePercent > 0 ? 'above' : 'below'} target`,
+        detail: `${variancePercent > 0 ? '+' : ''}${formatDecimal(variancePercent, 1)}% versus the day ${formatAgeDay(ageDay)} employee target curve.`
+      });
       }
     }
 

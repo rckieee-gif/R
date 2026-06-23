@@ -469,7 +469,7 @@ export default function BatchManagement({
               )}
             </select>
             <p className="mt-1 text-[10px] text-app-text-secondary font-inter">
-              Use ON THE WAY before arrival. Switch to ONGOING when chicks are unloaded to start Day 1.
+              Use ON THE WAY before arrival. Switch to ONGOING when chicks are unloaded to start Day 0.
             </p>
           </div>
 
