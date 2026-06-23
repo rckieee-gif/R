@@ -11,6 +11,7 @@ import OfflineStaleBanner from '../../shared/components/OfflineStaleBanner';
 import { calculateMortalityBuffer, applyMortalityBuffer } from '../../shared/utils/mortalityBuffer';
 import DailyLogForm from './components/DailyLogForm';
 import DailyLogHistory from './components/DailyLogHistory';
+import DailyLogEditModal from './components/DailyLogEditModal';
 import { dailyLogSchema } from './dailyLogSchemas';
 import SuccessBurst from '../../shared/components/SuccessBurst';
 
@@ -100,16 +101,18 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
   });
   const [activeBuilding, setActiveBuilding] = useState('A');
   const [feedItems, setFeedItems] = useState([]);
-  const [editingId, setEditingId] = useState(null);
+  const [editModalLog, setEditModalLog] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
   const [formResetKey, setFormResetKey] = useState(0);
   const [successBurstKey, setSuccessBurstKey] = useState(0);
   const { success, error: toastError, confirm } = useNotification();
   const skipSaveRef = useRef(false);
   const submitInFlightRef = useRef(false);
+  const editSubmitInFlightRef = useRef(false);
   const activeBatchId = activeBatch?.id ?? null;
-  const formKey = getDailyLogFormKey(activeBatchId, activeBuilding, editingId);
+  const formKey = getDailyLogFormKey(activeBatchId, activeBuilding, null);
   const [formState, setFormState] = useState(() => ({
     key: getDailyLogFormKey(activeBatchId, 'A', null),
     values: readDailyLogDraft(activeBatchId, 'A')
@@ -242,7 +245,6 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
 
     const savedTotals = logs
       .filter((log) => String(log.employeeId) === String(selectedAssignment.employeeId))
-      .filter((log) => log.id !== editingId)
       .filter((log) => log.date <= date)
       .reduce((totals, log) => ({
         feedBags: totals.feedBags + Number(log.feed || 0),
@@ -253,7 +255,7 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
       feedBags: savedTotals.feedBags + Number(feedConsumed || 0),
       mortality: savedTotals.mortality + Number(mortality || 0)
     };
-  }, [date, editingId, feedConsumed, logs, mortality, selectedAssignment]);
+  }, [date, feedConsumed, logs, mortality, selectedAssignment]);
 
   const feedTarget = useMemo(
     () => calculateTargetFeedForHeads(selectedAssignment?.handledBirds, ageDay),
@@ -396,7 +398,7 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
 
   // --- OFFLINE DRAFT STATE MANAGEMENT ---
   useEffect(() => {
-    if (!activeBatchId || editingId || skipSaveRef.current) return;
+    if (!activeBatchId || skipSaveRef.current) return;
 
     const draft = {
       date,
@@ -415,7 +417,7 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
         JSON.stringify(draft)
       );
     }
-  }, [date, activeBuilding, selectedEmployeeId, feedItemId, feedConsumed, mortality, averageWeightGrams, remarks, activeBatchId, editingId]);
+  }, [date, activeBuilding, selectedEmployeeId, feedItemId, feedConsumed, mortality, averageWeightGrams, remarks, activeBatchId]);
 
   const discardDraft = () => {
     if (!activeBatchId) return;
@@ -439,7 +441,6 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
 
   const resetForm = () => {
     const nextKey = getDailyLogFormKey(activeBatchId, activeBuilding, null);
-    setEditingId(null);
     setFormState({
       key: nextKey,
       values: {
@@ -462,12 +463,6 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
 
     if (readOnly) {
       toastError('Your role can view daily logs but cannot add or edit entries.');
-      return;
-    }
-
-    if (editingId && !canEditOrDelete) {
-      toastError('Only admin.roland can edit existing daily logs.');
-      setEditingId(null);
       return;
     }
 
@@ -511,16 +506,10 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     setIsSubmitting(true);
 
     try {
-      const data = editingId
-        ? await apiClient.patch(`/api/logs/${editingId}`, newLogData)
-        : await apiClient.post('/api/logs', newLogData);
+      const data = await apiClient.post('/api/logs', newLogData);
 
-      setLogs((current) => (
-        editingId
-          ? current.map((log) => log.id === editingId ? data : log)
-          : [data, ...current]
-      ));
-      success(editingId ? 'Daily log entry updated!' : 'Daily log entry saved!');
+      setLogs((current) => [data, ...current]);
+      success('Daily log entry saved!');
       setSuccessBurstKey((prev) => prev + 1);
       localStorage.removeItem(`octavioDailyLogDraft:${activeBatch.id}:${activeBuilding}`);
       resetForm();
@@ -533,24 +522,63 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     }
   };
 
+  const handleEditSave = async (updatedLogData) => {
+    if (editSubmitInFlightRef.current) {
+      return;
+    }
+
+    if (readOnly || !canEditOrDelete) {
+      toastError('Only admin.roland can edit existing daily logs.');
+      setEditModalLog(null);
+      return;
+    }
+
+    if (!activeBatch?.id || !editModalLog?.id) {
+      toastError('Select an active batch before updating a daily log.');
+      return;
+    }
+
+    const feedQuantity = Number(updatedLogData.feed || 0);
+    if (feedQuantity > 0 && !updatedLogData.feedItemId) {
+      toastError('Select which feed inventory item was consumed.');
+      return;
+    }
+
+    const payload = {
+      batchId: activeBatch.id,
+      ...updatedLogData,
+      feedItemId: feedQuantity > 0 ? updatedLogData.feedItemId : null
+    };
+
+    const result = dailyLogSchema.safeParse(payload);
+    if (!result.success) {
+      const errorMsg = result.error.issues.map(err => err.message).join('. ');
+      toastError(errorMsg);
+      return;
+    }
+
+    editSubmitInFlightRef.current = true;
+    setIsEditSubmitting(true);
+
+    try {
+      const data = await apiClient.patch(`/api/logs/${editModalLog.id}`, payload);
+      setLogs((current) => current.map((log) => log.id === editModalLog.id ? data : log));
+      success('Daily log entry updated!');
+      setSuccessBurstKey((prev) => prev + 1);
+      setEditModalLog(null);
+    } catch (err) {
+      console.error('Failed to update log:', err);
+      toastError(err.message || 'Cannot update daily log right now.');
+    } finally {
+      editSubmitInFlightRef.current = false;
+      setIsEditSubmitting(false);
+    }
+  };
+
   const handleEditClick = (log) => {
     if (!canEditOrDelete) return;
 
-    setEditingId(log.id);
-    setActiveBuilding(log.building);
-    setFormState({
-      key: getDailyLogFormKey(activeBatchId, log.building, log.id),
-      values: {
-        date: log.date,
-        selectedEmployeeId: log.employeeId ? String(log.employeeId) : '',
-        feedItemId: log.feedItemId ? String(log.feedItemId) : (feedItems[0]?.id ? String(feedItems[0].id) : ''),
-        feedConsumed: String(log.feed || ''),
-        mortality: String(log.mortality || ''),
-        averageWeightGrams: log.averageWeightGrams == null ? '' : String(log.averageWeightGrams),
-        remarks: log.remarks || ''
-      }
-    });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setEditModalLog(log);
   };
 
   const handleDeleteLog = async (idToDelete) => {
@@ -567,7 +595,7 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     try {
       await apiClient.delete(`/api/logs/${idToDelete}`);
       setLogs((current) => current.filter((log) => log.id !== idToDelete));
-      if (editingId === idToDelete) resetForm();
+      if (editModalLog?.id === idToDelete) setEditModalLog(null);
       success('Daily log deleted successfully!');
     } catch (err) {
       console.error('Failed to delete log:', err);
@@ -635,7 +663,7 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
       {!readOnly && (
         <DailyLogForm
           handleSubmit={handleSubmit}
-          editingId={editingId}
+          editingId={null}
           formResetKey={formResetKey}
           date={date}
           setDate={setDate}
@@ -675,12 +703,28 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
 
       <DailyLogHistory
         logs={logs}
-        editingId={editingId}
+        editingId={editModalLog?.id ?? null}
         readOnly={readOnly}
         canEditOrDelete={canEditOrDelete}
         handleEditClick={handleEditClick}
         handleDeleteLog={handleDeleteLog}
       />
+
+      {editModalLog && (
+        <DailyLogEditModal
+          key={editModalLog.id}
+          log={editModalLog}
+          activeBatchId={activeBatch?.id}
+          buildingNames={buildingNames}
+          assignments={assignments}
+          feedItems={feedItems}
+          isSaving={isEditSubmitting}
+          onClose={() => {
+            if (!isEditSubmitting) setEditModalLog(null);
+          }}
+          onSave={handleEditSave}
+        />
+      )}
     </div>
   );
 }

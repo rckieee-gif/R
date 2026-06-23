@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup, act, within } from '@testing-library/react';
 import { vi } from 'vitest';
 import DailyLog from '../features/dailyLogs/DailyLog';
 import { apiClient } from '../shared/utils/apiClient';
@@ -9,6 +9,8 @@ vi.mock('../shared/utils/apiClient', () => ({
   apiClient: {
     get: vi.fn(),
     post: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
   },
 }));
 
@@ -31,6 +33,22 @@ const mockBuildings = [
 const mockAssignments = [
   { employeeId: 20, employeeName: 'Worker Rolly', assignedBuilding: 'A', handledBirds: 5000, buildingChicksLoaded: 5000 },
 ];
+
+const mockExistingLog = {
+  id: 55,
+  batchId: '20260604-02',
+  date: '2026-06-21',
+  building: 'A',
+  employeeId: 20,
+  employeeName: 'Worker Rolly',
+  handledBirds: 5000,
+  feedItemId: 10,
+  feedItemName: 'Starter Feed',
+  feed: 1,
+  mortality: 2,
+  averageWeightGrams: null,
+  remarks: 'Initial count',
+};
 
 const renderComponent = (props = {}) => {
   return render(
@@ -331,5 +349,63 @@ describe('DailyLog Component', () => {
     await waitFor(() => {
       expect(screen.getByText(/Step 1 of 7/i)).toBeInTheDocument();
     });
+  });
+
+  it('edits an existing daily log in a modal without replacing the new entry draft', async () => {
+    const setLogs = vi.fn();
+    apiClient.patch.mockResolvedValue({
+      ...mockExistingLog,
+      feed: 3,
+      remarks: 'Corrected count',
+    });
+
+    renderComponent({
+      logs: [mockExistingLog],
+      setLogs,
+      canEditOrDelete: true,
+      activeBatch: {
+        ...mockBatch,
+        id: '20260604-02',
+        batchCode: '20260604-02',
+        startDate: '2026-06-21',
+      },
+    });
+
+    await screen.findByText(/Bldg A/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /next step/i }));
+    await screen.findByText(/2. Worker/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /next step/i }));
+    await screen.findByText(/3. Feed/i);
+    fireEvent.change(screen.getByPlaceholderText('0.00'), { target: { value: '5' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /^edit$/i }));
+
+    const dialog = await screen.findByRole('dialog', { name: /edit daily log/i });
+    expect(screen.getByText(/Step 3 of 7/i)).toBeInTheDocument();
+
+    const modal = within(dialog);
+    fireEvent.change(modal.getByLabelText(/feed used/i), { target: { value: '3' } });
+    fireEvent.change(modal.getByLabelText(/remarks/i), { target: { value: 'Corrected count' } });
+    fireEvent.click(modal.getByRole('button', { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(apiClient.patch).toHaveBeenCalledWith('/api/logs/55', expect.objectContaining({
+        batchId: '20260604-02',
+        building: 'A',
+        employeeId: 20,
+        feed: 3,
+        mortality: 2,
+        remarks: 'Corrected count',
+      }));
+    });
+    expect(setLogs).toHaveBeenCalled();
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: /edit daily log/i })).not.toBeInTheDocument();
+    });
+    expect(screen.getByText(/Step 3 of 7/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('0.00')).toHaveValue(5);
   });
 });
