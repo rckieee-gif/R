@@ -57,12 +57,15 @@ export function getBroilerTarget(day) {
   const numericDay = Number(day);
   if (!Number.isFinite(numericDay) || numericDay < 0) return null;
 
-  const curveRow = BROILER_TARGETS[Math.floor(numericDay)];
-  return curveRow ? { ...curveRow, day: Math.floor(numericDay) } : null;
+  const guideDay = Math.floor(numericDay);
+  if (guideDay === 0) {
+    return { day: 0, weightGrams: null, bagsPerThousandHeads: 0, fcr: null };
+  }
+  return BROILER_TARGETS.find((target) => target.day === guideDay) || null;
 }
 
 export function getLastBroilerTargetDay() {
-  return BROILER_TARGETS.length - 1;
+  return BROILER_TARGETS[BROILER_TARGETS.length - 1].day;
 }
 
 export function calculateTargetFeedForHeads(heads, day) {

@@ -73,6 +73,15 @@ function todayInputForTest() {
   return `${year}-${month}-${day}`;
 }
 
+function dateInputOffsetForTest(offsetDays) {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function mockTodayApi() {
   server.use(
     http.get(apiPath('/batches/:batchId/loadings'), () => json([])),
@@ -314,7 +323,7 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
       activeBatch: {
         ...mockBatchActive,
         id: 247,
-        startDate: todayInputForTest(),
+        startDate: dateInputOffsetForTest(-1),
         status: 'ONGOING',
         totalChicksLoaded: 1000,
         actualChicksArrived: 800,

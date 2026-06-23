@@ -143,7 +143,7 @@ describe('Analytics report context', () => {
         transactions={[]}
         activeBatch={{
           id: 3,
-          startDate: '2026-06-06',
+          startDate: '2026-06-05',
           totalChicksLoaded: 1000,
           actualChicksArrived: 1000,
           doaCount: 100,
