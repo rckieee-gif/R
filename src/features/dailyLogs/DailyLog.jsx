@@ -713,6 +713,7 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
         canEditOrDelete={canEditOrDelete}
         handleEditClick={handleEditClick}
         handleDeleteLog={handleDeleteLog}
+        activeBatch={activeBatch}
       />
 
       {editModalLog && (

@@ -96,8 +96,12 @@ describe('DailyLog Component', () => {
     expect(screen.getByText(/Bldg A/i)).toBeInTheDocument();
   });
 
-  it('renders daily logs as an overview data sheet with the event log on the side', async () => {
+  it('filters the overview sheet and recalculates feed variance from filtered rows', async () => {
     renderComponent({
+      activeBatch: {
+        ...mockBatch,
+        startDate: '2026-06-20',
+      },
       logs: [
         mockExistingLog,
         {
@@ -118,8 +122,10 @@ describe('DailyLog Component', () => {
     const sheet = screen.getByRole('table', { name: /daily log overview data sheet/i });
     expect(screen.getByText('Daily log data sheet')).toBeInTheDocument();
     expect(screen.getByText(/One sheet grouped by building and employee/i)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /^Event log$/i })).toBeInTheDocument();
-    expect(screen.getByText('Placeholder')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Feed variance$/i })).toBeInTheDocument();
+    expect(screen.getByText(/Uses the filtered sheet/i)).toBeInTheDocument();
+    expect(screen.getByText('Best range')).toBeInTheDocument();
+    expect(screen.getByText('Best action')).toBeInTheDocument();
     expect(screen.queryByText('Recent Logs')).not.toBeInTheDocument();
 
     expect(within(sheet).getByText('Building A')).toBeInTheDocument();
@@ -127,6 +133,17 @@ describe('DailyLog Component', () => {
     expect(within(sheet).getByText('Worker Rolly')).toBeInTheDocument();
     expect(within(sheet).getByText('Worker Jane')).toBeInTheDocument();
     expect(within(sheet).getByText('Second building')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/filter building/i), { target: { value: 'B' } });
+
+    await waitFor(() => {
+      expect(within(sheet).queryByText('Worker Rolly')).not.toBeInTheDocument();
+    });
+    expect(within(sheet).getByText('Building B')).toBeInTheDocument();
+    expect(within(sheet).getByText('Worker Jane')).toBeInTheDocument();
+    expect(screen.getByText(/1 row on chosen day, 1 row to date/i)).toBeInTheDocument();
+    expect(screen.getByText('Under target')).toBeInTheDocument();
+    expect(screen.getByText(/filtered feed is short/i)).toBeInTheDocument();
   });
 
   it('saves draft to localStorage on input changes and displays restore warning', async () => {
@@ -145,7 +162,7 @@ describe('DailyLog Component', () => {
     });
 
     // Worker dropdown should have Worker Rolly
-    const workerSelect = screen.getByRole('combobox');
+    const workerSelect = screen.getByLabelText(/employee share/i);
     fireEvent.change(workerSelect, { target: { value: '20' } });
 
     // Go to step 3 (Feed)
@@ -220,7 +237,7 @@ describe('DailyLog Component', () => {
     // Step 2
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     await screen.findByText(/2. Worker/i);
-    const workerSelect = screen.getByRole('combobox');
+    const workerSelect = screen.getByLabelText(/employee share/i);
     fireEvent.change(workerSelect, { target: { value: '20' } });
 
     // Step 3 (Feed)
