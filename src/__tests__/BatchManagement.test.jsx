@@ -1,4 +1,5 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { useState } from 'react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { vi } from 'vitest';
 import BatchManagement from '../features/batches/BatchManagement';
@@ -68,6 +69,84 @@ describe('BatchManagement', () => {
     expect(screen.getByText('Enter building chick counts when the delivery arrives.')).toBeInTheDocument();
     expect(screen.queryByText('-100')).not.toBeInTheDocument();
     expect(screen.queryByText('100 below planned flock (-10%).')).not.toBeInTheDocument();
+  });
+
+  it('deletes a selected closed batch from history when batch id types differ', async () => {
+    const closedBatch = {
+      id: '20260418',
+      startDate: '2026-04-18',
+      targetHarvestDate: '2026-05-23',
+      status: 'CLOSED',
+      totalChicksLoaded: 900,
+      actualChicksArrived: 900,
+      plannedFlock: 900,
+      mortalityAllowance: 35
+    };
+    const nextBatch = {
+      id: '20260604-02',
+      startDate: '2026-06-04',
+      status: 'ONGOING',
+      totalChicksLoaded: 1000,
+      actualChicksArrived: 1000,
+      plannedFlock: 1000,
+      mortalityAllowance: 50
+    };
+    const deletedBatchIds = [];
+    const setActiveBatch = vi.fn();
+
+    server.use(
+      http.delete(apiPath('/batches/:batchId'), ({ params }) => {
+        deletedBatchIds.push(params.batchId);
+        return json({ ok: true });
+      })
+    );
+
+    function Harness() {
+      const [activeBatch, setActiveBatchState] = useState({ ...closedBatch, id: 20260418 });
+
+      const handleSetActiveBatch = (batch) => {
+        setActiveBatch(batch);
+        setActiveBatchState(batch);
+      };
+
+      return (
+        <NotificationProvider>
+          <BatchManagement
+            activeBatch={activeBatch}
+            setActiveBatch={handleSetActiveBatch}
+            token={null}
+            canEditOrDelete={true}
+            batchList={[closedBatch, nextBatch]}
+            isBatchListLoading={false}
+          />
+        </NotificationProvider>
+      );
+    }
+
+    render(<Harness />);
+
+    const selectedButton = screen.getByRole('button', { name: /^Selected$/i });
+    const closedBatchCard = selectedButton.closest('.bg-app-card');
+
+    expect(closedBatchCard).not.toBeNull();
+    expect(within(closedBatchCard).getByText('Status: CLOSED')).toBeInTheDocument();
+
+    fireEvent.click(within(closedBatchCard).getByRole('button', { name: /^Delete$/i }));
+    expect(await screen.findByText(/Are you sure you want to delete batch 20260418/i)).toBeInTheDocument();
+
+    const deleteButtons = screen.getAllByRole('button', { name: /^Delete$/i });
+    fireEvent.click(deleteButtons.at(-1));
+
+    await waitFor(() => {
+      expect(deletedBatchIds).toEqual(['20260418']);
+    });
+    expect(setActiveBatch).toHaveBeenCalledWith(nextBatch);
+
+    await waitFor(() => {
+      expect(screen.queryByText('20260418')).not.toBeInTheDocument();
+    });
+    expect(screen.getAllByText('20260604-02')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: /^Selected$/i })).toBeInTheDocument();
   });
 
   it('selects and hands off an incoming batch after starting its cycle', async () => {

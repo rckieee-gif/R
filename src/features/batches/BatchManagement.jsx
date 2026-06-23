@@ -49,6 +49,10 @@ function isIncomingStatus(status) {
   return normalized === 'ON_THE_WAY' || normalized === 'ON THE WAY';
 }
 
+function isSameBatchId(left, right) {
+  return left != null && right != null && String(left) === String(right);
+}
+
 function getLockedSharePct(chicksLoaded, totalChicksLoaded) {
   const total = Number(totalChicksLoaded || 0);
   if (!total) return 0;
@@ -116,7 +120,7 @@ export default function BatchManagement({
       ? previewData.batches || []
       : optimisticBatchList ?? (hasExternalBatchList ? batchList : batches);
 
-    if (!activeBatch?.id || sourceBatches.some((batch) => String(batch.id) === String(activeBatch.id))) {
+    if (!activeBatch?.id || sourceBatches.some((batch) => isSameBatchId(batch.id, activeBatch.id))) {
       return sourceBatches;
     }
 
@@ -339,9 +343,9 @@ export default function BatchManagement({
         : await apiClient.post(url, batchPayload);
 
       if (editingBatchId) {
-        updateBatchList((current) => current.map((batch) => batch.id === editingBatchId ? data : batch));
+        updateBatchList((current) => current.map((batch) => isSameBatchId(batch.id, editingBatchId) ? data : batch));
 
-        if (isDayOneHandoff || activeBatch?.id === editingBatchId) {
+        if (isDayOneHandoff || isSameBatchId(activeBatch?.id, editingBatchId)) {
           setActiveBatch(data);
         }
         success(isStartingCycle ? 'Cycle started successfully!' : 'Batch updated successfully!');
@@ -391,9 +395,9 @@ export default function BatchManagement({
     try {
       await apiClient.delete(`/api/batches/${batchId}`);
 
-      const remainingBatches = updateBatchList((current) => current.filter((batch) => batch.id !== batchId));
+      const remainingBatches = updateBatchList((current) => current.filter((batch) => !isSameBatchId(batch.id, batchId)));
 
-      if (activeBatch?.id === batchId) {
+      if (isSameBatchId(activeBatch?.id, batchId)) {
         setActiveBatch(remainingBatches[0] || null);
       }
       refreshExternalBatchList();
@@ -768,12 +772,13 @@ export default function BatchManagement({
         <div className="space-y-3">
           {visibleBatches.map((batch) => {
             const arrivalVariance = getBatchWarningSignals(batch).arrival;
+            const isSelectedBatch = isSameBatchId(activeBatch?.id, batch.id);
 
             return (
               <div
                 key={batch.id}
                 className={`bg-app-card p-4 rounded-xl shadow-sm border transition-all ${
-                  activeBatch?.id === batch.id
+                  isSelectedBatch
                     ? 'border-app-accent shadow-[0_0_12px_rgba(75,226,119,0.15)]'
                     : 'border-app-border'
                 }`}
@@ -809,12 +814,12 @@ export default function BatchManagement({
                   <button
                     onClick={() => setActiveBatch(batch)}
                     className={`px-3 py-2 rounded-xl text-xs font-bold cursor-pointer transition ${
-                      activeBatch?.id === batch.id
+                      isSelectedBatch
                         ? 'bg-app-accent text-app-on-accent'
                         : 'bg-app-bg text-app-text-secondary border border-app-border hover:text-app-text'
                     }`}
                   >
-                    {activeBatch?.id === batch.id ? 'Selected' : 'Select'}
+                    {isSelectedBatch ? 'Selected' : 'Select'}
                   </button>
 
                   {!readOnly && canEditOrDelete && (
