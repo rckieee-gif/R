@@ -25,6 +25,7 @@ const MORTALITY_WARNING_RATE = 0.005;
 export default function DailyLogForm({
   handleSubmit,
   editingId,
+  formResetKey = 0,
   date,
   setDate,
   activeBuilding,
@@ -34,6 +35,7 @@ export default function DailyLogForm({
   setSelectedEmployeeId,
   buildingAssignments,
   isLoading,
+  isSubmitting = false,
   selectedAssignment,
   feedTarget,
   actualFcr,
@@ -55,7 +57,7 @@ export default function DailyLogForm({
   discardDraft,
   activeBatchId
 }) {
-  const currentPropsKey = `${activeBuilding}:${editingId}`;
+  const currentPropsKey = `${activeBuilding}:${editingId}:${formResetKey}`;
   const [stepState, setStepState] = useState(() => ({
     key: currentPropsKey,
     step: 1
@@ -510,9 +512,10 @@ export default function DailyLogForm({
           ) : (
             <button
               type="submit"
-              className="flex-[2] bg-app-accent text-app-on-accent px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-card"
+              disabled={isSubmitting}
+              className="flex-[2] bg-app-accent text-app-on-accent px-3.5 h-11 md:h-10 flex items-center justify-center rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-card disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
             >
-              {editingId ? 'Update Log' : 'Save Log'}
+              {isSubmitting ? 'Saving...' : (editingId ? 'Update Log' : 'Save Log')}
             </button>
           )}
         </div>

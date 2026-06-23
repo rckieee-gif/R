@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
 import { vi } from 'vitest';
 import DailyLog from '../features/dailyLogs/DailyLog';
 import { apiClient } from '../shared/utils/apiClient';
@@ -258,5 +258,78 @@ describe('DailyLog Component', () => {
       }));
     });
     expect(setLogs).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.getByText(/Step 1 of 7/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('button', { name: /save log/i })).not.toBeInTheDocument();
+  });
+
+  it('prevents duplicate submissions while a daily log is saving', async () => {
+    let resolvePost;
+    apiClient.post.mockImplementation(() => new Promise((resolve) => {
+      resolvePost = resolve;
+    }));
+
+    renderComponent({
+      activeBatch: {
+        ...mockBatch,
+        id: '20260604-02',
+        batchCode: '20260604-02',
+        startDate: '2026-06-21',
+      },
+    });
+
+    await screen.findByText(/Bldg A/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /next step/i }));
+    await screen.findByText(/2. Worker/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /next step/i }));
+    await screen.findByText(/3. Feed/i);
+    fireEvent.change(screen.getByPlaceholderText('0.00'), { target: { value: '2' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /next step/i }));
+    await screen.findByText(/4. Mortality/i);
+    fireEvent.change(screen.getByPlaceholderText('0'), { target: { value: '0' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /next step/i }));
+    await screen.findByText(/5. Weight/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /next step/i }));
+    await screen.findByText(/6. Warnings/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /next step/i }));
+    await screen.findByText(/Verify Log Details/i);
+
+    const saveButton = screen.getByRole('button', { name: /save log/i });
+    fireEvent.click(saveButton);
+    fireEvent.click(saveButton);
+
+    expect(apiClient.post).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /saving/i })).toBeDisabled();
+    });
+
+    await act(async () => {
+      resolvePost({
+        id: 101,
+        batchId: '20260604-02',
+        date: '2026-06-21',
+        building: 'A',
+        employeeId: 20,
+        employeeName: 'Worker Rolly',
+        handledBirds: 5000,
+        feedItemId: 10,
+        feedItemName: 'Starter Feed',
+        feed: 2,
+        mortality: 0,
+        averageWeightGrams: null,
+        remarks: '',
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Step 1 of 7/i)).toBeInTheDocument();
+    });
   });
 });

@@ -102,9 +102,12 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
   const [feedItems, setFeedItems] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formResetKey, setFormResetKey] = useState(0);
   const [successBurstKey, setSuccessBurstKey] = useState(0);
   const { success, error: toastError, confirm } = useNotification();
   const skipSaveRef = useRef(false);
+  const submitInFlightRef = useRef(false);
   const activeBatchId = activeBatch?.id ?? null;
   const formKey = getDailyLogFormKey(activeBatchId, activeBuilding, editingId);
   const [formState, setFormState] = useState(() => ({
@@ -447,10 +450,15 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
         remarks: ''
       }
     });
+    setFormResetKey((current) => current + 1);
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (submitInFlightRef.current) {
+      return;
+    }
 
     if (readOnly) {
       toastError('Your role can view daily logs but cannot add or edit entries.');
@@ -499,6 +507,9 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
       return;
     }
 
+    submitInFlightRef.current = true;
+    setIsSubmitting(true);
+
     try {
       const data = editingId
         ? await apiClient.patch(`/api/logs/${editingId}`, newLogData)
@@ -516,6 +527,9 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
     } catch (err) {
       console.error('Failed to save log:', err);
       toastError(err.message || 'Cannot connect to daily logs.');
+    } finally {
+      submitInFlightRef.current = false;
+      setIsSubmitting(false);
     }
   };
 
@@ -622,6 +636,7 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
         <DailyLogForm
           handleSubmit={handleSubmit}
           editingId={editingId}
+          formResetKey={formResetKey}
           date={date}
           setDate={setDate}
           activeBuilding={activeBuilding}
@@ -631,6 +646,7 @@ export default function DailyLog({ logs, setLogs, activeBatch, token, readOnly =
           setSelectedEmployeeId={setSelectedEmployeeId}
           buildingAssignments={buildingAssignments}
           isLoading={isLoading}
+          isSubmitting={isSubmitting}
           selectedAssignment={selectedAssignment}
           ageDay={ageDay}
           feedTarget={feedTarget}
