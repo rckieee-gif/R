@@ -254,6 +254,32 @@ describe('TodayOperations Component Keyboard Shortcuts', () => {
     expect(screen.queryByText(/No arrived DOC input yet/i)).not.toBeInTheDocument();
   });
 
+  it('separates optional checklist items from required closeout progress', async () => {
+    renderComponent({
+      activeBatch: {
+        ...mockBatchActive,
+        id: 248,
+        startDate: todayInputForTest(),
+        targetHarvestDate: dateInputOffsetForTest(30),
+        status: 'ONGOING',
+        totalChicksLoaded: 1000,
+        actualChicksArrived: 1000,
+        plannedFlock: 1000,
+      },
+    });
+
+    expect(await screen.findByRole('heading', { name: /Today.s Farm Checklist/i })).toBeInTheDocument();
+    expect(screen.getByText('Required closeout')).toBeInTheDocument();
+    expect(screen.getByText('Optional checks')).toBeInTheDocument();
+    expect(screen.getByText('Optional checks do not block required progress.')).toBeInTheDocument();
+    expect(screen.getByText('0 of 5 required tasks completed today')).toBeInTheDocument();
+    expect(screen.getByText('0/5 required')).toBeInTheDocument();
+    expect(screen.getByText('1/3 optional')).toBeInTheDocument();
+    expect(screen.getByText('Record average weight')).toBeInTheDocument();
+    expect(screen.getByText('Check abnormal warnings')).toBeInTheDocument();
+    expect(screen.getByText('Check weather')).toBeInTheDocument();
+  });
+
   it('keeps day-zero operational targets and warnings neutral while explicit arrived DOC is zero', async () => {
     const batchId = 246;
     localStorage.setItem(`octavioArrivedDocConfirmed:${batchId}`, '1000');

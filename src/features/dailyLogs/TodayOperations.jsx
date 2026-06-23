@@ -1232,7 +1232,7 @@ export default function TodayOperations({
   const dangerCount = abnormalWarnings.filter((warning) => warning.severity === 'danger').length;
   const todayTotals = buildLogTotals(todayLogs);
 
-  const farmChecklistItems = (() => {
+  const farmChecklistGroups = (() => {
     const isMortalityRecorded = buildingChecks.length > 0 && buildingChecks.every(check => 
       check.hasLogToday && check.todaysLogs.some(log => log.mortality !== null && log.mortality !== undefined && log.mortality !== '')
     );
@@ -1256,7 +1256,7 @@ export default function TodayOperations({
     const weightLog = todayLogs.find(log => Number(log.averageWeightGrams || 0) > 0);
     const weightValue = weightLog ? Number(weightLog.averageWeightGrams) : null;
 
-    const items = [
+    const requiredItems = [
       {
         key: 'mortality',
         title: 'Record mortality',
@@ -1284,17 +1284,6 @@ export default function TodayOperations({
         actionLabel: 'Go to Logs'
       },
       {
-        key: 'weight',
-        title: 'Record average weight',
-        desc: 'Weigh a sample of birds to update daily average weight.',
-        statusLabel: weightValue !== null 
-          ? `Weight: ${formatNumber(weightValue)}g average` 
-          : 'Weight: Missing',
-        autoComplete: isWeightRecorded,
-        actionScreen: 'dailyLog',
-        actionLabel: 'Go to Logs'
-      },
-      {
         key: 'feedStock',
         title: 'Check feed stock',
         desc: 'Verify if current feed inventory is above safety thresholds.',
@@ -1306,19 +1295,6 @@ export default function TodayOperations({
         autoComplete: isFeedStockOk,
         actionScreen: 'inventory',
         actionLabel: 'Check Stock'
-      },
-      {
-        key: 'warnings',
-        title: 'Check abnormal warnings',
-        desc: 'Review any feed, mortality, or age variance warning alerts.',
-        statusLabel: !hasConfirmedArrival
-          ? 'Warnings: Awaiting arrived DOC'
-          : abnormalWarnings.length > 0
-          ? `Warnings: ${abnormalWarnings.length} active warning${abnormalWarnings.length === 1 ? '' : 's'}` 
-          : 'Warnings: Clear',
-        autoComplete: isWarningsClear,
-        actionScreen: 'warnings',
-        actionLabel: 'Review Warnings'
       },
       {
         key: 'assignments',
@@ -1344,15 +1320,59 @@ export default function TodayOperations({
       }
     ];
 
-    return items.map(item => ({
+    const optionalItems = [
+      {
+        key: 'weight',
+        title: 'Record average weight',
+        desc: 'Weigh a sample of birds to update daily average weight.',
+        statusLabel: weightValue !== null
+          ? `Weight: ${formatNumber(weightValue)}g average`
+          : 'Weight: Optional',
+        autoComplete: isWeightRecorded,
+        actionScreen: 'dailyLog',
+        actionLabel: 'Go to Logs'
+      },
+      {
+        key: 'warnings',
+        title: 'Check abnormal warnings',
+        desc: 'Review any feed, mortality, or age variance warning alerts.',
+        statusLabel: !hasConfirmedArrival
+          ? 'Warnings: Awaiting arrived DOC'
+          : abnormalWarnings.length > 0
+          ? `Warnings: ${abnormalWarnings.length} active warning${abnormalWarnings.length === 1 ? '' : 's'}`
+          : 'Warnings: Clear',
+        autoComplete: isWarningsClear,
+        actionScreen: 'warnings',
+        actionLabel: 'Review Warnings'
+      },
+      {
+        key: 'weather',
+        title: 'Check weather',
+        desc: 'Review rain, heat, wind, and ventilation risk before closeout.',
+        statusLabel: manualCheckedItems.weather ? 'Weather: Checked' : 'Weather: Optional',
+        autoComplete: false
+      }
+    ];
+
+    const decorate = (item, optional = false) => ({
       ...item,
+      optional,
       checked: Boolean(manualCheckedItems[item.key] || item.autoComplete)
-    }));
+    });
+
+    return {
+      required: requiredItems.map((item) => decorate(item)),
+      optional: optionalItems.map((item) => decorate(item, true))
+    };
   })();
 
-  const farmCheckedCount = farmChecklistItems.filter(item => item.checked).length;
-  const farmPercentComplete = farmChecklistItems.length > 0 
-    ? Math.round((farmCheckedCount / farmChecklistItems.length) * 100) 
+  const requiredFarmChecklistItems = farmChecklistGroups.required;
+  const optionalFarmChecklistItems = farmChecklistGroups.optional;
+  const farmChecklistItems = [...requiredFarmChecklistItems, ...optionalFarmChecklistItems];
+  const farmCheckedCount = requiredFarmChecklistItems.filter(item => item.checked).length;
+  const optionalFarmCheckedCount = optionalFarmChecklistItems.filter(item => item.checked).length;
+  const farmPercentComplete = requiredFarmChecklistItems.length > 0
+    ? Math.round((farmCheckedCount / requiredFarmChecklistItems.length) * 100)
     : 0;
 
   const postSummary = useMemo(() => {
@@ -1652,6 +1672,93 @@ export default function TodayOperations({
 
   const renderFarmChecklist = () => {
     const needsMortalityLog = farmChecklistItems.some((item) => item.key === 'mortality' && !item.autoComplete);
+    const requiredAttentionKeys = ['mortality', 'feed', 'assignments', 'dailyLog'];
+    const statusTextClass = (item) => {
+      if (item.checked) return 'text-app-success';
+      if (item.key === 'warnings' && dangerCount > 0) return 'text-app-danger';
+      if (item.key === 'feedStock' && daysOfFeedRemaining !== null && daysOfFeedRemaining < 3) return 'text-app-danger';
+      if (item.key === 'feedStock' && daysOfFeedRemaining !== null && daysOfFeedRemaining < 7) return 'text-app-warning';
+      if (!item.optional && requiredAttentionKeys.includes(item.key)) return 'text-app-warning';
+      return 'text-app-text-secondary';
+    };
+    const renderChecklistItem = (item) => {
+      const isAuto = item.autoComplete;
+      const badgeLabel = item.checked ? (isAuto ? 'Auto-done' : 'Done') : item.optional ? 'Optional' : 'Pending';
+      const badgeClass = item.checked
+        ? isAuto
+          ? 'bg-app-success-bg/40 text-app-success border-app-success/20'
+          : 'bg-app-accent/10 text-app-accent border-app-accent/20'
+        : item.optional
+          ? 'bg-app-card text-app-text-secondary/70 border-app-border'
+          : 'bg-app-bg text-app-text-secondary/60 border-app-border';
+
+      return (
+        <div
+          key={item.key}
+          onClick={() => toggleFarmChecklistItem(item.key)}
+          className="group flex items-center justify-between py-3.5 transition-all duration-150 cursor-pointer first:pt-0 last:pb-0 hover:bg-app-accent/[0.02] px-2 -mx-2 rounded-xl"
+        >
+          <div className="flex items-center gap-3.5 min-w-0 pr-4">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleFarmChecklistItem(item.key);
+              }}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-app-bg border border-app-border text-app-text-secondary/40 hover:text-app-accent hover:border-app-accent hover:bg-app-accent/5 focus-visible:ring-2 focus-visible:ring-app-accent transition-all active:scale-95 cursor-pointer"
+              aria-label={`Toggle check for ${item.title}`}
+            >
+              {item.checked ? (
+                <svg className="h-6 w-6 text-app-success animate-[checkmark-in_0.2s_ease-out]" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="h-6 w-6 text-app-text-secondary/30 transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                </svg>
+              )}
+            </button>
+
+            <div className="min-w-0">
+              <p className={`font-extrabold text-sm font-hanken tracking-tight leading-snug transition-colors group-hover:text-app-accent ${
+                item.checked ? 'line-through text-app-text-secondary/70' : 'text-app-text'
+              }`}>
+                {item.title}
+              </p>
+              <p className={`mt-0.5 text-[11px] font-black font-inter leading-tight ${statusTextClass(item)}`}>
+                {item.statusLabel}
+              </p>
+              <p className="mt-1 text-xs text-app-text-secondary leading-snug font-inter truncate sm:whitespace-normal">
+                {item.desc}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <span className={`hidden sm:inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider font-inter border ${badgeClass}`}>
+              {badgeLabel}
+            </span>
+
+            {item.actionScreen && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (item.actionScreen === 'warnings') {
+                    setMobileTab('warnings');
+                  } else {
+                    setActiveScreen(item.actionScreen);
+                  }
+                }}
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-app-border bg-app-card px-3 text-xs font-black text-app-text-secondary hover:text-app-accent hover:border-app-accent active:scale-[0.98] transition-all shadow-sm cursor-pointer font-inter whitespace-nowrap"
+              >
+                {item.actionLabel}
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    };
 
     return (
       <div className="rounded-2xl border border-app-border bg-gradient-to-br from-app-card via-app-card to-app-accent/5 p-6 shadow-sm mb-6">
@@ -1671,7 +1778,7 @@ export default function TodayOperations({
 
           <div className="w-full lg:w-80 shrink-0 space-y-2">
             <div className="flex justify-between text-xs font-bold font-inter">
-              <span className="text-app-text-secondary">DAILY PROGRESS</span>
+              <span className="text-app-text-secondary">REQUIRED PROGRESS</span>
               <span className="text-app-accent font-black">{farmPercentComplete}% COMPLETE</span>
             </div>
             <div className="h-3 w-full rounded-full bg-app-bg overflow-hidden border border-app-border">
@@ -1681,7 +1788,7 @@ export default function TodayOperations({
               />
             </div>
             <p className="text-[10px] text-app-text-secondary text-right font-inter font-semibold">
-              {farmCheckedCount} of {farmChecklistItems.length} tasks completed today
+              {farmCheckedCount} of {requiredFarmChecklistItems.length} required tasks completed today
             </p>
           </div>
         </div>
@@ -1708,94 +1815,42 @@ export default function TodayOperations({
           </div>
         )}
 
-        <div className="divide-y divide-app-border/60">
-          {farmChecklistItems.map((item) => {
-            const isAuto = item.autoComplete;
-            return (
-              <div
-                key={item.key}
-                onClick={() => toggleFarmChecklistItem(item.key)}
-                className="group flex items-center justify-between py-3.5 transition-all duration-150 cursor-pointer first:pt-0 last:pb-0 hover:bg-app-accent/[0.02] px-2 -mx-2 rounded-xl"
-              >
-                <div className="flex items-center gap-3.5 min-w-0 pr-4">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFarmChecklistItem(item.key);
-                    }}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-app-bg border border-app-border text-app-text-secondary/40 hover:text-app-accent hover:border-app-accent hover:bg-app-accent/5 focus-visible:ring-2 focus-visible:ring-app-accent transition-all active:scale-95 cursor-pointer"
-                    aria-label={`Toggle check for ${item.title}`}
-                  >
-                    {item.checked ? (
-                      <svg className="h-6 w-6 text-app-success animate-[checkmark-in_0.2s_ease-out]" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                    ) : (
-                      <svg className="h-6 w-6 text-app-text-secondary/30 transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10" />
-                      </svg>
-                    )}
-                  </button>
+        <div>
+          <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h4 className="text-sm font-black text-app-text font-hanken">
+                Required closeout
+              </h4>
+              <p className="text-xs text-app-text-secondary font-inter">
+                Complete these before considering today's operation closed.
+              </p>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-inter">
+              {farmCheckedCount}/{requiredFarmChecklistItems.length} required
+            </span>
+          </div>
+          <div className="divide-y divide-app-border/60">
+            {requiredFarmChecklistItems.map(renderChecklistItem)}
+          </div>
+        </div>
 
-                  <div className="min-w-0">
-                    <p className={`font-extrabold text-sm font-hanken tracking-tight leading-snug transition-colors group-hover:text-app-accent ${
-                      item.checked ? 'line-through text-app-text-secondary/70' : 'text-app-text'
-                    }`}>
-                      {item.title}
-                    </p>
-                    <p className={`mt-0.5 text-[11px] font-black font-inter leading-tight ${
-                      item.checked 
-                        ? 'text-app-success' 
-                        : item.key === 'warnings' && dangerCount > 0
-                          ? 'text-app-danger'
-                          : item.key === 'feedStock' && daysOfFeedRemaining !== null && daysOfFeedRemaining < 3
-                            ? 'text-app-danger'
-                            : item.key === 'feedStock' && daysOfFeedRemaining !== null && daysOfFeedRemaining < 7
-                              ? 'text-app-warning'
-                              : ['mortality', 'feed', 'weight', 'assignments', 'dailyLog'].includes(item.key) && !item.checked
-                                ? 'text-app-warning'
-                                : 'text-app-text-secondary'
-                    }`}>
-                      {item.statusLabel}
-                    </p>
-                    <p className="mt-1 text-xs text-app-text-secondary leading-snug font-inter truncate sm:whitespace-normal">
-                      {item.desc}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className={`hidden sm:inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider font-inter border ${
-                    item.checked
-                      ? isAuto
-                        ? 'bg-app-success-bg/40 text-app-success border-app-success/20'
-                        : 'bg-app-accent/10 text-app-accent border-app-accent/20'
-                      : 'bg-app-bg text-app-text-secondary/60 border-app-border'
-                  }`}>
-                    {item.checked ? (isAuto ? 'Auto-done' : 'Done') : 'Pending'}
-                  </span>
-
-                  {item.actionScreen && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (item.actionScreen === 'warnings') {
-                          setMobileTab('warnings');
-                        } else {
-                          setActiveScreen(item.actionScreen);
-                        }
-                      }}
-                      className="inline-flex h-9 items-center justify-center rounded-lg border border-app-border bg-app-card px-3 text-xs font-black text-app-text-secondary hover:text-app-accent hover:border-app-accent active:scale-[0.98] transition-all shadow-sm cursor-pointer font-inter whitespace-nowrap"
-                    >
-                      {item.actionLabel}
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div className="mt-5 border-t border-app-border/60 pt-5">
+          <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h4 className="text-sm font-black text-app-text font-hanken">
+                Optional checks
+              </h4>
+              <p className="text-xs text-app-text-secondary font-inter">
+                Optional checks do not block required progress.
+              </p>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-app-text-secondary font-inter">
+              {optionalFarmCheckedCount}/{optionalFarmChecklistItems.length} optional
+            </span>
+          </div>
+          <div className="divide-y divide-app-border/60">
+            {optionalFarmChecklistItems.map(renderChecklistItem)}
+          </div>
         </div>
       </div>
     );
