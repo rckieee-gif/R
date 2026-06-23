@@ -96,6 +96,39 @@ describe('DailyLog Component', () => {
     expect(screen.getByText(/Bldg A/i)).toBeInTheDocument();
   });
 
+  it('renders daily logs as an overview data sheet with the event log on the side', async () => {
+    renderComponent({
+      logs: [
+        mockExistingLog,
+        {
+          ...mockExistingLog,
+          id: 56,
+          date: '2026-06-22',
+          building: 'B',
+          employeeId: 21,
+          employeeName: 'Worker Jane',
+          handledBirds: 4800,
+          feed: 2,
+          mortality: 1,
+          remarks: 'Second building',
+        },
+      ],
+    });
+
+    const sheet = screen.getByRole('table', { name: /daily log overview data sheet/i });
+    expect(screen.getByText('Daily log data sheet')).toBeInTheDocument();
+    expect(screen.getByText(/One sheet grouped by building and employee/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Event log$/i })).toBeInTheDocument();
+    expect(screen.getByText('Placeholder')).toBeInTheDocument();
+    expect(screen.queryByText('Recent Logs')).not.toBeInTheDocument();
+
+    expect(within(sheet).getByText('Building A')).toBeInTheDocument();
+    expect(within(sheet).getByText('Building B')).toBeInTheDocument();
+    expect(within(sheet).getByText('Worker Rolly')).toBeInTheDocument();
+    expect(within(sheet).getByText('Worker Jane')).toBeInTheDocument();
+    expect(within(sheet).getByText('Second building')).toBeInTheDocument();
+  });
+
   it('saves draft to localStorage on input changes and displays restore warning', async () => {
     // Mock get requests so state loads
     renderComponent();
