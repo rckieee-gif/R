@@ -45,10 +45,9 @@ describe('TransactionLedger Component', () => {
       </NotificationProvider>
     );
 
-    screen.debug(undefined, 100000);
     await waitFor(() => {
       expect(screen.getAllByText('Bought Starter Feed')[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/PHP\s+1,500/)[0]).toBeInTheDocument();
+      expect(screen.getAllByText(/\$1,500\.00/)[0]).toBeInTheDocument();
     });
   });
 
@@ -78,19 +77,15 @@ describe('TransactionLedger Component', () => {
       </NotificationProvider>
     );
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /save record/i })).toBeInTheDocument();
-    });
+    await screen.findByRole('button', { name: /new expense/i });
+    fireEvent.click(screen.getByRole('button', { name: /new expense/i }));
 
-    // Fill in transaction details
-    const descInput = screen.getByLabelText('Description');
-    const quantityInput = screen.getByLabelText('Quantity');
-    const amountInput = screen.getByLabelText('Amount');
-    const paidToInput = screen.getByLabelText('Paid To');
-    const saveBtn = screen.getByRole('button', { name: /save record/i });
+    const descInput = screen.getByLabelText(/Description/i);
+    const amountInput = screen.getByLabelText(/Amount/i);
+    const paidToInput = screen.getByLabelText(/Vendor/i);
+    const saveBtn = screen.getByRole('button', { name: /add expense/i });
 
     fireEvent.change(descInput, { target: { value: 'Starter Feed' } });
-    fireEvent.change(quantityInput, { target: { value: '10' } });
     fireEvent.change(amountInput, { target: { value: '2000' } });
     fireEvent.change(paidToInput, { target: { value: 'Supplier Feed' } });
     fireEvent.click(saveBtn);
@@ -101,6 +96,7 @@ describe('TransactionLedger Component', () => {
         expect.objectContaining({
           amount: 2000,
           paidTo: 'Supplier Feed',
+          description: 'Starter Feed',
         })
       );
     });
@@ -124,13 +120,11 @@ describe('TransactionLedger Component', () => {
       </NotificationProvider>
     );
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /edit/i })).toBeInTheDocument();
-    });
+    const editButton = await screen.findByRole('button', { name: /edit bought starter feed/i });
 
-    fireEvent.click(screen.getByRole('button', { name: /edit/i }));
-    fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'Updated Starter Feed' } });
-    fireEvent.click(screen.getByRole('button', { name: /update record/i }));
+    fireEvent.click(editButton);
+    fireEvent.change(screen.getByLabelText(/Description/i), { target: { value: 'Updated Starter Feed' } });
+    fireEvent.click(screen.getByRole('button', { name: /update expense/i }));
 
     await waitFor(() => {
       expect(apiClient.patch).toHaveBeenCalledWith(

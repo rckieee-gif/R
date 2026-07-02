@@ -133,8 +133,6 @@ export default function StatusBar({ activeBatch }) {
     };
   }, []);
 
-  const buildingString = buildings.length ? `Building ${buildings.join('/')}` : 'Building A/B/C';
-
   return (
     <div className="no-print w-full bg-app-card/40 dark:bg-black/20 border-b border-app-border px-4 py-2 flex items-center justify-between text-[11px] font-bold text-app-text-secondary select-none font-jetbrains backdrop-blur-md transition-colors duration-300">
       <div className="flex items-center gap-2 sm:gap-2.5 flex-nowrap min-w-0">

@@ -172,9 +172,11 @@ describe('Business protection coverage', () => {
       </NotificationProvider>
     );
 
-    await screen.findByRole('heading', { name: /^Today$/i });
+    await waitFor(() => {
+      expect(screen.getByTitle('Today')).toHaveAttribute('aria-current', 'page');
+    });
     expect(screen.queryByRole('heading', { name: /^Expenses$/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /save record/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /new expense/i })).not.toBeInTheDocument();
   });
 
   it('blocks negative transaction amounts before the API is called', async () => {
@@ -201,12 +203,13 @@ describe('Business protection coverage', () => {
       </NotificationProvider>
     );
 
-    await screen.findByRole('button', { name: /save record/i });
-    fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'Medicine purchase' } });
-    const amountInput = screen.getByLabelText('Amount');
+    await screen.findByRole('button', { name: /new expense/i });
+    fireEvent.click(screen.getByRole('button', { name: /new expense/i }));
+    fireEvent.change(screen.getByLabelText(/Description/i), { target: { value: 'Medicine purchase' } });
+    const amountInput = screen.getByLabelText(/Amount/i);
     fireEvent.change(amountInput, { target: { value: '-25' } });
-    fireEvent.change(screen.getByLabelText('Paid To'), { target: { value: 'Supplier' } });
-    fireEvent.click(screen.getByRole('button', { name: /save record/i }));
+    fireEvent.change(screen.getByLabelText(/Vendor/i), { target: { value: 'Supplier' } });
+    fireEvent.click(screen.getByRole('button', { name: /add expense/i }));
 
     expect(amountInput).toBeInvalid();
     expect(transactionPosts).toHaveLength(0);
@@ -241,9 +244,10 @@ describe('Business protection coverage', () => {
 
     render(<InventoryManagement token="manager-token" activeBatch={activeBatch} />);
 
-    await screen.findByRole('button', { name: /save movement/i });
+    await screen.findByRole('button', { name: /log movement/i });
+    fireEvent.click(screen.getByRole('button', { name: /log movement/i }));
     fireEvent.change(screen.getByDisplayValue('Stock In'), { target: { value: 'Stock Out' } });
-    fireEvent.change(screen.getAllByPlaceholderText('0')[2], { target: { value: '6' } });
+    fireEvent.change(screen.getByLabelText(/Qty/i), { target: { value: '6' } });
     fireEvent.click(screen.getByRole('button', { name: /save movement/i }));
 
     await screen.findByText(/Starter Feed cannot go below zero stock/i);

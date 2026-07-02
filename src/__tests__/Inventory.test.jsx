@@ -58,8 +58,7 @@ describe('InventoryManagement Component', () => {
       expect(screen.getAllByText('Starter Feed').length).toBeGreaterThan(0);
     });
 
-    // Check low stock alert warning banner
-    expect(screen.getByText(/Low Stock Warning/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Low stock/i).length).toBeGreaterThan(0);
   });
 
   it('allows creation of a new item', async () => {
@@ -67,12 +66,11 @@ describe('InventoryManagement Component', () => {
 
     render(<InventoryManagement token="test-token" activeBatch={{ id: 1 }} canEditOrDelete={true} />);
 
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText(/e.g. Starter Feed/i)).toBeInTheDocument();
-    });
+    await screen.findByRole('button', { name: /new item/i });
+    fireEvent.click(screen.getByRole('button', { name: /new item/i }));
 
     const nameInput = screen.getByPlaceholderText(/e.g. Starter Feed/i);
-    const saveButton = screen.getByRole('button', { name: /save item/i });
+    const saveButton = screen.getByRole('button', { name: /add item/i });
 
     fireEvent.change(nameInput, { target: { value: 'Finisher Feed' } });
     fireEvent.click(saveButton);
@@ -90,13 +88,10 @@ describe('InventoryManagement Component', () => {
 
     render(<InventoryManagement token="test-token" activeBatch={{ id: 1 }} canEditOrDelete={true} />);
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /save movement/i })).toBeInTheDocument();
-    });
+    await screen.findByRole('button', { name: /log movement/i });
+    fireEvent.click(screen.getByRole('button', { name: /log movement/i }));
 
-    // Choose movement quantity (3rd input with placeholder "0")
-    const inputs = screen.getAllByPlaceholderText('0');
-    const qtyInput = inputs[2];
+    const qtyInput = screen.getByLabelText(/Qty/i);
     fireEvent.change(qtyInput, { target: { value: '15' } });
 
     const saveMovementBtn = screen.getByRole('button', { name: /save movement/i });

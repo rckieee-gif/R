@@ -2,6 +2,18 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../shared/utils/apiClient';
 import { inventoryItemSchema, inventoryMovementSchema } from './inventorySchemas';
 import OfflineStaleBanner from '../../shared/components/OfflineStaleBanner';
+import {
+  Badge,
+  Button,
+  DataTable,
+  FormField,
+  Modal,
+  PageHeader,
+  SearchInput,
+  SectionLabel,
+  SelectField,
+  TextInput
+} from '../../shared/components/OctavioUI';
 
 const emptyItemForm = {
   name: '',
@@ -27,7 +39,7 @@ const emptyMovementForm = {
   reference: ''
 };
 
-const categories = ['Feed', 'Medicine', 'Supplies', 'Equipment', 'Chicks'];
+const categories = ['Feed', 'Medicine', 'Supplies', 'Equipment', 'Chicks', 'Seeds', 'Tools'];
 const units = ['sacks', 'kg', 'heads', 'pcs', 'bottle', 'pack', 'dose', 'sack', 'liter', 'gallon'];
 const movementTypes = ['Stock In', 'Stock Out', 'Adjustment', 'Transfer'];
 const ledgerFunding = ['OPEX', 'CAPEX', 'CAPEX-Recoverable'];
@@ -40,16 +52,14 @@ function formatQuantity(value, digits = 2) {
 }
 
 function formatMoney(value) {
-  return `PHP ${Number(value || 0).toLocaleString(undefined, {
+  return `$${Number(value || 0).toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })}`;
 }
 
 function getStockWarningType(item) {
-  if (['low-stock', 'needed-stock', 'ok'].includes(item.warningType)) {
-    return item.warningType;
-  }
+  if (['low-stock', 'needed-stock', 'ok'].includes(item.warningType)) return item.warningType;
 
   const currentStock = Number(item.currentStock || 0);
   const targetQuantity = Number(item.targetQuantity || 0);
@@ -60,52 +70,15 @@ function getStockWarningType(item) {
   return 'ok';
 }
 
-function getStockWarningMeta(type) {
-  if (type === 'low-stock') {
-    return {
-      label: 'Low alert',
-      border: 'border-app-danger bg-app-danger-bg',
-      valueText: 'text-app-danger',
-      badgeText: 'text-app-danger'
-    };
-  }
-
-  if (type === 'needed-stock') {
-    return {
-      label: 'Needed stock gap',
-      border: 'border-app-warning bg-app-warning-bg',
-      valueText: 'text-app-warning',
-      badgeText: 'text-app-warning'
-    };
-  }
-
-  return {
-    label: 'Stock met',
-    border: 'border-app-border',
-    valueText: 'text-app-success',
-    badgeText: 'text-app-success'
-  };
-}
-
-function formatWarningNames(items) {
-  return `${items.slice(0, 3).map((item) => item.name).join(', ')}${items.length > 3 ? ` +${items.length - 3} more` : ''}`;
-}
-
-function getMovementTone(type) {
-  if (type === 'Stock In') return 'text-app-success';
-  if (type === 'Stock Out') return 'text-app-danger';
-  return 'text-app-text-secondary';
-}
-
 function normalizeStakeholderName(name) {
-  return name === 'Yanyan' ? 'Others' : name;
+  return name === 'Yanyan' ? 'Others' : String(name || '').trim();
 }
 
 function uniqueStakeholders(stakeholders) {
   const seen = new Set();
   return stakeholders.reduce((list, stakeholder) => {
     const name = normalizeStakeholderName(stakeholder.name);
-    if (seen.has(name)) return list;
+    if (!name || seen.has(name)) return list;
     seen.add(name);
     list.push({ ...stakeholder, name });
     return list;
@@ -123,12 +96,8 @@ async function readInventoryData({ activeBatchId, signal }) {
   return {
     items: itemData,
     movements: movementData,
-    buildings: Array.isArray(buildingData)
-      ? ['All', ...buildingData.map((building) => building.name)]
-      : null,
-    stakeholders: Array.isArray(stakeholderData)
-      ? uniqueStakeholders(stakeholderData)
-      : null
+    buildings: Array.isArray(buildingData) ? ['All', ...buildingData.map((building) => building.name)] : null,
+    stakeholders: Array.isArray(stakeholderData) ? uniqueStakeholders(stakeholderData) : null
   };
 }
 
@@ -141,9 +110,12 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
   const [itemForm, setItemForm] = useState(emptyItemForm);
   const [movementForm, setMovementForm] = useState(emptyMovementForm);
   const [editingItemId, setEditingItemId] = useState(null);
+  const [modalMode, setModalMode] = useState(null);
+  const [search, setSearch] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const isPreviewMode = !token && Boolean(previewData);
+
   const visibleItems = useMemo(
     () => isPreviewMode ? previewData.inventoryItems || [] : items,
     [isPreviewMode, items, previewData]
@@ -153,9 +125,7 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
     [isPreviewMode, movements, previewData]
   );
   const visibleBuildings = useMemo(
-    () => isPreviewMode
-      ? ['All', ...(previewData.buildings || []).map((building) => building.name)]
-      : buildings,
+    () => isPreviewMode ? ['All', ...(previewData.buildings || []).map((building) => building.name)] : buildings,
     [buildings, isPreviewMode, previewData]
   );
   const visibleStakeholders = useMemo(
@@ -163,30 +133,26 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
     [isPreviewMode, previewData, stakeholders]
   );
 
-  const lowStockItems = useMemo(
-    () => visibleItems.filter((item) => getStockWarningType(item) === 'low-stock'),
-    [visibleItems]
-  );
+  const filteredItems = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return visibleItems;
+    return visibleItems.filter((item) => [
+      item.name,
+      item.category,
+      item.unit,
+      item.currentStock,
+      item.reorderLevel
+    ].join(' ').toLowerCase().includes(query));
+  }, [search, visibleItems]);
 
-  const neededStockItems = useMemo(
-    () => visibleItems.filter((item) => getStockWarningType(item) === 'needed-stock'),
-    [visibleItems]
-  );
-
-  const feedStock = useMemo(
-    () => visibleItems
-      .filter((item) => item.category === 'Feed')
-      .reduce((sum, item) => sum + Number(item.currentStock || 0), 0),
-    [visibleItems]
+  const selectedMovementItem = useMemo(
+    () => visibleItems.find((item) => String(item.id) === String(movementForm.itemId)) || null,
+    [movementForm.itemId, visibleItems]
   );
 
   const movementAmount = movementForm.unitCost && movementForm.quantity
     ? Number(movementForm.quantity || 0) * Number(movementForm.unitCost || 0)
     : 0;
-  const selectedMovementItem = useMemo(
-    () => visibleItems.find((item) => String(item.id) === String(movementForm.itemId)) || null,
-    [movementForm.itemId, visibleItems]
-  );
 
   const fetchInventory = useCallback(async (signal) => {
     if (!token) return;
@@ -195,8 +161,7 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
     setError('');
 
     try {
-      const inventoryData = await readInventoryData({ token, activeBatchId, signal });
-
+      const inventoryData = await readInventoryData({ activeBatchId, signal });
       if (signal?.aborted) return;
 
       setItems(inventoryData.items);
@@ -215,9 +180,7 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
       console.error(err);
       setError(err.message || 'Cannot connect to inventory.');
     } finally {
-      if (!signal?.aborted) {
-        setIsLoading(false);
-      }
+      if (!signal?.aborted) setIsLoading(false);
     }
   }, [activeBatchId, token]);
 
@@ -227,47 +190,14 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
 
     const loadInventory = async () => {
       await Promise.resolve();
-      if (controller.signal.aborted) return;
-
-      setIsLoading(true);
-      setError('');
-
-      try {
-        const inventoryData = await readInventoryData({
-          token,
-          activeBatchId,
-          signal: controller.signal
-        });
-
-        if (controller.signal.aborted) return;
-
-        setItems(inventoryData.items);
-        setMovements(inventoryData.movements);
-        if (inventoryData.buildings) setBuildings(inventoryData.buildings);
-        if (inventoryData.stakeholders) setStakeholders(inventoryData.stakeholders);
-
-        setMovementForm((current) => ({
-          ...current,
-          itemId: current.itemId || inventoryData.items[0]?.id || '',
-          paidBy: normalizeStakeholderName(current.paidBy) || inventoryData.stakeholders?.find((item) => item.name === 'Rolly')?.name || inventoryData.stakeholders?.[0]?.name || '',
-          paidTo: normalizeStakeholderName(current.paidTo) || inventoryData.stakeholders?.[0]?.name || ''
-        }));
-      } catch (err) {
-        if (err.name === 'AbortError') return;
-        console.error(err);
-        setError(err.message || 'Cannot connect to inventory.');
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoading(false);
-        }
+      if (!controller.signal.aborted) {
+        fetchInventory(controller.signal);
       }
     };
 
     loadInventory();
-    return () => {
-      controller.abort();
-    };
-  }, [activeBatchId, token]);
+    return () => controller.abort();
+  }, [fetchInventory, token]);
 
   const updateItemForm = (field, value) => {
     setItemForm((current) => ({ ...current, [field]: value }));
@@ -286,9 +216,25 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
     });
   };
 
-  const resetItemForm = () => {
+  const openNewItemModal = () => {
     setEditingItemId(null);
     setItemForm(emptyItemForm);
+    setError('');
+    setModalMode('item');
+  };
+
+  const openMovementModal = () => {
+    setError('');
+    setMovementForm((current) => ({
+      ...current,
+      itemId: current.itemId || visibleItems[0]?.id || ''
+    }));
+    setModalMode('movement');
+  };
+
+  const closeModal = () => {
+    setModalMode(null);
+    setEditingItemId(null);
     setError('');
   };
 
@@ -302,13 +248,13 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
     }
 
     if (editingItemId && !canEditOrDelete) {
-      setError('Only admin.roland can edit inventory items.');
+      setError('Only owners can edit inventory items.');
       return;
     }
 
     const result = inventoryItemSchema.safeParse(itemForm);
     if (!result.success) {
-      setError(result.error.errors.map(err => err.message).join('. '));
+      setError(result.error.errors.map((err) => err.message).join('. '));
       return;
     }
 
@@ -319,7 +265,7 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
         await apiClient.post('/api/inventory/items', itemForm);
       }
       await fetchInventory();
-      resetItemForm();
+      closeModal();
     } catch (err) {
       console.error(err);
       setError(err.message || 'Cannot save inventory item.');
@@ -363,13 +309,12 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
 
     const result = inventoryMovementSchema.safeParse(payload);
     if (!result.success) {
-      setError(result.error.errors.map(err => err.message).join('. '));
+      setError(result.error.errors.map((err) => err.message).join('. '));
       return;
     }
 
     try {
       await apiClient.post('/api/inventory/movements', payload);
-
       setMovementForm((current) => ({
         ...emptyMovementForm,
         itemId: current.itemId,
@@ -377,6 +322,7 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
         paidTo: current.paidTo
       }));
       await fetchInventory();
+      closeModal();
     } catch (err) {
       console.error(err);
       setError(err.message || 'Cannot save inventory movement.');
@@ -394,454 +340,395 @@ export default function InventoryManagement({ token, activeBatch, readOnly = fal
       targetQuantity: String(item.targetQuantity || ''),
       reorderLevel: String(item.reorderLevel || '')
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setModalMode('item');
   };
 
+  const exportToCSV = () => {
+    const headers = ['Item', 'Category', 'In Stock', 'Unit', 'Reorder At', 'Status'];
+    const rows = filteredItems.map((item) => [
+      item.name,
+      item.category,
+      item.currentStock,
+      item.unit,
+      item.reorderLevel,
+      getStockWarningType(item) === 'ok' ? 'OK' : 'Low stock'
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const link = document.createElement('a');
+    link.href = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
+    link.download = `inventory_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const columns = [
+    {
+      key: 'item',
+      header: 'Item',
+      render: (item) => (
+        <div>
+          <p className="font-semibold text-app-text">{item.name}</p>
+          <p className="text-xs text-app-text-secondary">{item.category}</p>
+        </div>
+      )
+    },
+    {
+      key: 'currentStock',
+      header: 'In Stock',
+      render: (item) => `${formatQuantity(item.currentStock)} ${item.unit || ''}`
+    },
+    {
+      key: 'reorderLevel',
+      header: 'Reorder At',
+      render: (item) => `${formatQuantity(item.reorderLevel)} ${item.unit || ''}`
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (item) => {
+        const type = getStockWarningType(item);
+        if (type === 'ok') return <Badge tone="success">OK</Badge>;
+        return <Badge tone="danger">Low stock</Badge>;
+      }
+    },
+    {
+      key: 'actions',
+      header: '',
+      cellClassName: 'w-20',
+      render: (item) => (
+        <div className="no-print flex items-center gap-3">
+          {canEditOrDelete && !readOnly ? (
+            <button
+              type="button"
+              onClick={() => handleEditItem(item)}
+              className="text-app-text hover:text-app-accent cursor-pointer"
+              aria-label={`Edit ${item.name}`}
+              title="Edit"
+            >
+              <span className="material-symbols-outlined text-[18px]">edit</span>
+            </button>
+          ) : null}
+          <button
+            type="button"
+            disabled
+            className="text-app-danger/70 disabled:cursor-not-allowed"
+            aria-label={`Delete ${item.name}`}
+            title="Delete is not available for inventory items yet"
+          >
+            <span className="material-symbols-outlined text-[18px]">delete</span>
+          </button>
+        </div>
+      )
+    }
+  ];
+
+  const movementColumns = [
+    {
+      key: 'itemName',
+      header: 'Item',
+      render: (movement) => movement.itemName || movement.item_name || 'Item'
+    },
+    {
+      key: 'usedFor',
+      header: 'Used For',
+      render: (movement) => movement.remarks || `${movement.movementType || 'Movement'} ${movement.building ? `(${movement.building})` : ''}`
+    },
+    {
+      key: 'quantity',
+      header: 'Qty',
+      render: (movement) => `${formatQuantity(movement.quantity)} ${movement.unit || ''}`
+    },
+    {
+      key: 'date',
+      header: 'Date',
+      render: (movement) => movement.movementDate || movement.movement_date || ''
+    }
+  ];
+
   return (
-    <div className="app-page">
-      <div className="mb-6 mt-2">
-        <h2 className="text-3xl font-extrabold text-app-text tracking-tight font-hanken">Feed & Inventory</h2>
-        <p className="text-app-text-secondary text-sm mt-1">
-          {activeBatch?.id ? `Batch ${activeBatch.id}` : 'Farm stock tracker'}
-        </p>
-      </div>
+    <div className="octavio-wide-page">
+      <PageHeader title="Inventory" subtitle="Seeds, feed, tools, medicine and supplies." />
 
       <OfflineStaleBanner data={[items, movements]} />
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
-        <div className="bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Low Alerts</p>
-          <p className={`text-lg font-black mt-1 font-jetbrains ${lowStockItems.length ? 'text-app-danger' : 'text-app-success'}`}>
-            {lowStockItems.length}
-          </p>
-        </div>
-
-        <div className="bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Need Gaps</p>
-          <p className={`text-lg font-black mt-1 font-jetbrains ${neededStockItems.length ? 'text-app-warning' : 'text-app-success'}`}>
-            {neededStockItems.length}
-          </p>
-        </div>
-
-        <div className="bg-app-card p-4 rounded-xl border border-app-border shadow-sm col-span-2 lg:col-span-1">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-app-text-secondary">Feed Stock</p>
-          <p className="text-lg font-black mt-1 text-app-text font-jetbrains">
-            {formatQuantity(feedStock)} sacks
-          </p>
-        </div>
-      </div>
-
-      {lowStockItems.length > 0 && (
-        <div className="bg-app-danger-bg border border-app-danger rounded-xl p-3 mb-6">
-          <p className="text-xs font-black uppercase tracking-wider text-app-danger">Low Stock Warning</p>
-          <p className="text-sm font-bold text-app-danger mt-1">
-            {formatWarningNames(lowStockItems)}
-          </p>
-        </div>
-      )}
-
-      {neededStockItems.length > 0 && (
-        <div className="bg-app-warning-bg border border-app-warning rounded-xl p-3 mb-6">
-          <p className="text-xs font-black uppercase tracking-wider text-app-warning">Needed Stock Gap</p>
-          <p className="text-sm font-bold text-app-warning mt-1">
-            {formatWarningNames(neededStockItems)}
-          </p>
-        </div>
-      )}
-
       {error && (
-        <div className="bg-app-danger-bg text-app-danger p-3 rounded-xl text-sm font-bold mb-4 border border-app-danger">
+        <div className="mb-4 rounded-2xl border border-app-danger bg-app-danger-bg p-4 text-sm font-semibold text-app-danger">
           {error}
         </div>
       )}
 
       {readOnly && (
-        <div className="bg-app-success-bg border border-app-accent rounded-xl p-3 mb-6">
-          <p className="text-xs font-black uppercase tracking-wider text-app-accent">Read-only access</p>
-          <p className="text-sm font-bold text-app-text-secondary mt-1">
-            You can review stock levels and movement history. Feed and inventory changes are restricted to operation managers and owners.
-          </p>
+        <div className="mb-5 rounded-2xl border border-app-accent bg-app-success-bg p-4 text-sm text-app-text">
+          <p className="text-xs font-bold uppercase tracking-wide text-app-accent">Read-only access</p>
+          <p className="mt-1">You can review stock levels and movement history. Inventory changes are restricted to operation managers and owners.</p>
         </div>
       )}
 
-      {!readOnly && (
-      <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-app-text-secondary font-hanken">
-            {editingItemId ? 'Edit Item' : 'New Item'}
-          </h3>
-          {editingItemId && (
-            <button type="button" onClick={resetItemForm} className="text-xs font-bold text-app-text-secondary hover:text-app-text transition-colors">
-              Cancel
-            </button>
-          )}
-        </div>
+      <div className="no-print mb-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
+        <SearchInput
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search items..."
+        />
+        <Button variant="secondary" onClick={exportToCSV}>
+          <span className="material-symbols-outlined text-[18px]">download</span>
+          Export CSV
+        </Button>
+        {!readOnly && (
+          <Button variant="secondary" onClick={openMovementModal}>
+            <span className="material-symbols-outlined text-[18px]">swap_vert</span>
+            Log Movement
+          </Button>
+        )}
+        {!readOnly && (
+          <Button onClick={openNewItemModal}>
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            New Item
+          </Button>
+        )}
+      </div>
 
-        <form onSubmit={handleItemSubmit} className="space-y-3">
-          <div>
-            <label className="block text-xs font-bold text-app-text-secondary mb-1">Item Name</label>
-            <input
-              type="text"
-              required
-              value={itemForm.name}
-              onChange={(event) => updateItemForm('name', event.target.value)}
-              className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all"
-              placeholder="e.g. Starter Feed"
-            />
-          </div>
+      {isLoading && <p className="mb-3 text-sm text-app-text-secondary">Loading inventory...</p>}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-app-text-secondary mb-1">Category</label>
-              <select
+      <DataTable
+        columns={columns}
+        rows={filteredItems}
+        emptyMessage={search ? 'No items match your search.' : 'No inventory items yet.'}
+      />
+
+      <h2 className="octavio-serif mt-8 mb-4 text-xl font-bold text-app-text">Usage history</h2>
+      <DataTable
+        columns={movementColumns}
+        rows={visibleMovements.slice(0, 8)}
+        emptyMessage="No inventory movements yet."
+      />
+
+      <Modal
+        open={modalMode === 'item'}
+        title={editingItemId ? 'Edit Item' : 'New Item'}
+        helperText="Track feed, supplies, medicine, tools, and reorder levels."
+        onClose={closeModal}
+        footer={(
+          <>
+            <Button variant="ghost" onClick={closeModal}>Cancel</Button>
+            <Button onClick={handleItemSubmit}>{editingItemId ? 'Update item' : 'Add item'}</Button>
+          </>
+        )}
+      >
+        <form onSubmit={handleItemSubmit}>
+          <SectionLabel>Item</SectionLabel>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FormField label="Item Name" required>
+              <TextInput
+                required
+                value={itemForm.name}
+                onChange={(event) => updateItemForm('name', event.target.value)}
+                placeholder="e.g. Starter Feed"
+              />
+            </FormField>
+            <FormField label="Category" required>
+              <SelectField
                 value={itemForm.category}
                 onChange={(event) => updateItemForm('category', event.target.value)}
-                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all font-bold"
               >
                 {categories.map((category) => (
                   <option key={category} value={category}>{category}</option>
                 ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-app-text-secondary mb-1">Unit</label>
-              <select
+              </SelectField>
+            </FormField>
+            <FormField label="Unit" required>
+              <SelectField
                 value={itemForm.unit}
                 onChange={(event) => updateItemForm('unit', event.target.value)}
-                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all font-bold"
               >
                 {units.map((unit) => (
                   <option key={unit} value={unit}>{unit}</option>
                 ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-app-text-secondary mb-1">Needed Qty</label>
-              <input
+              </SelectField>
+            </FormField>
+            <FormField label="Needed Qty">
+              <TextInput
                 type="number"
                 step="0.001"
                 min="0"
                 value={itemForm.targetQuantity}
                 onChange={(event) => updateItemForm('targetQuantity', event.target.value)}
-                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-jetbrains transition-all"
                 placeholder="0"
               />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-app-text-secondary mb-1">Low Alert</label>
-              <input
+            </FormField>
+            <FormField label="Reorder At">
+              <TextInput
                 type="number"
                 step="0.001"
                 min="0"
                 value={itemForm.reorderLevel}
                 onChange={(event) => updateItemForm('reorderLevel', event.target.value)}
-                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-jetbrains transition-all"
                 placeholder="0"
               />
-            </div>
+            </FormField>
           </div>
-
-          <button type="submit" className="w-full bg-app-accent text-app-on-accent h-11 md:h-10 flex items-center justify-center rounded-xl font-bold shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer">
-            {editingItemId ? 'Update Item' : 'Save Item'}
-          </button>
+          <button type="submit" className="hidden">Submit item</button>
         </form>
-      </div>
-      )}
+      </Modal>
 
-      {!readOnly && (
-      <div className="bg-app-card p-5 rounded-2xl shadow-sm border border-app-border mb-6">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-app-text-secondary mb-4 font-hanken">
-          Stock Movement
-        </h3>
-
-        <form onSubmit={handleMovementSubmit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-app-text-secondary mb-1">Date</label>
-              <input
+      <Modal
+        open={modalMode === 'movement'}
+        title="Log Movement"
+        helperText="Record stock in, stock out, adjustments, and transfers."
+        onClose={closeModal}
+        footer={(
+          <>
+            <Button variant="ghost" onClick={closeModal}>Cancel</Button>
+            <Button onClick={handleMovementSubmit}>Save movement</Button>
+          </>
+        )}
+      >
+        <form onSubmit={handleMovementSubmit}>
+          <SectionLabel>Movement</SectionLabel>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FormField label="Date" required>
+              <TextInput
                 type="date"
                 required
                 value={movementForm.movementDate}
                 onChange={(event) => updateMovementForm('movementDate', event.target.value)}
-                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-bold transition-all"
               />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-app-text-secondary mb-1">Type</label>
-              <select
+            </FormField>
+            <FormField label="Type" required>
+              <SelectField
                 value={movementForm.movementType}
                 onChange={(event) => updateMovementForm('movementType', event.target.value)}
-                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-bold transition-all"
               >
                 {movementTypes.map((type) => (
                   <option key={type} value={type}>{type}</option>
                 ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-app-text-secondary mb-1">Item</label>
-            <select
-              required
-              value={movementForm.itemId}
-              onChange={(event) => updateMovementForm('itemId', event.target.value)}
-              className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-bold transition-all"
-            >
-              {visibleItems.length === 0 && <option value="">No inventory items</option>}
-              {visibleItems.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name} ({formatQuantity(item.currentStock)} {item.unit})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <label className="block text-xs font-bold text-app-text-secondary mb-1">Qty</label>
-              <input
+              </SelectField>
+            </FormField>
+            <FormField label="Item" required className="sm:col-span-2">
+              <SelectField
+                required
+                value={movementForm.itemId}
+                onChange={(event) => updateMovementForm('itemId', event.target.value)}
+              >
+                {visibleItems.length === 0 && <option value="">No inventory items</option>}
+                {visibleItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name} ({formatQuantity(item.currentStock)} {item.unit})
+                  </option>
+                ))}
+              </SelectField>
+            </FormField>
+            <FormField label="Qty" required>
+              <TextInput
                 type="number"
                 step="0.001"
                 required
                 value={movementForm.quantity}
                 onChange={(event) => updateMovementForm('quantity', event.target.value)}
-                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-jetbrains transition-all"
                 placeholder={movementForm.movementType === 'Adjustment' ? '+/-' : '0'}
               />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-app-text-secondary mb-1">Unit Cost</label>
-              <input
+            </FormField>
+            <FormField label="Unit Cost">
+              <TextInput
                 type="number"
                 step="0.0001"
                 min="0"
                 value={movementForm.unitCost}
                 onChange={(event) => updateMovementForm('unitCost', event.target.value)}
-                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-jetbrains transition-all"
                 placeholder="0"
               />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-app-text-secondary mb-1">Building</label>
-              <select
+            </FormField>
+            <FormField label="Building">
+              <SelectField
                 value={movementForm.building}
                 onChange={(event) => updateMovementForm('building', event.target.value)}
-                className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent font-bold transition-all"
               >
                 {visibleBuildings.map((building) => (
                   <option key={building} value={building}>{building}</option>
                 ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-app-text-secondary mb-1">Remarks</label>
-            <input
-              type="text"
-              value={movementForm.remarks}
-              onChange={(event) => updateMovementForm('remarks', event.target.value)}
-              className="w-full p-3 border border-app-border rounded-xl bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all"
-              placeholder="Optional"
-            />
+              </SelectField>
+            </FormField>
+            <FormField label="Remarks" className="sm:col-span-2">
+              <TextInput
+                value={movementForm.remarks}
+                onChange={(event) => updateMovementForm('remarks', event.target.value)}
+                placeholder="Optional"
+              />
+            </FormField>
           </div>
 
           {movementForm.movementType === 'Stock In' && (
-            <div className="rounded-xl border border-app-border p-3 space-y-3">
-              <label className="flex items-center gap-2 text-xs font-bold text-app-text-secondary">
+            <div className="mt-4 rounded-2xl border border-app-border bg-app-card/70 p-4">
+              <label className="flex items-center gap-2 text-sm font-semibold text-app-text-secondary">
                 <input
                   type="checkbox"
                   checked={movementForm.createLedger}
                   onChange={(event) => updateMovementForm('createLedger', event.target.checked)}
                   className="h-4 w-4 accent-app-accent"
                 />
-                Add purchase to ledger
+                Add purchase to expenses
               </label>
 
               {movementForm.createLedger && (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[10px] font-bold text-app-text-secondary mb-1">Funding</label>
-                      <select
-                        value={movementForm.fundingNature}
-                        onChange={(event) => updateMovementForm('fundingNature', event.target.value)}
-                        className="w-full p-2 border border-app-border rounded-lg bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all"
-                      >
-                        {ledgerFunding.map((funding) => (
-                          <option key={funding} value={funding}>{funding}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-bold text-app-text-secondary mb-1">Category</label>
-                      <input
-                        type="text"
-                        value={movementForm.ledgerCategory}
-                        onChange={(event) => updateMovementForm('ledgerCategory', event.target.value)}
-                        className="w-full p-2 border border-app-border rounded-lg bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[10px] font-bold text-app-text-secondary mb-1">Paid By</label>
-                      <select
-                        value={movementForm.paidBy}
-                        onChange={(event) => updateMovementForm('paidBy', event.target.value)}
-                        className="w-full p-2 border border-app-border rounded-lg bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all"
-                      >
-                        <option value="">-- Select --</option>
-                        {visibleStakeholders.map((stakeholder) => (
-                          <option key={stakeholder.id} value={stakeholder.name}>{stakeholder.name}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-bold text-app-text-secondary mb-1">Paid To</label>
-                      <select
-                        value={movementForm.paidTo}
-                        onChange={(event) => updateMovementForm('paidTo', event.target.value)}
-                        className="w-full p-2 border border-app-border rounded-lg bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all"
-                      >
-                        <option value="">-- Select --</option>
-                        {visibleStakeholders.map((stakeholder) => (
-                          <option key={stakeholder.id} value={stakeholder.name}>{stakeholder.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <input
-                    type="text"
-                    value={movementForm.reference}
-                    onChange={(event) => updateMovementForm('reference', event.target.value)}
-                    className="w-full p-2 border border-app-border rounded-lg bg-app-bg text-app-text outline-none focus:ring-2 focus:ring-app-accent transition-all"
-                    placeholder="Invoice or OR reference"
-                  />
-
-                  <div className="text-right text-xs font-black text-app-text-secondary font-jetbrains">
-                    Ledger amount: {formatMoney(movementAmount)}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
-          <button type="submit" className="w-full bg-app-accent text-app-on-accent h-11 md:h-10 flex items-center justify-center rounded-xl font-bold shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer">
-            Save Movement
-          </button>
-        </form>
-      </div>
-      )}
-
-      {isLoading && (
-        <p className="text-sm text-app-text-secondary mb-3">Loading inventory...</p>
-      )}
-
-      <div className="mb-6">
-        <h3 className="text-xs font-bold text-app-text-secondary uppercase tracking-wider mb-3 ml-1">
-          Current Stock
-        </h3>
-        <div className="space-y-3">
-          {visibleItems.map((item) => {
-            const warningType = getStockWarningType(item);
-            const warningMeta = getStockWarningMeta(warningType);
-
-            return (
-              <div key={item.id} className={`bg-app-card p-4 rounded-xl border shadow-sm ${warningMeta.border}`}>
-                <div className="flex justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-black text-app-text truncate">{item.name}</p>
-                    <p className="text-xs text-app-text-secondary font-bold uppercase mt-1">{item.category}</p>
-                    {warningType !== 'ok' && (
-                      <p className={`text-[10px] font-black uppercase tracking-wider mt-1 ${warningMeta.badgeText}`}>
-                        {warningMeta.label}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <p className={`text-lg font-black font-jetbrains ${warningMeta.valueText}`}>
-                      {formatQuantity(item.currentStock)}
-                    </p>
-                    <p className="text-xs text-app-text-secondary">{item.unit}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 mt-3 text-[10px]">
-                  <p className={`${warningType === 'needed-stock' ? 'bg-app-warning-bg text-app-warning' : 'bg-app-bg text-app-text-secondary'} rounded-lg p-2 font-bold`}>
-                    Need <span className="font-black font-jetbrains">{formatQuantity(item.targetQuantity)}</span>
-                  </p>
-                  <p className={`${warningType === 'low-stock' ? 'bg-app-danger-bg text-app-danger' : 'bg-app-bg text-app-text-secondary'} rounded-lg p-2 font-bold`}>
-                    Alert <span className="font-black font-jetbrains">{formatQuantity(item.reorderLevel)}</span>
-                  </p>
-                  {readOnly || !canEditOrDelete ? (
-                    <p className="bg-app-bg rounded-lg p-2 text-app-text-secondary font-black text-center">
-                      View only
-                    </p>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleEditItem(item)}
-                      className="bg-app-accent/10 text-app-accent border border-app-accent/20 hover:bg-app-accent/20 rounded-lg p-2 font-black transition-colors cursor-pointer"
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <FormField label="Funding">
+                    <SelectField
+                      value={movementForm.fundingNature}
+                      onChange={(event) => updateMovementForm('fundingNature', event.target.value)}
                     >
-                      Edit
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div>
-        <h3 className="text-xs font-bold text-app-text-secondary uppercase tracking-wider mb-3 ml-1">
-          Recent Movements
-        </h3>
-        <div className="space-y-3">
-          {visibleMovements.map((movement) => (
-            <div key={movement.id} className="bg-app-card p-4 rounded-xl border border-app-border shadow-sm">
-              <div className="flex justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-black text-app-text truncate">{movement.itemName}</p>
-                  <p className="text-xs text-app-text-secondary font-bold mt-1">
-                    {movement.movementDate} - Bldg {movement.building}
+                      {ledgerFunding.map((funding) => (
+                        <option key={funding} value={funding}>{funding}</option>
+                      ))}
+                    </SelectField>
+                  </FormField>
+                  <FormField label="Category">
+                    <TextInput
+                      value={movementForm.ledgerCategory}
+                      onChange={(event) => updateMovementForm('ledgerCategory', event.target.value)}
+                    />
+                  </FormField>
+                  <FormField label="Paid By">
+                    <SelectField
+                      value={movementForm.paidBy}
+                      onChange={(event) => updateMovementForm('paidBy', event.target.value)}
+                    >
+                      <option value="">-- Select --</option>
+                      {visibleStakeholders.map((stakeholder) => (
+                        <option key={stakeholder.id} value={stakeholder.name}>{stakeholder.name}</option>
+                      ))}
+                    </SelectField>
+                  </FormField>
+                  <FormField label="Paid To">
+                    <SelectField
+                      value={movementForm.paidTo}
+                      onChange={(event) => updateMovementForm('paidTo', event.target.value)}
+                    >
+                      <option value="">-- Select --</option>
+                      {visibleStakeholders.map((stakeholder) => (
+                        <option key={stakeholder.id} value={stakeholder.name}>{stakeholder.name}</option>
+                      ))}
+                    </SelectField>
+                  </FormField>
+                  <FormField label="Reference" className="sm:col-span-2">
+                    <TextInput
+                      value={movementForm.reference}
+                      onChange={(event) => updateMovementForm('reference', event.target.value)}
+                      placeholder="Invoice or OR reference"
+                    />
+                  </FormField>
+                  <p className="sm:col-span-2 text-right text-sm font-bold text-app-text-secondary">
+                    Expense amount: {formatMoney(movementAmount)}
                   </p>
-                  {movement.linkedTransactionId && (
-                    <p className="text-[10px] text-app-accent font-bold mt-1">Ledger {movement.linkedTransactionId}</p>
-                  )}
                 </div>
-                <div className="text-right">
-                  <p className={`text-sm font-black ${getMovementTone(movement.movementType)}`}>{movement.movementType}</p>
-                  <p className="text-lg font-black text-app-text font-jetbrains">
-                    {formatQuantity(movement.quantity)} {movement.unit}
-                  </p>
-                </div>
-              </div>
-              {movement.remarks && (
-                <p className="text-xs text-app-text-secondary italic mt-2 truncate">"{movement.remarks}"</p>
               )}
             </div>
-          ))}
-
-          {visibleMovements.length === 0 && (
-            <p className="text-center text-app-text-secondary text-sm mt-4">No inventory movements yet.</p>
           )}
-        </div>
-      </div>
+          <button type="submit" className="hidden">Submit movement</button>
+        </form>
+      </Modal>
     </div>
   );
 }

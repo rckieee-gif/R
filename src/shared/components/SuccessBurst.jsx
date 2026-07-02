@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
 
+function seededUnit(index, salt) {
+  const raw = Math.sin((index + 1) * 12.9898 + salt * 78.233) * 43758.5453;
+  return raw - Math.floor(raw);
+}
+
 /**
  * A lightweight, performant particle burst component for completion celebrations.
  * Renders 10-12 floating organic particles drifting outwards from the center.
@@ -9,22 +14,29 @@ export default function SuccessBurst({ active = true, particleCount = 12 }) {
   const [show, setShow] = useState(active);
 
   useEffect(() => {
+    let showTimer;
+    let hideTimer;
+
     if (!active) {
-      setShow(false);
-      return;
+      showTimer = setTimeout(() => setShow(false), 0);
+      return () => clearTimeout(showTimer);
     }
-    setShow(true);
-    const timer = setTimeout(() => {
+
+    showTimer = setTimeout(() => setShow(true), 0);
+    hideTimer = setTimeout(() => {
       setShow(false);
     }, 800);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+    };
   }, [active]);
 
   if (!show) return null;
 
   const particles = Array.from({ length: particleCount }).map((_, i) => {
-    const angle = (i * 2 * Math.PI) / particleCount + (Math.random() * 0.4 - 0.2);
-    const distance = 30 + Math.random() * 45; // distance in pixels
+    const angle = (i * 2 * Math.PI) / particleCount + (seededUnit(i, 1) * 0.4 - 0.2);
+    const distance = 30 + seededUnit(i, 2) * 45; // distance in pixels
     const dx = `${Math.cos(angle) * distance}px`;
     const dy = `${Math.sin(angle) * distance}px`;
     
@@ -36,8 +48,8 @@ export default function SuccessBurst({ active = true, particleCount = 12 }) {
       '#34d399'             // Emerald
     ];
     const color = colors[i % colors.length];
-    const size = `${Math.floor(Math.random() * 5) + 5}px`; // 5px - 9px
-    const delay = `${Math.random() * 0.08}s`;
+    const size = `${Math.floor(seededUnit(i, 3) * 5) + 5}px`; // 5px - 9px
+    const delay = `${seededUnit(i, 4) * 0.08}s`;
 
     return {
       id: i,
